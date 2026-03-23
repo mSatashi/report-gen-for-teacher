@@ -1,73 +1,80 @@
-# React + TypeScript + Vite
+# Teacher Report Generator AI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project uses AI (Large Language Models) to generate personalized student reports based on provided data.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Generates detailed teacher reports from student information
+- Uses GPT-2 model for text generation
+- Supports customizable student data input
+- Saves reports to file
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## Expanding the ESLint configuration
+2. **Environment Variables**:
+   - Create a `.env` file in the project root with your Hugging Face token:
+     ```
+     HF_TOKEN=your_hugging_face_token_here
+     ```
+   - Get a token from [Hugging Face](https://huggingface.co/settings/tokens)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+3. **Run the Program**:
+   ```bash
+   python report_generator.py
+   ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Usage
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Run the backend API server:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open `http://localhost:8000/docs` for interactive Swagger UI.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Generate a report
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+POST `http://localhost:8000/api/reports`
+
+JSON body example:
+
+```json
+{
+  "student_name": "John Mare",
+  "grade_level": "Grade 11 / Advanced Science",
+  "academic_performance": "Grade A+ with good performance",
+  "behavioral_observations": "Very polite and diligent student",
+  "report_style": "Constructive",
+  "use_ai": false
+}
 ```
+
+### Fetch all reports
+
+GET `http://localhost:8000/api/reports`
+
+### Fetch a report by ID
+
+GET `http://localhost:8000/api/reports/{report_id}`
+
+### Delete a report
+
+DELETE `http://localhost:8000/api/reports/{report_id}`
+
+## Troubleshooting
+
+- **Model download**: First run may take time to download the GPT-2 model.
+- **CUDA/GPU issues**: The code automatically falls back to CPU if GPU is unavailable.
+- **Token issues**: Ensure your HF_TOKEN is valid for faster downloads.
+
+## Requirements
+
+- Python 3.8+
+- Hugging Face account with token
+- Internet connection for model download
