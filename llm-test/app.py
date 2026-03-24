@@ -79,15 +79,22 @@ def _template_report(data: ReportInput) -> str:
 def _generate_ai_report(data: ReportInput) -> str:
     try:
         from transformers import pipeline
+        from transformers import GenerationConfig
 
-        gpt2 = pipeline(
-            "text-generation",
-            model="gpt2",
-            tokenizer="gpt2",
+        model_name = "Qwen/Qwen3Guard-Gen-4B"
+
+        ##Configuration for model generation - adjust as needed for different output styles or lengths
+        generation_config = GenerationConfig(
+            model=model_name,
             max_new_tokens=240,
-            top_p=0.92,
-            temperature=0.8,
             repetition_penalty=1.1,
+            tie_word_embeddings=False,
+        )
+
+        qwen = pipeline(
+            "text-generation",
+            model=model_name,
+            tokenizer=model_name,
         )
 
         prompt = (
@@ -99,7 +106,10 @@ def _generate_ai_report(data: ReportInput) -> str:
             f" Report Style: {data.report_style}."
         )
 
-        output = gpt2(prompt, do_sample=True, num_return_sequences=1)
+        output = qwen(
+            prompt,
+            generation_config=generation_config,
+        )
         text = output[0]["generated_text"]
 
         # Trim prompt echo when possible
