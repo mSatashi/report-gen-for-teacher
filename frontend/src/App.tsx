@@ -7,6 +7,8 @@ import { NAV_ITEMS } from "./data";
 import DailyLogPage from "./pages/daily-log";
 import LearningPlan from "./pages/learning-plan";
 import ReportEditor from "./pages/report-editor";
+import { styles } from "./styles";
+import { fonts } from "./components/fontstyle";
 
 const App: React.FC = () => {
   const [activeRoute, setActiveRoute]         = useState<string>("home");
@@ -49,45 +51,21 @@ const App: React.FC = () => {
 
   return (
     <div
-      style={{
-        display: "flex",
-        width: "100vw",
-        height: "100vh",
-        maxWidth: "100vw",
-        maxHeight: "100vh",
-        fontFamily: "'Poppins', sans-serif",
-        background: "#f9fafb",
-        overflow: "hidden",
-        position: "fixed",
-        top: 0,
-        left: 0,
-      }}
+      style={styles.container}
     >
       {/* ── Mobile overlay ── */}
       {mobileSidebarOpen && (
         <div
           onClick={() => setMobileSidebarOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            zIndex: 40,
-          }}
+          style={styles.sidebarMobile}
         />
       )}
 
       {/* ── Mobile sidebar drawer ── */}
       <div
         className="mobile-sidebar-drawer"
-        style={{
-          position: "fixed",
-          top: 0,
-          bottom: 0,
+        style={{ ...styles.mSidebarDrawer,
           left: mobileSidebarOpen ? 0 : -260,
-          width: 240,
-          zIndex: 50,
-          transition: "left .25s",
-          display: "none", // shown via CSS media query
         }}
       >
         <Sidebar
@@ -113,38 +91,23 @@ const App: React.FC = () => {
 
       {/* ── Main area ── */}
       <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          minWidth: 0,
-          overflow: "hidden",
-        }}
+        style={styles.mainArea}
       >
         {/* Header */}
         <Header onOpenMobileMenu={() => setMobileSidebarOpen(true)} />
 
         {/* Toolbar / page title */}
         <div
-          style={{
-            background: "#fff",
-            borderBottom: "1px solid #e5e7eb",
-            padding: "10px 28px",
-            flexShrink: 0,
-          }}
+          style={styles.toolbar}
         >
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: "#111827", margin: 0 }}>
+          <h1 style={fonts.h1}>
             {pageTitle}
           </h1>
         </div>
 
         {/* Content */}
         <main
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: "28px 28px 40px",
-          }}
+          style={styles.root}
         >
           {renderPage()}
         </main>

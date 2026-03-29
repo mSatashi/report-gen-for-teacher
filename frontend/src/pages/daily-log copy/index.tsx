@@ -4,7 +4,7 @@ import DailyLogForm  from "./dailyLogForm";
 import { INITIAL_DATA } from "./constants";
 import type { LogEntry, FormState } from "./types";
 
-type ActiveView = "index" | "form";
+type ActiveView = "index" | "form" | "formMakul";
 
 const DailyLogPage: React.FC = () => {
   const [view,   setView]   = useState<ActiveView>("index");
@@ -17,6 +17,7 @@ const DailyLogPage: React.FC = () => {
     : undefined;
 
   const handleOpenAdd    = ()           => { setEditId(null); setView("form"); };
+  const handleOpenAddMakul    = ()           => { setEditId(null); setView("formMakul"); };
   const handleOpenDetail = (id: number) => { setEditId(id);   setView("form"); };
 
   const handleSave = (form: FormState) => {
@@ -44,7 +45,7 @@ const DailyLogPage: React.FC = () => {
     return <DailyLogForm initialForm={initialForm} onBack={() => setView("index")} onSave={handleSave} />;
   }
 
-  return <DailyLogIndex data={data} onAdd={handleOpenAdd} onDetail={handleOpenDetail} />;
+  return <DailyLogIndex data={data} onAdd={handleOpenAdd} onAddMakul={handleOpenAddMakul} onDetail={handleOpenDetail} />;
 };
 
 export default DailyLogPage;

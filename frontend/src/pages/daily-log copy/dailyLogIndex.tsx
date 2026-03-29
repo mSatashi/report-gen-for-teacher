@@ -1,16 +1,17 @@
 import React from "react";
 import type { LogEntry } from "./types";
 import { PENGUASAAN_BADGE } from "./constants";
+import { styles } from "./styles";
 
 interface DailyLogIndexProps {
   data: LogEntry[];
-  onAdd: () => void;
+  onAddMakul: () => void;
   onDetail: (id: number) => void;
 }
 
-const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAdd, onDetail }) => {
+const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAddMakul, onDetail }) => {
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
+    <div style={styles.container}>
 
       {/* Page heading */}
       <div style={{ marginBottom: 20, flexShrink: 0 }}>
@@ -38,14 +39,11 @@ const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAdd, onDetail }) 
         {/* Card header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexShrink: 0 }}>
           <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>
-            List Catatan Belajar Siswa
+            List Mata Pelajaran
           </span>
           <button
-            onClick={onAdd}
-            style={{
-              background: "#3b82f6", color: "#fff", border: "none",
-              borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-            }}
+            onClick={onAddMakul}
+            style={styles.btnAdd}
           >
             + Tambah Data
           </button>
@@ -59,9 +57,6 @@ const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAdd, onDetail }) 
                 {[
                   { label: "No",                  width: 50    },
                   { label: "Nama Mata Pelajaran",  width: "auto" },
-                  { label: "Materi Ajar",          width: "auto" },
-                  { label: "Catatan Guru",         width: "auto" },
-                  { label: "Tingkat Penguasaan",   width: 160   },
                   { label: "Actions",              width: 100   },
                 ].map((h) => (
                   <th
@@ -87,19 +82,6 @@ const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAdd, onDetail }) 
                   <tr key={row.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                     <td style={{ padding: "12px 14px", color: "#6b7280" }}>{idx + 1}</td>
                     <td style={{ padding: "12px 14px", fontWeight: 500, color: "#111827" }}>{row.mapel}</td>
-                    <td style={{ padding: "12px 14px", color: "#374151" }}>{row.materi}</td>
-                    <td style={{ padding: "12px 14px", color: "#6b7280", maxWidth: 280 }}>{row.catatan}</td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <span
-                        style={{
-                          background: badge.bg, color: badge.color,
-                          borderRadius: 6, padding: "3px 10px",
-                          fontSize: 12, fontWeight: 600,
-                        }}
-                      >
-                        {row.tingkat_penguasaan}
-                      </span>
-                    </td>
                     <td style={{ padding: "12px 14px" }}>
                       <button
                         onClick={() => onDetail(row.id)}
