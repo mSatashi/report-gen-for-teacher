@@ -23,14 +23,14 @@ export interface LogEntry {
 export interface MakulEntry {
   id: number;
   nama: string;
-  jumlahSiswa: number;
+  // jumlahSiswa: number;
   deskripsi?: string;
 }
 
 export interface FormState {
   siswa: string;
   tanggal: string;
-  idMapel: string;
+  idMapel: number;
   mapel: string;
   topik: string;
   durasi: string;
@@ -54,4 +54,13 @@ export interface MapelSiswaState {
   id: number;
   idSiswa: number;
   idMapel: number;
+}
+
+// Hasil join MakulSiswa + SiswaData — yang dikirim ke DailyListSiswa
+export interface SiswaJoined {
+  id: number;
+  idSiswa: number;
+  idMapel: number;
+  nama: string;
+  kelas: string;
 }

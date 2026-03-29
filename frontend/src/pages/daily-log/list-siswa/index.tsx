@@ -1,9 +1,9 @@
 import React from "react";
-import type { LogEntry, MapelSiswaState } from "../components/types";
+import type { LogEntry, SiswaJoined } from "../components/types";
 import { PENGUASAAN_BADGE, btnAddStyle } from "../components/constants";
 
 interface DailyListSiswaProps {
-  siswaData: MapelSiswaState[];
+  siswaData: SiswaJoined[];
   logData: LogEntry[];
   onDetail: (siswaId: number) => void;
   onAddSiswa: () => void;
@@ -80,6 +80,9 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
             </button>
             <button style={btnAddStyle}>
               Import Log
+            </button>
+            <button onClick={onAddSiswa} style={btnAddStyle}>
+              Tambah
             </button>
           </div>
         </div>

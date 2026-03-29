@@ -12,11 +12,11 @@ export const INITIAL_LOG_DATA: LogEntry[] = [
 ];
 
 export const INITIAL_MAKUL_DATA: MakulEntry[] = [
-  { id: 1, nama: "Matematika",       jumlahSiswa: 15, deskripsi: "Aljabar, Kalkulus, Statistika" },
-  { id: 2, nama: "Bahasa Indonesia", jumlahSiswa: 20, deskripsi: "Teks, Sastra, Tata Bahasa"     },
-  { id: 3, nama: "Fisika",           jumlahSiswa: 15, deskripsi: "Mekanika, Termodinamika"        },
-  { id: 4, nama: "IPA",              jumlahSiswa: 20, deskripsi: "Biologi, Kimia, Fisika Dasar"   },
-  { id: 5, nama: "Bahasa Inggris",   jumlahSiswa: 15, deskripsi: "Grammar, Reading, Speaking"     },
+  { id: 1, nama: "Matematika",       deskripsi: "Aljabar, Kalkulus, Statistika" },
+  { id: 2, nama: "Bahasa Indonesia", deskripsi: "Teks, Sastra, Tata Bahasa"     },
+  { id: 3, nama: "Fisika",           deskripsi: "Mekanika, Termodinamika"        },
+  { id: 4, nama: "IPA",              deskripsi: "Biologi, Kimia, Fisika Dasar"   },
+  { id: 5, nama: "Bahasa Inggris",   deskripsi: "Grammar, Reading, Speaking"     },
 ];
 
 export const INITIAL_SISWA_DATA = [
@@ -86,12 +86,3 @@ export const btnAddStyle: React.CSSProperties = {
   background: "#06b6d4", color: "#fff", border: "none",
   borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
 };
-
-// ─── Shared atoms ─────────────────────────────────────────────────────────────
-
-export const Label: React.FC<{ text: string; optional?: boolean }> = ({ text, optional }) => (
-  <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-    {text}
-    {optional && <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 4 }}>(opsional)</span>}
-  </div>
-);

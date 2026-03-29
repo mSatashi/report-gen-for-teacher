@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import type { FormState } from "../components/types";
 import {
-  SISWA_OPTIONS, MAPEL_OPTIONS, METODE_OPTIONS,
+  MAPEL_OPTIONS, METODE_OPTIONS,
   PEMAHAMAN_OPTIONS, KETERLIBATAN_OPTIONS,
-  inputStyle, textareaStyle, cardStyle, Label,
+  inputStyle, textareaStyle, cardStyle,
 } from "../components/constants";
 import { styles } from "./styles";
 
@@ -19,6 +19,7 @@ interface DailyLogFormLogProps {
 const DEFAULT_FORM: FormState = {
   siswa: "Aisya Putri",
   tanggal: new Date().toISOString().split("T")[0],
+  idMapel: 1,
   mapel: "Matematika",
   topik: "",
   durasi: "90",
@@ -33,19 +34,9 @@ const DEFAULT_FORM: FormState = {
   kendala: "",
 };
 
-const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSiswa, lockedMapel, onBack, onSave }) => {
-  const [form, setForm] = useState<FormState>({ 
-    ...DEFAULT_FORM, 
-    ...initialForm, 
-    ...(lockedSiswa ? { siswa: lockedSiswa } : {}),...(lockedMapel ? { mapel: lockedMapel } : {}), });
-
-  const set = (key: keyof FormState) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-      setForm((f) => ({ ...f, [key]: e.target.value }));
-
-  const SaveButton: React.FC<{ size?: "sm" | "md" }> = ({ size = "md" }) => (
+const SaveButton: React.FC<{ size?: "sm" | "md"; onClick: () => void; }> = ({ size = "md", onClick }) => (
     <button
-      onClick={() => onSave(form)}
+      onClick={onClick}
       style={{
         background: "#22c55e", color: "#fff", border: "none",
         borderRadius: 8,
@@ -56,6 +47,23 @@ const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSi
       Simpan Log
     </button>
   );
+
+const Label: React.FC<{ text: string; optional?: boolean }> = ({ text, optional }) => (
+  <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+    {text}
+    {optional && <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 4 }}>(opsional)</span>}
+  </div>
+);
+
+const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSiswa, lockedMapel, onBack, onSave }) => {
+  const [form, setForm] = useState<FormState>({ 
+    ...DEFAULT_FORM, 
+    ...initialForm, 
+    ...(lockedSiswa ? { siswa: lockedSiswa } : {}),...(lockedMapel ? { mapel: lockedMapel } : {}), });
+
+  const set = (key: keyof FormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setForm((f) => ({ ...f, [key]: e.target.value }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
@@ -85,7 +93,7 @@ const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSi
           >
             ← Kembali
           </button>
-          <SaveButton size="sm" />
+          <SaveButton onClick={() => onSave(form)} size="sm" />
         </div>
       </div>
 
@@ -305,7 +313,7 @@ const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSi
           >
             Batal
           </button>
-          <SaveButton />
+          <SaveButton onClick={() => onSave(form)} size="sm" />
         </div>
 
       </div>

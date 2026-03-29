@@ -1,14 +1,21 @@
 import React from "react";
-import type { MakulEntry } from "../components/types";
+import type { MakulEntry, MapelSiswaState } from "../components/types";
 import { btnAddStyle } from "../components/constants";
 
 interface DailyLogIndexProps {
   data: MakulEntry[];
+  mapelSiswa: MapelSiswaState[];
   onAddMakul: () => void;
   onDetail: (id: number) => void;
 }
 
-const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAddMakul, onDetail }) => {
+const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, mapelSiswa, onAddMakul, onDetail }) => {
+  /** Hitung ringkasan log per siswa */
+  const getSiswaCounts = (idMapel: number) => {
+    const siswa = mapelSiswa.filter((l) => l.idMapel === idMapel);
+    return { total: siswa.length };
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
 
@@ -75,11 +82,12 @@ const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAddMakul, onDetai
             </thead>
             <tbody>
               {data.map((row, idx) => {
+                const { total } = getSiswaCounts(row.id);
                 return (
                   <tr key={row.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                     <td style={{ padding: "12px 14px", color: "#6b7280" }}>{idx + 1}</td>
                     <td style={{ padding: "12px 14px", color: "#374151" }}>{row.nama}</td>
-                    <td style={{ padding: "12px 14px", color: "#374151" }}>{row.jumlahSiswa}</td>
+                    <td style={{ padding: "12px 14px", color: "#374151" }}>{total}</td>
                     <td style={{ padding: "12px 14px", color: "#111827" }}>{row.deskripsi}</td>
                     <td style={{ padding: "12px 14px" }}>
                       <button

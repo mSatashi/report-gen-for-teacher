@@ -31,7 +31,7 @@ const DailyLogPage: React.FC = () => {
   // ── Data state ──────────────────────────────────────────────────────────────
   const [logData,   setLogData]   = useState<LogEntry[]>(INITIAL_LOG_DATA);
   const [mapelData, setmapelData] = useState<MakulEntry[]>(INITIAL_MAKUL_DATA);
-  const [MapelSiswa] = useState(INITIAL_MAKUL_SISWA);
+  const [mapelSiswa] = useState(INITIAL_MAKUL_SISWA);
   const [siswaData]               = useState(INITIAL_SISWA_DATA);
 
   const [selectedMakulId, setSelectedMakulId] = useState<number | null>(null);
@@ -42,7 +42,7 @@ const DailyLogPage: React.FC = () => {
   const selectedMakul = mapelData.find((m) => m.id === selectedMakulId) ?? null;
 
   const siswaUntukMapel = selectedMakulId !== null
-    ? MapelSiswa
+    ? mapelSiswa
         .filter((ms) => ms.idMapel === selectedMakulId)
         .map((ms) => {
           const siswa = siswaData.find((s) => s.id === ms.idSiswa);
@@ -84,8 +84,8 @@ const DailyLogPage: React.FC = () => {
                 siswa:             form.siswa,
                 idMapel:           form.idMapel,
                 mapel:             form.mapel,
-                materi:            form.topik || "—",
-                catatan:           form.catatanGuru || "—",
+                materi:            form.topik ?? "—",
+                catatan:           form.catatanGuru ?? "—",
                 tingkat_penguasaan: form.pemahaman,
                 tanggal:           form.tanggal,
                 durasi:            form.durasi,
@@ -103,8 +103,8 @@ const DailyLogPage: React.FC = () => {
           siswa:             form.siswa,
           idMapel:           form.idMapel,
           mapel:             form.mapel,
-          materi:            form.topik || "—",
-          catatan:           form.catatanGuru || "—",
+          materi:            form.topik ?? "—",
+          catatan:           form.catatanGuru ?? "—",
           tingkat_penguasaan: form.pemahaman,
           tanggal:           form.tanggal,
           durasi:            form.durasi,
@@ -186,6 +186,7 @@ const DailyLogPage: React.FC = () => {
   return (
     <DailyLogIndex
       data={mapelData}
+      mapelSiswa={mapelSiswa}
       onAddMakul={handleOpenAdd}
       onDetail={handleOpenDetail}
     />
