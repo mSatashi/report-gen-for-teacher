@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL Database ───────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: adaptive_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password_anda   # ganti sesuai .env
+      POSTGRES_DB: db_pendidikan
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Ollama (Model AI Lokal) ────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: adaptive_ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Uncomment baris berikut jika ada GPU NVIDIA:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ── FastAPI Backend ───────────────────────────────────────────────────────
+  backend:
+    build: .
+    container_name: adaptive_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:password_anda@postgres:5432/db_pendidikan
+      - OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    volumes:
+      - ./uploads:/app/uploads
+
+volumes:
+  postgres_data:
+  ollama_data:
