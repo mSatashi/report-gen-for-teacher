@@ -39,9 +39,15 @@ report-gen-for-teacher/
    - For Hugging Face token (if using external models): `HF_TOKEN=your_token`
 
 4. **Run with Docker Compose**:
-   ```bash
-   docker-compose up --build
-   ```
+   - From project root (`report-gen-for-teacher`):
+     ```bash
+     docker-compose down
+     docker-compose up --build -d
+     ```
+   - If you only need backend (plus dependencies):
+     ```bash
+     docker-compose up --build -d postgres ollama backend
+     ```
 
 5. **Access the application**:
    - Frontend: http://localhost:3000
@@ -72,10 +78,56 @@ npm run dev
 
 ## API Endpoints
 
-- `POST /api/reports`: Generate a student report
-- `GET /api/reports`: List saved reports
-- `GET /api/reports/{report_id}`: Fetch a report by ID
-- `DELETE /api/reports/{report_id}`: Delete a report
+### Auth
+- `POST /auth/register` : Register user
+- `POST /auth/login` : Login and get JWT token
+
+### Kelas & Murid
+- `GET /kelas` : List kelas
+- `POST /kelas` : Create kelas
+- `GET /kelas/{kelas_id}` : Get kelas by ID
+- `PUT /kelas/{kelas_id}` : Update kelas
+- `DELETE /kelas/{kelas_id}` : Delete kelas
+- `GET /kelas/{kelas_id}/murid` : List murid in kelas
+- `POST /kelas/{kelas_id}/murid` : Add murid to kelas
+- `DELETE /kelas/{kelas_id}/murid/{murid_id}` : Remove murid from kelas
+- `POST /kelas/murid/tambah` : Add murid (global)
+- `PUT /kelas/murid/{murid_id}` : Update murid
+
+### Daily Log
+- `GET /logs/hari-ini` : Get today logs
+- `GET /logs/kelas/{kelas_id}` : Get logs by kelas
+- `GET /logs/murid/{murid_id}` : Get logs by murid
+- `GET /logs/{log_id}` : Get log by ID
+- `POST /logs` : Create log pertemuan
+- `POST /logs/bulk/{kelas_id}` : Bulk upload logs for kelas
+- `PUT /logs/{log_id}` : Update log
+- `DELETE /logs/{log_id}` : Delete log
+
+### Rencana Studi
+- `POST /rencana-studi/generate` : Generate rencana studi
+- `GET /rencana-studi` : List rencana studi
+
+### Laporan
+- `POST /laporan/generate` : Generate laporan narasi
+- `GET /laporan` : List laporan
+- `GET /laporan/{laporan_id}` : Get one laporan by ID
+- `PUT /laporan/{laporan_id}` : Update laporan
+- `POST /laporan/{laporan_id}/kirim` : Kirim laporan
+- `GET /laporan/{laporan_id}/pdf` : Download laporan PDF
+
+### Knowledge State (BKT)
+- `GET /knowledge-state/{murid_id}` : Get learning knowledge state for murid
+
+### Dashboard
+- `GET /dashboard/{pengajar_id}` : Dashboard summary for pengajar
+
+### AI / LLM
+- `GET /ai/health` : AI service health check
+
+### Diagnostic
+- `POST /diagnostic` : Create diagnostic entry
+- `GET /diagnostic/murid/{murid_id}` : List diagnostics for murid
 
 ## Troubleshooting
 
