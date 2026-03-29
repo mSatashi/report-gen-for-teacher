@@ -27,16 +27,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+# [BARU] Menambahkan field untuk BKT dan PSO
 class ReportInput(BaseModel):
-    student_name: str = Field(..., example="John Mare")
-    grade_level: str = Field(..., example="Grade 11 / Advanced Science")
-    academic_performance: str = Field(..., example="Grade A+ with good performance")
-    behavioral_observations: str = Field(..., example="Very polite and diligence student")
-    report_style: str = Field("Constructive", example="Constructive")
+    student_name: str = Field(..., example="Alea")
+    grade_level: str = Field(..., example="Kelas 6 / Ilmu Pengetahuan Alam")
+    academic_performance: str = Field(..., example="Nilai rata-rata 85, sangat baik di teori.")
+    behavioral_observations: str = Field(..., example="Sangat aktif bertanya, namun kurang teliti saat ujian.")
+    bkt_understanding_level: str = Field("Probabilitas pemahaman 0.85 (Tinggi)", example="Probabilitas pemahaman 0.85")
+    pso_recommended_route: str = Field("Lanjut ke materi Ekosistem Darat", example="Lanjut ke materi Ekosistem Darat")
+    report_style: str = Field("Konstruktif dan Memotivasi", example="Konstruktif")
     use_ai: bool = Field(False, example=False, description="Whether to produce report text with ML model.")
     attachments: Optional[List[str]] = Field(None, example=["student_project.pdf"])
-
 
 class ReportOutput(BaseModel):
     id: str
@@ -47,47 +48,43 @@ class ReportOutput(BaseModel):
     use_ai: bool
     attachments: Optional[List[str]]
 
-
 def _load_reports() -> Dict[str, dict]:
     try:
         return json.loads(DATA_FILE.read_text(encoding="utf-8") or "{}")
     except Exception:
         return {}
 
-
 def _save_reports(reports: Dict[str, dict]) -> None:
     DATA_FILE.write_text(json.dumps(reports, indent=2, ensure_ascii=False), encoding="utf-8")
 
-
 def _template_report(data: ReportInput) -> str:
     return (
-        f"Academic Progress Report\n"
-        f"Student Name: {data.student_name}\n"
-        f"Grade Level/Course: {data.grade_level}\n\n"
-        f"Academic Performance:\n"
-        f"{data.academic_performance.strip()}\n\n"
-        f"Behavioral Observations:\n"
-        f"{data.behavioral_observations.strip()}\n\n"
-        f"Report Style: {data.report_style}\n\n"
-        "Summary:\n"
-        "This report highlights strengths and a path for continuing progress. "
-        "The student is demonstrating positive effort, should maintain consistent focus, "
-        "and benefit from targeted development activities."        
+        f"Laporan Perkembangan Akademik\n"
+        f"Nama Siswa: {data.student_name}\n"
+        f"Kelas/Mata Pelajaran: {data.grade_level}\n\n"
+        f"Performa Akademik:\n{data.academic_performance.strip()}\n\n"
+        f"Observasi Sikap:\n{data.behavioral_observations.strip()}\n\n"
+        f"Status Pemahaman (BKT): {data.bkt_understanding_level}\n"
+        f"Rencana Belajar Berikutnya (PSO): {data.pso_recommended_route}\n\n"
+        "Ringkasan: Siswa menunjukkan perkembangan positif. Fokus selanjutnya adalah pada rekomendasi materi di atas."        
     )
-
 
 def _generate_ai_report(data: ReportInput) -> str:
     try:
         from transformers import pipeline
         from transformers import GenerationConfig
 
-        model_name = "Qwen/Qwen3Guard-Gen-4B"
+        # [DIUBAH] Menggunakan model <8B yang optimal untuk instruksi (7B parameter)
+        model_name = "Qwen/Qwen2.5-3B-Instruct"
 
-        ##Configuration for model generation - adjust as needed for different output styles or lengths
+        # [DIUBAH] Konfigurasi tuning ditambahkan temperature, top_p, dan do_sample
         generation_config = GenerationConfig(
             model=model_name,
-            max_new_tokens=240,
+            max_new_tokens=1024,
+            temperature=0.6,
+            top_p=0.9,
             repetition_penalty=1.1,
+            do_sample=True,
             tie_word_embeddings=False,
         )
 
@@ -95,15 +92,24 @@ def _generate_ai_report(data: ReportInput) -> str:
             "text-generation",
             model=model_name,
             tokenizer=model_name,
+            device_map="auto" # Membantu membagi beban memori
         )
 
+        # [DIUBAH] Prompt terstruktur menggunakan Few-Shot dan memuat data BKT/PSO
         prompt = (
-            f"Generate a polished academic progress report for a student using this data:"
-            f" Student Name: {data.student_name}."
-            f" Grade Level/Course: {data.grade_level}."
-            f" Academic Performance: {data.academic_performance}."
-            f" Behavioral Observations: {data.behavioral_observations}."
-            f" Report Style: {data.report_style}."
+            f"Tuliskan laporan perkembangan siswa dalam Bahasa Indonesia yang formal, empatik, dan mudah dipahami oleh orang tua.\n\n"
+            f"Contoh Format:\n"
+            f"Ananda telah mengikuti kelas dengan sangat baik. Secara akademik, penguasaan materinya memuaskan. "
+            f"Berdasarkan analisis sistem kami, tingkat pemahaman ananda sudah matang. Oleh karena itu, untuk pertemuan berikutnya, "
+            f"rencana pembelajaran akan difokuskan pada pengayaan materi lanjutan. Terus pertahankan semangat belajarnya!\n\n"
+            f"Data Siswa Saat Ini:\n"
+            f"- Nama: {data.student_name}\n"
+            f"- Mata Pelajaran: {data.grade_level}\n"
+            f"- Performa Akademik: {data.academic_performance}\n"
+            f"- Observasi Sikap: {data.behavioral_observations}\n"
+            f"- Tingkat Pemahaman (BKT): {data.bkt_understanding_level}\n"
+            f"- Rekomendasi Rute Belajar (PSO): {data.pso_recommended_route}\n\n"
+            f"Buat laporan untuk data siswa di atas berdasarkan contoh format:"
         )
 
         output = qwen(
@@ -112,7 +118,6 @@ def _generate_ai_report(data: ReportInput) -> str:
         )
         text = output[0]["generated_text"]
 
-        # Trim prompt echo when possible
         if prompt in text:
             text = text.replace(prompt, "", 1).strip()
 
@@ -121,8 +126,9 @@ def _generate_ai_report(data: ReportInput) -> str:
 
         return text
     except Exception as exc:
-        # If AI generation fails use template fallback
-        return _template_report(data) + "\n\n(Note: AI generation failed, template fallback used.)"
+        print(f"Error AI: {exc}")
+        return _template_report(data) + "\n\n(Catatan: Generasi AI gagal, menggunakan draf template.)"
+
 
 
 @app.post("/api/reports", response_model=ReportOutput)
