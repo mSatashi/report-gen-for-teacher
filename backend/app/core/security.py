@@ -1,32 +1,41 @@
 """
 security.py
-Fungsi-fungsi keamanan: hashing password, buat & verifikasi JWT token.
+Fungsi keamanan: hashing password (bcrypt langsung) + JWT token.
+Tidak pakai passlib karena konflik dengan bcrypt versi baru.
 """
 from datetime import datetime, timedelta
 from typing import Optional
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
 
-# ── Password Hashing ─────────────────────────────────────────────────────────
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# ── Password Hashing ──────────────────────────────────────────────────────────
 
 def hash_password(password: str) -> str:
-    """Mengubah password plain-text menjadi hash bcrypt."""
-    return pwd_context.hash(password)
+    """Hash password menggunakan bcrypt."""
+    pwd_bytes = password.encode("utf-8")
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Memverifikasi password plain-text dengan hash yang tersimpan."""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verifikasi password plain-text dengan hash yang tersimpan di DB."""
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8"),
+        )
+    except Exception:
+        return False
 
 
-# ── JWT Token ────────────────────────────────────────────────────────────────
+# ── JWT Token ─────────────────────────────────────────────────────────────────
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Membuat JWT access token."""
+    """Buat JWT access token."""
     to_encode = data.copy()
     expire = datetime.utcnow() + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -37,11 +46,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 def decode_access_token(token: str) -> Optional[dict]:
     """
-    Mendekode JWT token.
-    Mengembalikan payload dict jika valid, None jika tidak valid / expired.
+    Decode JWT token.
+    Return payload dict jika valid, None jika tidak valid atau expired.
     """
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        return payload
+        return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except JWTError:
         return None
