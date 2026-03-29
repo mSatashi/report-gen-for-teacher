@@ -6,16 +6,18 @@ services:
     image: postgres:15-alpine
     container_name: adaptive_db
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password_anda   # ganti sesuai .env
-      POSTGRES_DB: db_pendidikan
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,18 +31,10 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    # Uncomment baris berikut jika ada GPU NVIDIA:
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
 
   # ── FastAPI Backend ───────────────────────────────────────────────────────
   backend:
-    build: .
+    build: ./backend
     container_name: adaptive_backend
     restart: unless-stopped
     ports:
@@ -48,8 +42,8 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql://postgres:password_anda@postgres:5432/db_pendidikan
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - DATABASE_URL=${DATABASE_URL}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,6 +52,26 @@ services:
     volumes:
       - ./uploads:/app/uploads
 
+  # ── React Frontend ────────────────────────────────────────────────────────
+  frontend:
+    build: .
+    container_name: adaptive_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
   ollama_data:
+      - DATABASE_URL=postgresql://postgres:password_anda@postgres:5432/db_pendidikan
+      - OLLAMA_BASE_URL=http://ollama:11434
+  depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+  volumes:
+      - ./uploads:/app/uploads
+

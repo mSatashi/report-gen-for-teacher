@@ -1,80 +1,91 @@
 # Teacher Report Generator AI
 
-This project uses AI (Large Language Models) to generate personalized student reports based on provided data.
+This is a full-stack web application that uses AI (Large Language Models) to generate personalized student reports. It consists of a React frontend, FastAPI backend, PostgreSQL database, and Ollama for local AI models.
 
 ## Features
 
-- Generates detailed teacher reports from student information
-- Uses GPT-2 model for text generation
-- Supports customizable student data input
-- Saves reports to file
+- **Frontend**: React + Vite web interface for inputting student data and viewing reports
+- **Backend**: FastAPI server with AI-powered report generation
+- **Database**: PostgreSQL for data storage
+- **AI**: Ollama for running local language models
+- **Docker**: Containerized deployment with docker-compose
 
-## Setup
+## Project Structure
 
-1. **Install Dependencies**:
+```
+report-gen-for-teacher/
+├── backend/          # FastAPI backend
+├── src/             # React frontend source
+├── public/          # Static assets
+├── Dockerfile       # Frontend container
+├── docker-compose.yml # Multi-service setup
+├── requirements.txt # Python dependencies
+└── package.json     # Node dependencies
+```
+
+## Setup with Docker (Recommended)
+
+1. **Prerequisites**:
+   - Docker and Docker Compose installed
+   - At least 8GB RAM for AI models
+
+2. **Clone and navigate to the project**:
    ```bash
-   pip install -r requirements.txt
+   cd report-gen-for-teacher
    ```
 
-2. **Environment Variables**:
-   - Create a `.env` file in the project root with your Hugging Face token:
-     ```
-     HF_TOKEN=your_hugging_face_token_here
-     ```
-   - Get a token from [Hugging Face](https://huggingface.co/settings/tokens)
+3. **Environment Variables**:
+   - Copy `.env.example` to `.env` and configure your settings
+   - For Hugging Face token (if using external models): `HF_TOKEN=your_token`
 
-3. **Run the Program**:
+4. **Run with Docker Compose**:
    ```bash
-   python report_generator.py
+   docker-compose up --build
    ```
+
+5. **Access the application**:
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - Database: localhost:5432
+
+## Manual Setup (Development)
+
+### Backend Setup
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Frontend Setup
+```bash
+npm install
+npm run dev
+```
 
 ## Usage
 
-Run the backend API server:
+1. Open the frontend at http://localhost:3000
+2. Input student information (name, grades, attendance, etc.)
+3. Generate AI-powered reports
+4. View and download reports
 
-```bash
-uvicorn app:app --reload --host 0.0.0.0 --port 8000
-```
+## API Endpoints
 
-Open `http://localhost:8000/docs` for interactive Swagger UI.
-
-### Generate a report
-
-POST `http://localhost:8000/api/reports`
-
-JSON body example:
-
-```json
-{
-  "student_name": "John Mare",
-  "grade_level": "Grade 11 / Advanced Science",
-  "academic_performance": "Grade A+ with good performance",
-  "behavioral_observations": "Very polite and diligent student",
-  "report_style": "Constructive",
-  "use_ai": false
-}
-```
-
-### Fetch all reports
-
-GET `http://localhost:8000/api/reports`
-
-### Fetch a report by ID
-
-GET `http://localhost:8000/api/reports/{report_id}`
-
-### Delete a report
-
-DELETE `http://localhost:8000/api/reports/{report_id}`
+- `POST /api/reports`: Generate a student report
+- `GET /api/reports`: List saved reports
+- `GET /api/reports/{report_id}`: Fetch a report by ID
+- `DELETE /api/reports/{report_id}`: Delete a report
 
 ## Troubleshooting
 
-- **Model download**: First run may take time to download the GPT-2 model.
-- **CUDA/GPU issues**: The code automatically falls back to CPU if GPU is unavailable.
-- **Token issues**: Ensure your HF_TOKEN is valid for faster downloads.
+- **Port conflicts**: Ensure ports 3000, 8000, 5432, 11434 are available
+- **Memory issues**: AI models require significant RAM; consider using smaller models
+- **Database connection**: Check PostgreSQL credentials in docker-compose.yml
 
 ## Requirements
 
-- Python 3.8+
-- Hugging Face account with token
-- Internet connection for model download
+- Docker & Docker Compose
+- Node.js 18+ (for manual frontend setup)
+- Python 3.10+ (for manual backend setup)
+- 8GB+ RAM recommended
