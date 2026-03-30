@@ -1,5 +1,5 @@
 import React from "react";
-import type { Student } from "../../types";
+import type { Student } from "../types";
 
 interface ProgressBarProps {
   pct: number;

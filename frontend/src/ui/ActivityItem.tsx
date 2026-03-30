@@ -1,5 +1,5 @@
 import React from "react";
-import type { Activity } from "../../types";
+import type { Activity } from "../types";
 
 interface ActivityItemProps {
   activity: Activity;

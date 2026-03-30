@@ -1,5 +1,5 @@
 import Header from '../components/header'
-import Sidebar from '../components/Sidebar'
+import Sidebar from '../components/sidebar'
 // import Header from '../components/Header'
 // import Toolbar from '../components/Toolbar'
 // import Footer from '../components/Footer'
@@ -25,13 +25,18 @@ function MainLayout({ children }: Props) {
         <div className="page d-flex flex-row flex-column-fluid">
 
           {/* Sidebar */}
-          <Sidebar />
+          <Sidebar
+            activeRoute="home"
+            collapsed={false}
+            onNavigate={() => {}}
+            onToggleCollapse={() => {}}
+          />
 
           {/* Wrapper */}
           <div className="wrapper d-flex flex-column flex-row-fluid" id="kt_wrapper">
 
             {/* Header */}
-            <Header />
+            <Header onOpenMobileMenu={() => {}} />
 
             {/* Content */}
             <div className="content d-flex flex-column flex-column-fluid" id="kt_content">

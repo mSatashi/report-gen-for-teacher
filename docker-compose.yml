@@ -34,7 +34,9 @@ services:
 
   # ── FastAPI Backend ───────────────────────────────────────────────────────
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: adaptive_backend
     restart: unless-stopped
     ports:
@@ -54,7 +56,9 @@ services:
 
   # ── React Frontend ────────────────────────────────────────────────────────
   frontend:
-    build: .
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: adaptive_frontend
     restart: unless-stopped
     ports:
@@ -65,13 +69,4 @@ services:
 volumes:
   postgres_data:
   ollama_data:
-      - DATABASE_URL=postgresql://postgres:password_anda@postgres:5432/db_pendidikan
-      - OLLAMA_BASE_URL=http://ollama:11434
-  depends_on:
-      postgres:
-        condition: service_healthy
-      ollama:
-        condition: service_started
-  volumes:
-      - ./uploads:/app/uploads
 
