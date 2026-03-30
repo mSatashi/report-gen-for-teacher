@@ -1,5 +1,5 @@
 import React from "react";
-import type { StatCard } from "../../types";
+import type { StatCard } from "../types";
 
 const badgeColors: Record<string, { bg: string; text: string }> = {
   green:  { bg: "#dcfce7", text: "#16a34a" },
