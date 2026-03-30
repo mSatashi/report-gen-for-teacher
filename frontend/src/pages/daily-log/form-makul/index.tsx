@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { MakulEntry, MakulFormState } from "../components/types";
 import { cardStyle, inputStyle, btnAddStyle } from "../components/constants";
 
+
 interface DailyLogFormMakulProps {
   /** Isi untuk mode edit, kosong untuk mode tambah baru */
   initialForm?: Partial<MakulFormState>;
@@ -15,6 +16,13 @@ const DEFAULT_FORM: MakulFormState = {
   nama: "",
   deskripsi: "",
 };
+
+const Label: React.FC<{ text: string; optional?: boolean }> = ({ text, optional }) => (
+  <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+    {text}
+    {optional && <span style={{ color: "#9ca3af", fontSize: 12 }}> (opsional)</span>}
+  </label>
+);
 
 const DailyLogFormMakul: React.FC<DailyLogFormMakulProps> = ({
   initialForm,
