@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type { MakulEntry, MakulFormState } from "../components/types";
-import { cardStyle, inputStyle, textareaStyle, Label, btnAddStyle } from "../components/constants";
+import { cardStyle, inputStyle, btnAddStyle } from "../components/constants";
 
 interface DailyLogFormMakulProps {
   /** Isi untuk mode edit, kosong untuk mode tambah baru */
