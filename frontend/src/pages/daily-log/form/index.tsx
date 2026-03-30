@@ -1,14 +1,17 @@
 import React, { useState } from "react";
-import type { FormState } from "./types";
+import type { FormState } from "../components/types";
 import {
-  SISWA_OPTIONS, MAPEL_OPTIONS, METODE_OPTIONS,
+  MAPEL_OPTIONS, METODE_OPTIONS,
   PEMAHAMAN_OPTIONS, KETERLIBATAN_OPTIONS,
-  inputStyle, textareaStyle, cardStyle, Label,
-} from "./constants";
+  inputStyle, textareaStyle, cardStyle,
+} from "../components/constants";
+import { styles } from "./styles";
 
-interface DailyLogFormProps {
-  /** Pass an existing entry id to pre-fill for editing, omit for a new entry */
+interface DailyLogFormLogProps {
+  /** Isi untuk mode edit, kosong untuk mode tambah baru */
   initialForm?: Partial<FormState>;
+  lockedSiswa?: string;
+  lockedMapel?: string;
   onBack: () => void;
   onSave: (form: FormState) => void;
 }
@@ -16,6 +19,7 @@ interface DailyLogFormProps {
 const DEFAULT_FORM: FormState = {
   siswa: "Aisya Putri",
   tanggal: new Date().toISOString().split("T")[0],
+  idMapel: 1,
   mapel: "Matematika",
   topik: "",
   durasi: "90",
@@ -30,16 +34,9 @@ const DEFAULT_FORM: FormState = {
   kendala: "",
 };
 
-const DailyLogForm: React.FC<DailyLogFormProps> = ({ initialForm, onBack, onSave }) => {
-  const [form, setForm] = useState<FormState>({ ...DEFAULT_FORM, ...initialForm });
-
-  const set = (key: keyof FormState) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-      setForm((f) => ({ ...f, [key]: e.target.value }));
-
-  const SaveButton: React.FC<{ size?: "sm" | "md" }> = ({ size = "md" }) => (
+const SaveButton: React.FC<{ size?: "sm" | "md"; onClick: () => void; }> = ({ size = "md", onClick }) => (
     <button
-      onClick={() => onSave(form)}
+      onClick={onClick}
       style={{
         background: "#22c55e", color: "#fff", border: "none",
         borderRadius: 8,
@@ -50,6 +47,23 @@ const DailyLogForm: React.FC<DailyLogFormProps> = ({ initialForm, onBack, onSave
       Simpan Log
     </button>
   );
+
+const Label: React.FC<{ text: string; optional?: boolean }> = ({ text, optional }) => (
+  <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+    {text}
+    {optional && <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 4 }}>(opsional)</span>}
+  </div>
+);
+
+const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSiswa, lockedMapel, onBack, onSave }) => {
+  const [form, setForm] = useState<FormState>({ 
+    ...DEFAULT_FORM, 
+    ...initialForm, 
+    ...(lockedSiswa ? { siswa: lockedSiswa } : {}),...(lockedMapel ? { mapel: lockedMapel } : {}), });
+
+  const set = (key: keyof FormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setForm((f) => ({ ...f, [key]: e.target.value }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
@@ -63,7 +77,7 @@ const DailyLogForm: React.FC<DailyLogFormProps> = ({ initialForm, onBack, onSave
       >
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>
-            Input Daily Log
+            {initialForm ? "Edit Daily Log" : "Input Daily Log"}
           </h2>
           <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
             Catat aktivitas belajar siswa hari ini
@@ -79,7 +93,7 @@ const DailyLogForm: React.FC<DailyLogFormProps> = ({ initialForm, onBack, onSave
           >
             ← Kembali
           </button>
-          <SaveButton size="sm" />
+          <SaveButton onClick={() => onSave(form)} size="sm" />
         </div>
       </div>
 
@@ -96,11 +110,38 @@ const DailyLogForm: React.FC<DailyLogFormProps> = ({ initialForm, onBack, onSave
             </h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
 
-              <div>
+              {/* <div>
                 <Label text="Siswa" />
                 <select value={form.siswa} onChange={set("siswa")} style={inputStyle}>
                   {SISWA_OPTIONS.map((s) => <option key={s}>{s}</option>)}
                 </select>
+              </div> */}
+
+              <div>
+                <Label text="Siswa" />
+                {lockedSiswa ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div
+                      style={{
+                        width: 28, height: 28, borderRadius: "50%",
+                        background: "#eff6ff", color: "#3b82f6",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 11, fontWeight: 700, flexShrink: 0,
+                      }}
+                    >
+                      {lockedSiswa.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+                    </div>
+                    <div style={styles.lockedFieldStyle}>{lockedSiswa}</div>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={form.siswa}
+                    onChange={set("siswa")}
+                    placeholder="Nama siswa"
+                    style={inputStyle}
+                  />
+                )}
               </div>
 
               <div>
@@ -108,11 +149,21 @@ const DailyLogForm: React.FC<DailyLogFormProps> = ({ initialForm, onBack, onSave
                 <input type="date" value={form.tanggal} onChange={set("tanggal")} style={inputStyle} />
               </div>
 
-              <div>
+              {/* <div>
                 <Label text="Mata Pelajaran" />
                 <select value={form.mapel} onChange={set("mapel")} style={inputStyle}>
                   {MAPEL_OPTIONS.map((m) => <option key={m}>{m}</option>)}
                 </select>
+              </div> */}
+              <div>
+                <Label text="Mata Pelajaran" />
+                {lockedMapel ? (
+                  <div style={styles.lockedFieldStyle}>{lockedMapel}</div>
+                ) : (
+                  <select value={form.mapel} onChange={set("mapel")} style={inputStyle}>
+                    {MAPEL_OPTIONS.map((m) => <option key={m}>{m}</option>)}
+                  </select>
+                )}
               </div>
 
               <div>
@@ -262,7 +313,7 @@ const DailyLogForm: React.FC<DailyLogFormProps> = ({ initialForm, onBack, onSave
           >
             Batal
           </button>
-          <SaveButton />
+          <SaveButton onClick={() => onSave(form)} size="sm" />
         </div>
 
       </div>
@@ -270,4 +321,4 @@ const DailyLogForm: React.FC<DailyLogFormProps> = ({ initialForm, onBack, onSave
   );
 };
 
-export default DailyLogForm;
+export default DailyLogFormLog;

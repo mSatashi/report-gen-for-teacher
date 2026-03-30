@@ -1,14 +1,21 @@
 import React from "react";
-import type { LogEntry } from "./types";
-import { PENGUASAAN_BADGE } from "./constants";
+import type { MakulEntry, MapelSiswaState } from "../components/types";
+import { btnAddStyle } from "../components/constants";
 
 interface DailyLogIndexProps {
-  data: LogEntry[];
-  onAdd: () => void;
+  data: MakulEntry[];
+  mapelSiswa: MapelSiswaState[];
+  onAddMakul: () => void;
   onDetail: (id: number) => void;
 }
 
-const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAdd, onDetail }) => {
+const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, mapelSiswa, onAddMakul, onDetail }) => {
+  /** Hitung ringkasan log per siswa */
+  const getSiswaCounts = (idMapel: number) => {
+    const siswa = mapelSiswa.filter((l) => l.idMapel === idMapel);
+    return { total: siswa.length };
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
 
@@ -38,15 +45,9 @@ const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAdd, onDetail }) 
         {/* Card header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexShrink: 0 }}>
           <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>
-            List Catatan Belajar Siswa
+            Daftar Log Aktivitas
           </span>
-          <button
-            onClick={onAdd}
-            style={{
-              background: "#3b82f6", color: "#fff", border: "none",
-              borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-            }}
-          >
+          <button onClick={onAddMakul} style={btnAddStyle}>
             + Tambah Data
           </button>
         </div>
@@ -57,12 +58,11 @@ const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAdd, onDetail }) 
             <thead>
               <tr style={{ background: "rgba(228,230,239,0.85)" }}>
                 {[
-                  { label: "No",                  width: 50    },
-                  { label: "Nama Mata Pelajaran",  width: "auto" },
-                  { label: "Materi Ajar",          width: "auto" },
-                  { label: "Catatan Guru",         width: "auto" },
-                  { label: "Tingkat Penguasaan",   width: 160   },
-                  { label: "Actions",              width: 100   },
+                  { label: "No",              width: 50     },
+                  { label: "Mata Pelajaran",  width: "auto" },
+                  { label: "Jumlah Siswa",    width: "auto" },
+                  { label: "Deskripsi",       width: "auto" },
+                  { label: "Actions",         width: 100    },
                 ].map((h) => (
                   <th
                     key={h.label}
@@ -82,24 +82,13 @@ const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAdd, onDetail }) 
             </thead>
             <tbody>
               {data.map((row, idx) => {
-                const badge = PENGUASAAN_BADGE[row.tingkat_penguasaan];
+                const { total } = getSiswaCounts(row.id);
                 return (
                   <tr key={row.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                     <td style={{ padding: "12px 14px", color: "#6b7280" }}>{idx + 1}</td>
-                    <td style={{ padding: "12px 14px", fontWeight: 500, color: "#111827" }}>{row.mapel}</td>
-                    <td style={{ padding: "12px 14px", color: "#374151" }}>{row.materi}</td>
-                    <td style={{ padding: "12px 14px", color: "#6b7280", maxWidth: 280 }}>{row.catatan}</td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <span
-                        style={{
-                          background: badge.bg, color: badge.color,
-                          borderRadius: 6, padding: "3px 10px",
-                          fontSize: 12, fontWeight: 600,
-                        }}
-                      >
-                        {row.tingkat_penguasaan}
-                      </span>
-                    </td>
+                    <td style={{ padding: "12px 14px", color: "#374151" }}>{row.nama}</td>
+                    <td style={{ padding: "12px 14px", color: "#374151" }}>{total}</td>
+                    <td style={{ padding: "12px 14px", color: "#111827" }}>{row.deskripsi}</td>
                     <td style={{ padding: "12px 14px" }}>
                       <button
                         onClick={() => onDetail(row.id)}
@@ -118,7 +107,7 @@ const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ data, onAdd, onDetail }) 
 
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ padding: "40px 14px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
+                  <td colSpan={7} style={{ padding: "40px 14px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
                     Belum ada data log.
                   </td>
                 </tr>
