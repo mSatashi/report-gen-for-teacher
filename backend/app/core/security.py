@@ -1,7 +1,6 @@
 """
 security.py
 Fungsi keamanan: hashing password (bcrypt langsung) + JWT token.
-Tidak pakai passlib karena konflik dengan bcrypt versi baru.
 """
 from datetime import datetime, timedelta
 from typing import Optional
@@ -11,12 +10,23 @@ from jose import JWTError, jwt
 
 from app.core.config import settings
 
+# Bcrypt maksimal 72 bytes
+MAX_PASSWORD_BYTES = 2056
+
 
 # ── Password Hashing ──────────────────────────────────────────────────────────
 
+def _prepare_password(password: str) -> bytes:
+    """
+    Encode password ke bytes dan potong maksimal 72 bytes
+    (batas keras bcrypt) supaya tidak error.
+    """
+    return password.encode("utf-8")[:MAX_PASSWORD_BYTES]
+
+
 def hash_password(password: str) -> str:
     """Hash password menggunakan bcrypt."""
-    pwd_bytes = password.encode("utf-8")
+    pwd_bytes = _prepare_password(password)
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
@@ -25,7 +35,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifikasi password plain-text dengan hash yang tersimpan di DB."""
     try:
         return bcrypt.checkpw(
-            plain_password.encode("utf-8"),
+            _prepare_password(plain_password),
             hashed_password.encode("utf-8"),
         )
     except Exception:
