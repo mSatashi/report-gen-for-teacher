@@ -27,3 +27,23 @@ export interface Activity {
 export type NavItem =
   | { kind: "section"; label: string }
   | { kind: "link"; label: string; route: string; icon: React.ReactNode };
+
+export interface Kelas {
+  id: string;
+  nama: string;
+  mata_pelajaran: string;
+  pengajar_id: string;
+  kredit: number;
+  jadwal: string;
+  created_at: string;
+  siswa: Siswa[];
+}
+
+export interface Siswa {
+  id: string;
+  nama: string;
+  nis: string;
+  jenisKelamin: "L" | "P";
+  tanggalLahir: string;
+  alamat: string;
+}

@@ -11,6 +11,8 @@ import { sidebarStyles, styles } from "./styles";
 import { fonts } from "./components/fontstyle";
 import LoginPage from "./pages/login";
 import { loginAPI, type AuthUser } from "./service/authService";
+import MasterKelas from "./pages/master-kelas";
+import { setUnauthorizedHandler } from "./service/apiFetch";
 
 // Helper token
 const TOKEN_KEY = "auth_token";
@@ -38,10 +40,6 @@ const App: React.FC = () => {
     (NAV_ITEMS.find(
       (n) => n.kind === "link" && (n as { route: string }).route === activeRoute
     ) as { label?: string } | undefined)?.label ?? "Dashboard";
-
-  useEffect(() => {
-    document.title = pageTitle ? `${pageTitle} — ${APP_NAME}` : APP_NAME;
-  }, [pageTitle]);
 
   /** Login handler — dipanggil dari LoginPage */
   const handleLogin = async (data: {
@@ -73,6 +71,18 @@ const App: React.FC = () => {
   //   setActiveRoute("login");
   // };
 
+  const handleLogout = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    setUser(null);
+    setActiveRoute("home");
+  };
+
+  useEffect(() => {
+    setUnauthorizedHandler(handleLogout);
+    document.title = pageTitle ? `${pageTitle} — ${APP_NAME}` : APP_NAME;
+  }, [pageTitle]);
+
   /** Jika belum login → tampilkan LoginPage saja  */
   if (!isLoggedIn) {
     return <LoginPage onLogin={handleLogin} error={loginError} />;
@@ -90,6 +100,8 @@ const App: React.FC = () => {
         return <LearningPlan />;
       case "reportEditor":
         return <ReportEditor />;
+      case "masterKelas":
+        return <MasterKelas />;
       default:
         return (
           <div style={styles.pageNotFound}>

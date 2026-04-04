@@ -1,6 +1,10 @@
-// src/services/apiFetch.ts
+import { API_BASE } from "./apiUrl";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+let onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(fn: () => void) {
+  onUnauthorized = fn;
+}
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = localStorage.getItem("auth_token");
@@ -14,11 +18,11 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     },
   });
 
-  // Token expired / tidak valid → logout otomatis
   if (res.status === 401) {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("auth_user");
-    window.location.reload(); // kembali ke login
+    onUnauthorized?.();
+    window.location.reload();
   }
 
   return res;

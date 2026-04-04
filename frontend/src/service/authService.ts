@@ -1,4 +1,3 @@
-
 export interface LoginPayload {
   email: string;
   password: string;
@@ -11,7 +10,7 @@ export interface AuthUser {
   tipe_pengguna: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
+export const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
 
 export async function loginAPI(payload: LoginPayload): Promise<AuthUser> {
   const res = await fetch(`${API_BASE}/auth/login`, {

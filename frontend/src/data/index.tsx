@@ -7,14 +7,17 @@ import {
   IconLog,
   IconPlan,
   IconPending,
+  IconKelas,
 } from "../icons";
-import type { NavItem, StatCard, Student, Activity } from "../types";
+import type { NavItem, StatCard, Student, Activity, Kelas } from "../types";
 
 export const NAV_ITEMS: NavItem[] = [
   { kind: "section", label: "Main Menu" },
   { kind: "link", label: "Dashboards",    route: "home",         icon: <IconDashboard /> },
   { kind: "link", label: "Daily Log",     route: "dailyLog",     icon: <IconDailyLog /> },
   { kind: "link", label: "Learning Plan", route: "learningPlan", icon: <IconCalendar /> },
+  { kind: "section", label: "Master Data" },
+  { kind: "link", label: "Kelas", route: "masterKelas", icon: <IconKelas /> },
   { kind: "section", label: "Report" },
   { kind: "link", label: "Report Editor", route: "reportEditor", icon: <IconReport /> },
   { kind: "section", label: "IF5200 - PPT" },
@@ -106,5 +109,18 @@ export const ACTIVITIES: Activity[] = [
     title: "Log Rafi · Bahasa Inggris",
     subtitle: "Reading Comp. · 60 menit",
     tags: [{ label: "Perlu Ulang", color: "#fee2e2" }],
+  },
+];
+
+export const initialKelas: Kelas[] = [
+  {
+    id: "k1",
+    nama: "10A",
+    tingkat: "10",
+    waliKelas: "Bu Sari",
+    tahunAjaran: "2024/2025",
+    siswa: [
+      { id: "s1", nama: "Aisya Putri", nis: "10001", jenisKelamin: "P", tanggalLahir: "2008-03-12", alamat: "Jl. Mawar No.1" },
+    ],
   },
 ];

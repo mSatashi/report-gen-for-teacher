@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { IconMenu, LogoBadge } from "../icons";
+import { styles } from "./styles";
 
 interface HeaderProps {
   onOpenMobileMenu: () => void;
@@ -30,62 +31,33 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
-      style={{
-        height: 60,
-        background: "#fff",
-        borderBottom: "1px solid #e5e7eb",
-        display: "flex",
-        alignItems: "center",
-        padding: "0 20px",
-        justifyContent: "space-between",
-        flexShrink: 0,
-      }}
+      style={styles.headerStyle}
     >
       {/* Left: mobile hamburger + app title */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={styles.headerHamberger}>
         <button
           onClick={onOpenMobileMenu}
           className="mobile-menu-btn"
-          style={{
-            display: "none",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "#374151",
-            alignItems: "center",
-          }}
+          style={styles.btnHumburger}
           aria-label="Open menu"
         >
           <IconMenu />
         </button>
       </div>
 
-      <div ref={dropdownRef} style={{ position: "relative" }}>
+      <div ref={dropdownRef} style={styles.positionRelative}>
  
         {/* Trigger */}
         <button
           onClick={() => setOpen((v) => !v)}
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: "50%",
-            border: "2px solid rgb(255, 255, 255)",
-            overflow: "hidden",
-            cursor: "pointer",
-            padding: 0,
-            background: "none",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
+          style={styles.btnHeader}
           title={namaLengkap}
         >
           {avatarUrl ? (
             <img
               src={avatarUrl}
               alt="user"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              style={styles.imgAvatar}
             />
           ) : (
             <LogoBadge size={32} />
@@ -95,63 +67,43 @@ const Header: React.FC<HeaderProps> = ({
         {/* Dropdown panel */}
         {open && (
           <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 10px)",
-              right: 0,
-              width: 275,
-              background: "rgb(255, 255, 255)",
-              borderRadius: 12,
-              boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
-              zIndex: 1000,
-              overflow: "hidden",
-            }}
+            style={styles.headerDropdown}
           >
             {/* User info */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px" }}>
+            <div style={styles.boxHeader}>
               <div
-                style={{
-                  width: 50, height: 50, borderRadius: "50%", flexShrink: 0,
-                  overflow: "hidden", border: "2px solid rgb(255, 255, 255)",
-                  background: "#f9fafb",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}
+                style={styles.avatarBoundaries}
               >
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={avatarUrl} alt="Logo" style={styles.imgAvatar} />
                 ) : (
                   <LogoBadge size={38} />
                 )}
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div style={styles.nameStyle}>
                   {namaLengkap}
                 </div>
-                <div style={{ fontSize: 12, color: "#9ca3af", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div style={styles.emailStyle}>
                   {email}
                 </div>
               </div>
             </div>
  
-            <div style={{ height: 1, background: "#f3f4f6", margin: "0 18px" }} />
+            <div style={styles.lineStyle} />
  
             {/* Sign Out */}
             <button
               onClick={() => { setOpen(false); onSignOut?.(); }}
               // onClick={() => navigate("/login")}
-              style={{
-                display: "block", width: "100%", textAlign: "left",
-                padding: "12px 18px", fontSize: 14, fontWeight: 500,
-                color: "#374151", background: "none", border: "none",
-                cursor: "pointer",
-              }}
+              style={styles.btnSignOut}
               onMouseEnter={(e) => (e.currentTarget.style.background = "#f9fafb")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
             >
               Sign Out
             </button>
  
-            <div style={{ height: 1, background: "#f3f4f6", margin: "0 18px" }} />
+            <div style={styles.lineStyle} />
 
  
             <div style={{ height: 8 }} />
