@@ -28,13 +28,6 @@ const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const initials = namaLengkap
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
   return (
     <header
       style={{
@@ -65,32 +58,7 @@ const Header: React.FC<HeaderProps> = ({
         >
           <IconMenu />
         </button>
-
-        {/* <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
-          Sistem Perencanaan Materi Adaptif &amp; Pelaporan Otomatis
-        </span> */}
       </div>
-
-      {/* Right: user avatar */}
-      {/* <div
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: "50%",
-          background: "linear-gradient(135deg,#3b82f6,#6366f1)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#fff",
-          fontWeight: 700,
-          fontSize: 14,
-          cursor: "pointer",
-          flexShrink: 0,
-        }}
-        title="Bu Rara"
-      >
-        BR
-      </div> */}
 
       <div ref={dropdownRef} style={{ position: "relative" }}>
  
@@ -170,6 +138,7 @@ const Header: React.FC<HeaderProps> = ({
             {/* Sign Out */}
             <button
               onClick={() => { setOpen(false); onSignOut?.(); }}
+              // onClick={() => navigate("/login")}
               style={{
                 display: "block", width: "100%", textAlign: "left",
                 padding: "12px 18px", fontSize: 14, fontWeight: 500,

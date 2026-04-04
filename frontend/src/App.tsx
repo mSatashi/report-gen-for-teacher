@@ -7,13 +7,31 @@ import { NAV_ITEMS } from "./data";
 import DailyLogPage from "./pages/daily-log";
 import LearningPlan from "./pages/learning-plan";
 import ReportEditor from "./pages/report-editor";
-import { styles } from "./styles";
+import { sidebarStyles, styles } from "./styles";
 import { fonts } from "./components/fontstyle";
+import LoginPage from "./pages/login";
+import { loginAPI, type AuthUser } from "./service/authService";
+
+// Helper token
+const TOKEN_KEY = "auth_token";
+const USER_KEY  = "auth_user";
 
 const App: React.FC = () => {
-  const [activeRoute, setActiveRoute]         = useState<string>("home");
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    try {
+      const saved = localStorage.getItem(USER_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+  const [loginError, setLoginError] = useState<string>("");
+  const [activeRoute, setActiveRoute] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
+
+  const isLoggedIn = !!user;
+
+  /** meta title page */
+  const APP_NAME = import.meta.env.META_TITLE ?? "Report GenAI Otomatis";
 
   /** Derive the current page title from NAV_ITEMS */
   const pageTitle =
@@ -21,12 +39,44 @@ const App: React.FC = () => {
       (n) => n.kind === "link" && (n as { route: string }).route === activeRoute
     ) as { label?: string } | undefined)?.label ?? "Dashboard";
 
-  /** meta title page */
-  const APP_NAME = import.meta.env.META_TITLE ?? "Report GenAI Otomatis";
-
   useEffect(() => {
     document.title = pageTitle ? `${pageTitle} — ${APP_NAME}` : APP_NAME;
   }, [pageTitle]);
+
+  /** Login handler — dipanggil dari LoginPage */
+  const handleLogin = async (data: {
+    email: string;
+    password: string;
+  }) => {
+    try {
+      setLoginError("");
+      const authUser = await loginAPI({
+        email: data.email,
+        password: data.password,
+      });
+
+      localStorage.setItem(TOKEN_KEY, authUser.access_token);
+      localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+
+      setUser(authUser);
+      setActiveRoute("home");
+    } catch (err: any) {
+      setLoginError(err.message ?? "Terjadi kesalahan.");
+    }
+  };
+
+  /** Logout handler */
+  // const handleLogout = () => {
+  //   localStorage.removeItem(TOKEN_KEY);
+  //   localStorage.removeItem(USER_KEY);
+  //   setUser(null);
+  //   setActiveRoute("login");
+  // };
+
+  /** Jika belum login → tampilkan LoginPage saja  */
+  if (!isLoggedIn) {
+    return <LoginPage onLogin={handleLogin} error={loginError} />;
+  }
 
 
   /** Render the active page */
@@ -42,7 +92,7 @@ const App: React.FC = () => {
         return <ReportEditor />;
       default:
         return (
-          <div style={{ color: "#9ca3af", fontSize: 14, padding: 8 }}>
+          <div style={styles.pageNotFound}>
             Halaman <strong>{pageTitle}</strong> belum tersedia.
           </div>
         );
@@ -117,22 +167,7 @@ const App: React.FC = () => {
       </div>
 
       {/* ── Global styles ── */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        * { box-sizing: border-box; }
-        body { margin: 0; }
-
-        /* Desktop: show desktop sidebar, hide mobile drawer */
-        .desktop-sidebar  { display: flex; }
-        .mobile-sidebar-drawer { display: none; }
-        .mobile-menu-btn  { display: none !important; }
-
-        @media (max-width: 1023px) {
-          .desktop-sidebar        { display: none !important; }
-          .mobile-sidebar-drawer  { display: flex !important; }
-          .mobile-menu-btn        { display: flex !important; }
-        }
-      `}</style>
+      <style>{sidebarStyles}</style>
     </div>
   );
 };
