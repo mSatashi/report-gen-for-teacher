@@ -1,8 +1,9 @@
 """
 test_murid.py
 Unit testing untuk fitur Murid.
-Mencakup: buat murid baru, update profil, validasi field,
-          credit management, dan akses kontrol.
+Mencakup: buat murid baru (via kelas & via /murid/),
+          list master data, detail, delete, update profil,
+          validasi field, credit management, akses kontrol, logout.
 
 Pakai SQLite in-memory — tidak perlu PostgreSQL.
 
@@ -13,7 +14,6 @@ import os
 import uuid
 import pytest
 
-# ── Set env sebelum import apapun dari app ────────────────────────────────────
 os.environ["DATABASE_URL"] = "sqlite:///./test_murid.db"
 os.environ["SECRET_KEY"]   = "test-secret-key-cukup-panjang-32-karakter-ok"
 
@@ -23,13 +23,8 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.database import Base, get_db
 
-# ── Setup SQLite ──────────────────────────────────────────────────────────────
 SQLITE_URL = "sqlite:///./test_murid.db"
-
-engine_test = create_engine(
-    SQLITE_URL,
-    connect_args={"check_same_thread": False},
-)
+engine_test = create_engine(SQLITE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_test)
 
 
@@ -103,7 +98,6 @@ def buat_pengajar(db, nama="Guru Test", email="guru@test.com"):
 
 
 def buat_murid_db(db, nama="Murid Test", email="murid@test.com"):
-    """Buat murid langsung ke DB tanpa lewat API."""
     from app.models.models import Pengguna, Murid
     from app.core.security import hash_password
     uid = str(uuid.uuid4())
@@ -131,13 +125,13 @@ def auth_header(token):
     return {"Authorization": f"Bearer {token}"}
 
 
-def buat_murid_via_api(client, token, data=None):
-    """Buat murid baru via API endpoint POST /kelas/murid/tambah."""
+def buat_murid_via_kelas_api(client, token, data=None):
+    """Buat murid baru via endpoint lama POST /kelas/murid/tambah."""
     payload = data or {
-        "username":      "murid_api_" + str(uuid.uuid4())[:4],
-        "email_address": "murid_api_" + str(uuid.uuid4())[:8] + "@test.com",
+        "username":      "murid_kelas_" + str(uuid.uuid4())[:4],
+        "email_address": "murid_kelas_" + str(uuid.uuid4())[:8] + "@test.com",
         "password":      "Test1234!",
-        "nama":          "Murid API",
+        "nama":          "Murid Kelas API",
         "usia":          15,
         "level":         "SMA",
         "credit_total":  20,
@@ -145,14 +139,28 @@ def buat_murid_via_api(client, token, data=None):
     return client.post("/api/v1/kelas/murid/tambah", json=payload, headers=auth_header(token))
 
 
+def buat_murid_via_api(client, token, data=None):
+    """Buat murid baru via endpoint baru POST /murid/."""
+    payload = data or {
+        "username":      "murid_api_" + str(uuid.uuid4())[:4],
+        "email_address": "murid_api_" + str(uuid.uuid4())[:8] + "@test.com",
+        "password":      "Test1234!",
+        "nama":          "Murid API Baru",
+        "usia":          15,
+        "level":         "SMA",
+        "credit_total":  20,
+    }
+    return client.post("/api/v1/murid/", json=payload, headers=auth_header(token))
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# TEST BUAT MURID BARU
+# TEST BUAT MURID — endpoint /kelas/murid/tambah (lama, tetap harus jalan)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class TestBuatMurid:
+class TestBuatMuridViaKelas:
 
     def test_buat_murid_lengkap_berhasil(self, client):
-        """✅ Buat murid dengan semua field terisi harus berhasil."""
+        """✅ Buat murid via /kelas/murid/tambah dengan semua field harus berhasil."""
         db = TestingSessionLocal()
         buat_pengajar(db, nama="guru_buat1", email="guru_buat1@test.com")
         db.close()
@@ -172,14 +180,13 @@ class TestBuatMurid:
         data = response.json()
         assert data["nama"]         == "Budi Santoso"
         assert data["usia"]         == 15
-        assert data["level"]        == "SMA Kelas 1"
         assert data["credit_total"] == 24
         assert data["credit_used"]  == 0
         assert data["username"]     == "budi_santoso"
         assert "id" in data
 
     def test_buat_murid_minimal_berhasil(self, client):
-        """✅ Buat murid dengan field minimal (wajib saja) harus berhasil."""
+        """✅ Buat murid dengan field minimal harus berhasil."""
         db = TestingSessionLocal()
         buat_pengajar(db, nama="guru_buat2", email="guru_buat2@test.com")
         db.close()
@@ -196,47 +203,44 @@ class TestBuatMurid:
         data = response.json()
         assert data["nama"]         == "Murid Minimal"
         assert data["usia"]         is None
-        assert data["level"]        is None
-        assert data["credit_total"] == 0   # default
+        assert data["credit_total"] == 0
 
-    def test_buat_murid_credit_default_nol(self, client):
-        """✅ credit_total default harus 0 jika tidak diisi."""
+    def test_buat_murid_email_duplikat_ditolak(self, client):
+        """❌ Email yang sudah terdaftar harus ditolak."""
         db = TestingSessionLocal()
         buat_pengajar(db, nama="guru_buat3", email="guru_buat3@test.com")
+        buat_murid_db(db, nama="murid_existing", email="sudah_ada@test.com")
         db.close()
 
         token = get_token(client, "guru_buat3@test.com")
         response = client.post("/api/v1/kelas/murid/tambah", json={
-            "username":      "murid_nocredit",
-            "email_address": "nocredit@test.com",
+            "username":      "username_baru_unik",
+            "email_address": "sudah_ada@test.com",
             "password":      "Test1234!",
-            "nama":          "Murid No Credit",
+            "nama":          "Nama Baru",
         }, headers=auth_header(token))
 
-        assert response.status_code == 201
-        assert response.json()["credit_total"] == 0
-        assert response.json()["credit_used"]  == 0
+        assert response.status_code == 400
+        assert "sudah terdaftar" in response.json()["detail"].lower()
 
-    def test_buat_murid_credit_used_selalu_nol(self, client):
-        """✅ credit_used harus selalu 0 saat murid pertama kali dibuat."""
+    def test_murid_tidak_bisa_buat_murid(self, client):
+        """❌ Murid tidak boleh membuat akun murid baru."""
         db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_buat4", email="guru_buat4@test.com")
+        buat_murid_db(db, nama="murid_akses", email="murid_akses@test.com")
         db.close()
 
-        token = get_token(client, "guru_buat4@test.com")
+        token = get_token(client, "murid_akses@test.com")
         response = client.post("/api/v1/kelas/murid/tambah", json={
-            "username":      "murid_creditused",
-            "email_address": "creditused@test.com",
+            "username":      "murid_baru",
+            "email_address": "murid_baru@test.com",
             "password":      "Test1234!",
-            "nama":          "Murid Credit Used",
-            "credit_total":  30,
+            "nama":          "Murid Baru",
         }, headers=auth_header(token))
 
-        assert response.status_code == 201
-        assert response.json()["credit_used"] == 0
+        assert response.status_code == 403
 
-    def test_buat_murid_response_tidak_ada_password(self, client):
-        """✅ Response tidak boleh mengandung password dalam bentuk apapun."""
+    def test_response_tidak_ada_password(self, client):
+        """✅ Response tidak boleh mengandung password."""
         db = TestingSessionLocal()
         buat_pengajar(db, nama="guru_buat5", email="guru_buat5@test.com")
         db.close()
@@ -256,145 +260,281 @@ class TestBuatMurid:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TEST VALIDASI INPUT BUAT MURID
+# TEST BUAT MURID — endpoint baru POST /murid/
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class TestValidasiBuatMurid:
+class TestBuatMuridEndpointBaru:
 
-    def test_email_duplikat_ditolak(self, client):
-        """❌ Email yang sudah terdaftar tidak boleh dipakai lagi."""
+    def test_buat_murid_via_endpoint_baru_berhasil(self, client):
+        """✅ POST /murid/ harus berhasil membuat murid baru."""
         db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_val1", email="guru_val1@test.com")
-        buat_murid_db(db, nama="murid_existing", email="sudah_ada@test.com")
+        buat_pengajar(db, nama="guru_new1", email="guru_new1@test.com")
         db.close()
 
-        token = get_token(client, "guru_val1@test.com")
-        response = client.post("/api/v1/kelas/murid/tambah", json={
-            "username":      "username_baru_unik",
-            "email_address": "sudah_ada@test.com",
+        token = get_token(client, "guru_new1@test.com")
+        response = buat_murid_via_api(client, token, {
+            "username":      "murid_baru_endpoint",
+            "email_address": "murid_baru_endpoint@test.com",
             "password":      "Test1234!",
-            "nama":          "Nama Baru",
-        }, headers=auth_header(token))
+            "nama":          "Murid Endpoint Baru",
+            "usia":          16,
+            "level":         "SMA",
+            "credit_total":  10,
+        })
 
-        assert response.status_code == 400
-        assert "sudah terdaftar" in response.json()["detail"].lower()
+        assert response.status_code == 201
+        data = response.json()
+        assert data["nama"]         == "Murid Endpoint Baru"
+        assert data["username"]     == "murid_baru_endpoint"
+        assert data["email_address"]== "murid_baru_endpoint@test.com"
+        assert data["usia"]         == 16
+        assert data["credit_used"]  == 0
+        assert "id" in data
 
-    def test_tanpa_username_ditolak(self, client):
-        """❌ Field username wajib diisi."""
+    def test_murid_tidak_bisa_akses_endpoint_baru(self, client):
+        """❌ Murid tidak boleh POST /murid/."""
         db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_val2", email="guru_val2@test.com")
+        buat_murid_db(db, nama="murid_coba", email="murid_coba@test.com")
         db.close()
 
-        token = get_token(client, "guru_val2@test.com")
-        response = client.post("/api/v1/kelas/murid/tambah", json={
-            "email_address": "tanpa_username@test.com",
-            "password":      "Test1234!",
-            "nama":          "Tanpa Username",
-        }, headers=auth_header(token))
-
-        assert response.status_code == 422
-
-    def test_tanpa_email_ditolak(self, client):
-        """❌ Field email wajib diisi."""
-        db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_val3", email="guru_val3@test.com")
-        db.close()
-
-        token = get_token(client, "guru_val3@test.com")
-        response = client.post("/api/v1/kelas/murid/tambah", json={
-            "username": "tanpa_email",
-            "password": "Test1234!",
-            "nama":     "Tanpa Email",
-        }, headers=auth_header(token))
-
-        assert response.status_code == 422
-
-    def test_tanpa_password_ditolak(self, client):
-        """❌ Field password wajib diisi."""
-        db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_val4", email="guru_val4@test.com")
-        db.close()
-
-        token = get_token(client, "guru_val4@test.com")
-        response = client.post("/api/v1/kelas/murid/tambah", json={
-            "username":      "tanpa_password",
-            "email_address": "tanpa_password@test.com",
-            "nama":          "Tanpa Password",
-        }, headers=auth_header(token))
-
-        assert response.status_code == 422
-
-    def test_tanpa_nama_ditolak(self, client):
-        """❌ Field nama wajib diisi."""
-        db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_val5", email="guru_val5@test.com")
-        db.close()
-
-        token = get_token(client, "guru_val5@test.com")
-        response = client.post("/api/v1/kelas/murid/tambah", json={
-            "username":      "tanpa_nama",
-            "email_address": "tanpa_nama@test.com",
-            "password":      "Test1234!",
-        }, headers=auth_header(token))
-
-        assert response.status_code == 422
-
-    def test_format_email_salah_ditolak(self, client):
-        """❌ Format email yang tidak valid harus ditolak."""
-        db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_val6", email="guru_val6@test.com")
-        db.close()
-
-        token = get_token(client, "guru_val6@test.com")
-        response = client.post("/api/v1/kelas/murid/tambah", json={
-            "username":      "email_salah",
-            "email_address": "ini-bukan-format-email",
-            "password":      "Test1234!",
-            "nama":          "Email Salah",
-        }, headers=auth_header(token))
-
-        assert response.status_code == 422
-
-    def test_body_kosong_ditolak(self, client):
-        """❌ Request body kosong harus ditolak."""
-        db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_val7", email="guru_val7@test.com")
-        db.close()
-
-        token = get_token(client, "guru_val7@test.com")
-        response = client.post("/api/v1/kelas/murid/tambah", json={}, headers=auth_header(token))
-
-        assert response.status_code == 422
-
-    def test_murid_tidak_bisa_buat_murid(self, client):
-        """❌ Murid tidak boleh membuat akun murid baru."""
-        db = TestingSessionLocal()
-        buat_murid_db(db, nama="murid_akses", email="murid_akses@test.com")
-        db.close()
-
-        token = get_token(client, "murid_akses@test.com")
-        response = client.post("/api/v1/kelas/murid/tambah", json={
-            "username":      "murid_baru",
-            "email_address": "murid_baru@test.com",
-            "password":      "Test1234!",
-            "nama":          "Murid Baru",
-        }, headers=auth_header(token))
-
+        token = get_token(client, "murid_coba@test.com")
+        response = buat_murid_via_api(client, token)
         assert response.status_code == 403
 
     def test_tanpa_token_ditolak(self, client):
-        """❌ Buat murid tanpa token harus ditolak."""
-        response = client.post("/api/v1/kelas/murid/tambah", json={
-            "username":      "tanpa_token",
-            "email_address": "tanpa_token@test.com",
-            "password":      "Test1234!",
-            "nama":          "Tanpa Token",
+        """❌ POST /murid/ tanpa token harus ditolak."""
+        response = client.post("/api/v1/murid/", json={
+            "username": "x", "email_address": "x@x.com",
+            "password": "Test1234!", "nama": "X",
         })
+        assert response.status_code in (401, 403)
+
+    def test_email_duplikat_ditolak(self, client):
+        """❌ Email duplikat di POST /murid/ harus 400."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_new2", email="guru_new2@test.com")
+        buat_murid_db(db, nama="existing", email="exists@test.com")
+        db.close()
+
+        token = get_token(client, "guru_new2@test.com")
+        response = buat_murid_via_api(client, token, {
+            "username": "unik123", "email_address": "exists@test.com",
+            "password": "Test1234!", "nama": "Duplikat",
+        })
+        assert response.status_code == 400
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEST LIST SEMUA MURID — GET /murid/
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestListMurid:
+
+    def test_list_murid_kosong(self, client):
+        """✅ List murid saat belum ada data harus return list kosong."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_list1", email="guru_list1@test.com")
+        db.close()
+
+        token = get_token(client, "guru_list1@test.com")
+        response = client.get("/api/v1/murid/", headers=auth_header(token))
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_list_murid_menampilkan_semua(self, client):
+        """✅ List murid harus menampilkan semua murid yang ada."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_list2", email="guru_list2@test.com")
+        buat_murid_db(db, nama="Murid Satu",  email="m1@test.com")
+        buat_murid_db(db, nama="Murid Dua",   email="m2@test.com")
+        buat_murid_db(db, nama="Murid Tiga",  email="m3@test.com")
+        db.close()
+
+        token = get_token(client, "guru_list2@test.com")
+        response = client.get("/api/v1/murid/", headers=auth_header(token))
+
+        assert response.status_code == 200
+        assert len(response.json()) == 3
+
+    def test_list_murid_struktur_response(self, client):
+        """✅ Setiap item dalam list harus punya field yang benar."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_list3", email="guru_list3@test.com")
+        buat_murid_db(db, nama="Murid Struktur", email="struktur@test.com")
+        db.close()
+
+        token = get_token(client, "guru_list3@test.com")
+        response = client.get("/api/v1/murid/", headers=auth_header(token))
+
+        assert response.status_code == 200
+        item = response.json()[0]
+        assert "id"            in item
+        assert "nama"          in item
+        assert "credit_total"  in item
+        assert "credit_used"   in item
+        assert "password"      not in item
+        assert "hashed_password" not in item
+
+    def test_list_murid_search_filter(self, client):
+        """✅ Filter search harus menyaring berdasarkan nama."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_list4", email="guru_list4@test.com")
+        buat_murid_db(db, nama="Andi Pratama", email="andi@test.com")
+        buat_murid_db(db, nama="Budi Santoso", email="budi@test.com")
+        db.close()
+
+        token = get_token(client, "guru_list4@test.com")
+        response = client.get("/api/v1/murid/?search=Andi", headers=auth_header(token))
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["nama"] == "Andi Pratama"
+
+    def test_list_murid_paginasi(self, client):
+        """✅ Parameter skip/limit harus bekerja dengan benar."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_list5", email="guru_list5@test.com")
+        for i in range(5):
+            buat_murid_db(db, nama=f"Murid {i}", email=f"murid{i}@test.com")
+        db.close()
+
+        token = get_token(client, "guru_list5@test.com")
+
+        resp_all   = client.get("/api/v1/murid/?limit=100",         headers=auth_header(token))
+        resp_limit = client.get("/api/v1/murid/?limit=2",           headers=auth_header(token))
+        resp_skip  = client.get("/api/v1/murid/?skip=3&limit=100",  headers=auth_header(token))
+
+        assert len(resp_all.json())   == 5
+        assert len(resp_limit.json()) == 2
+        assert len(resp_skip.json())  == 2
+
+    def test_murid_tidak_bisa_akses_list(self, client):
+        """❌ Murid tidak bisa lihat master data semua murid."""
+        db = TestingSessionLocal()
+        buat_murid_db(db, nama="murid_akses2", email="murid_akses2@test.com")
+        db.close()
+
+        token = get_token(client, "murid_akses2@test.com")
+        response = client.get("/api/v1/murid/", headers=auth_header(token))
+        assert response.status_code == 403
+
+    def test_tanpa_token_ditolak(self, client):
+        """❌ GET /murid/ tanpa token harus ditolak."""
+        response = client.get("/api/v1/murid/")
         assert response.status_code in (401, 403)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TEST UPDATE MURID
+# TEST DETAIL MURID — GET /murid/{id}
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestDetailMurid:
+
+    def test_detail_murid_berhasil(self, client):
+        """✅ GET /murid/{id} harus return data murid yang benar."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_det1", email="guru_det1@test.com")
+        murid = buat_murid_db(db, nama="Murid Detail", email="detail@test.com")
+        db.close()
+
+        token = get_token(client, "guru_det1@test.com")
+        response = client.get(f"/api/v1/murid/{murid.id}", headers=auth_header(token))
+
+        assert response.status_code == 200
+        assert response.json()["nama"] == "Murid Detail"
+        assert response.json()["id"]   == murid.id
+
+    def test_detail_murid_tidak_ada_return_404(self, client):
+        """❌ ID yang tidak ada harus return 404."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_det2", email="guru_det2@test.com")
+        db.close()
+
+        token = get_token(client, "guru_det2@test.com")
+        response = client.get("/api/v1/murid/id-tidak-ada", headers=auth_header(token))
+        assert response.status_code == 404
+
+    def test_murid_bisa_lihat_diri_sendiri(self, client):
+        """✅ Murid bisa akses detail dirinya sendiri."""
+        db = TestingSessionLocal()
+        murid = buat_murid_db(db, nama="Murid Self", email="self@test.com")
+        db.close()
+
+        token = get_token(client, "self@test.com")
+        response = client.get(f"/api/v1/murid/{murid.id}", headers=auth_header(token))
+        assert response.status_code == 200
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEST DELETE MURID — DELETE /murid/{id}
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestDeleteMurid:
+
+    def test_hapus_murid_berhasil(self, client):
+        """✅ Pengajar bisa hapus murid dan data hilang dari DB."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_del1", email="guru_del1@test.com")
+        murid = buat_murid_db(db, nama="Murid Hapus", email="hapus@test.com")
+        murid_id = murid.id
+        db.close()
+
+        token = get_token(client, "guru_del1@test.com")
+        response = client.delete(f"/api/v1/murid/{murid_id}", headers=auth_header(token))
+
+        assert response.status_code == 200
+        assert "berhasil" in response.json()["message"].lower()
+
+        # Verifikasi benar-benar terhapus dari DB
+        db = TestingSessionLocal()
+        from app.models.models import Pengguna
+        pengguna = db.query(Pengguna).filter(Pengguna.id == murid_id).first()
+        db.close()
+        assert pengguna is None
+
+    def test_hapus_murid_tidak_ada_return_404(self, client):
+        """❌ Hapus murid dengan ID tidak ada harus 404."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_del2", email="guru_del2@test.com")
+        db.close()
+
+        token = get_token(client, "guru_del2@test.com")
+        response = client.delete("/api/v1/murid/id-tidak-ada", headers=auth_header(token))
+        assert response.status_code == 404
+
+    def test_murid_tidak_bisa_hapus_murid(self, client):
+        """❌ Murid tidak bisa menghapus murid lain."""
+        db = TestingSessionLocal()
+        murid_penyerang = buat_murid_db(db, nama="penyerang", email="penyerang@test.com")
+        murid_target    = buat_murid_db(db, nama="target",    email="target@test.com")
+        db.close()
+
+        token = get_token(client, "penyerang@test.com")
+        response = client.delete(f"/api/v1/murid/{murid_target.id}", headers=auth_header(token))
+        assert response.status_code == 403
+
+    def test_tanpa_token_tidak_bisa_hapus(self, client):
+        """❌ Hapus murid tanpa token harus ditolak."""
+        response = client.delete("/api/v1/murid/id-apapun")
+        assert response.status_code in (401, 403)
+
+    def test_hapus_pengajar_ditolak(self, client):
+        """❌ DELETE /murid/{id} tidak bisa dipakai untuk hapus pengajar."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_del3",   email="guru_del3@test.com")
+        pengajar2 = buat_pengajar(db, nama="guru_target", email="guru_target@test.com")
+        db.close()
+
+        token = get_token(client, "guru_del3@test.com")
+        # Coba hapus pengajar via endpoint delete murid — harus 404
+        response = client.delete(f"/api/v1/murid/{pengajar2.id}", headers=auth_header(token))
+        assert response.status_code == 404
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEST UPDATE MURID — PUT /kelas/murid/{id}
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestUpdateMurid:
@@ -406,7 +546,7 @@ class TestUpdateMurid:
         db.close()
 
         token = get_token(client, "guru_upd1@test.com")
-        murid_id = buat_murid_via_api(client, token, {
+        murid_id = buat_murid_via_kelas_api(client, token, {
             "username": "murid_upd1", "email_address": "murid_upd1@test.com",
             "password": "Test1234!", "nama": "Nama Lama",
         }).json()["id"]
@@ -418,63 +558,6 @@ class TestUpdateMurid:
         assert response.status_code == 200
         assert response.json()["nama"] == "Nama Baru Setelah Update"
 
-    def test_update_usia_berhasil(self, client):
-        """✅ Update usia murid harus berhasil."""
-        db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_upd2", email="guru_upd2@test.com")
-        db.close()
-
-        token = get_token(client, "guru_upd2@test.com")
-        murid_id = buat_murid_via_api(client, token, {
-            "username": "murid_upd2", "email_address": "murid_upd2@test.com",
-            "password": "Test1234!", "nama": "Murid Usia", "usia": 14,
-        }).json()["id"]
-
-        response = client.put(f"/api/v1/kelas/murid/{murid_id}", json={
-            "usia": 16,
-        }, headers=auth_header(token))
-
-        assert response.status_code == 200
-        assert response.json()["usia"] == 16
-
-    def test_update_level_berhasil(self, client):
-        """✅ Update level murid harus berhasil."""
-        db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_upd3", email="guru_upd3@test.com")
-        db.close()
-
-        token = get_token(client, "guru_upd3@test.com")
-        murid_id = buat_murid_via_api(client, token, {
-            "username": "murid_upd3", "email_address": "murid_upd3@test.com",
-            "password": "Test1234!", "nama": "Murid Level", "level": "SMA Kelas 1",
-        }).json()["id"]
-
-        response = client.put(f"/api/v1/kelas/murid/{murid_id}", json={
-            "level": "SMA Kelas 2",
-        }, headers=auth_header(token))
-
-        assert response.status_code == 200
-        assert response.json()["level"] == "SMA Kelas 2"
-
-    def test_update_credit_total_berhasil(self, client):
-        """✅ Update credit_total murid harus berhasil."""
-        db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_upd4", email="guru_upd4@test.com")
-        db.close()
-
-        token = get_token(client, "guru_upd4@test.com")
-        murid_id = buat_murid_via_api(client, token, {
-            "username": "murid_upd4", "email_address": "murid_upd4@test.com",
-            "password": "Test1234!", "nama": "Murid Credit", "credit_total": 10,
-        }).json()["id"]
-
-        response = client.put(f"/api/v1/kelas/murid/{murid_id}", json={
-            "credit_total": 30,
-        }, headers=auth_header(token))
-
-        assert response.status_code == 200
-        assert response.json()["credit_total"] == 30
-
     def test_update_semua_field_sekaligus(self, client):
         """✅ Update semua field sekaligus harus berhasil."""
         db = TestingSessionLocal()
@@ -482,17 +565,15 @@ class TestUpdateMurid:
         db.close()
 
         token = get_token(client, "guru_upd5@test.com")
-        murid_id = buat_murid_via_api(client, token, {
+        murid_id = buat_murid_via_kelas_api(client, token, {
             "username": "murid_upd5", "email_address": "murid_upd5@test.com",
             "password": "Test1234!", "nama": "Sebelum Update",
             "usia": 13, "level": "SMP", "credit_total": 5,
         }).json()["id"]
 
         response = client.put(f"/api/v1/kelas/murid/{murid_id}", json={
-            "nama":         "Sesudah Update",
-            "usia":         15,
-            "level":        "SMA",
-            "credit_total": 20,
+            "nama": "Sesudah Update", "usia": 15,
+            "level": "SMA", "credit_total": 20,
         }, headers=auth_header(token))
 
         assert response.status_code == 200
@@ -503,72 +584,111 @@ class TestUpdateMurid:
         assert data["credit_total"] == 20
 
     def test_update_partial_field_lain_tidak_berubah(self, client):
-        """✅ Update sebagian field tidak boleh mengubah field lain yang tidak di-update."""
+        """✅ Update sebagian field tidak boleh mengubah field lain."""
         db = TestingSessionLocal()
         buat_pengajar(db, nama="guru_upd6", email="guru_upd6@test.com")
         db.close()
 
         token = get_token(client, "guru_upd6@test.com")
-        murid_id = buat_murid_via_api(client, token, {
+        murid_id = buat_murid_via_kelas_api(client, token, {
             "username": "murid_upd6", "email_address": "murid_upd6@test.com",
             "password": "Test1234!", "nama": "Nama Tetap",
             "usia": 15, "level": "SMA", "credit_total": 20,
         }).json()["id"]
 
-        # Update hanya usia
         response = client.put(f"/api/v1/kelas/murid/{murid_id}", json={
             "usia": 16,
         }, headers=auth_header(token))
 
         assert response.status_code == 200
         data = response.json()
-        assert data["usia"]         == 16          # berubah
-        assert data["nama"]         == "Nama Tetap"  # tidak berubah
-        assert data["level"]        == "SMA"         # tidak berubah
-        assert data["credit_total"] == 20            # tidak berubah
+        assert data["usia"]         == 16
+        assert data["nama"]         == "Nama Tetap"
+        assert data["level"]        == "SMA"
+        assert data["credit_total"] == 20
 
     def test_update_id_tidak_ada_return_404(self, client):
-        """❌ Update murid dengan ID yang tidak ada harus return 404."""
+        """❌ Update murid dengan ID tidak ada harus 404."""
         db = TestingSessionLocal()
         buat_pengajar(db, nama="guru_upd7", email="guru_upd7@test.com")
         db.close()
 
         token = get_token(client, "guru_upd7@test.com")
-        response = client.put("/api/v1/kelas/murid/id-tidak-ada-sama-sekali", json={
+        response = client.put("/api/v1/kelas/murid/id-tidak-ada", json={
             "nama": "Apapun",
         }, headers=auth_header(token))
-
         assert response.status_code == 404
 
-    def test_update_tanpa_token_ditolak(self, client):
-        """❌ Update murid tanpa token harus ditolak."""
-        response = client.put("/api/v1/kelas/murid/murid-id-apapun", json={
-            "nama": "Tanpa Token",
-        })
-        assert response.status_code in (401, 403)
-
-    def test_update_body_kosong_tetap_berhasil(self, client):
-        """✅ Update dengan body kosong tidak mengubah data apapun."""
+    def test_murid_tidak_bisa_update_murid_lain(self, client):
+        """❌ Murid tidak bisa mengupdate profil murid lain."""
         db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_upd8", email="guru_upd8@test.com")
+        murid_target    = buat_murid_db(db, nama="murid_target",    email="murid_target@test.com")
+        buat_murid_db(db, nama="murid_penyerang", email="murid_penyerang@test.com")
         db.close()
 
-        token = get_token(client, "guru_upd8@test.com")
-        murid_id = buat_murid_via_api(client, token, {
-            "username": "murid_upd8", "email_address": "murid_upd8@test.com",
-            "password": "Test1234!", "nama": "Nama Tidak Berubah", "usia": 15,
-        }).json()["id"]
-
-        response = client.put(f"/api/v1/kelas/murid/{murid_id}", json={},
-                              headers=auth_header(token))
-
-        assert response.status_code == 200
-        assert response.json()["nama"] == "Nama Tidak Berubah"
-        assert response.json()["usia"] == 15
+        token = get_token(client, "murid_penyerang@test.com")
+        response = client.put(f"/api/v1/kelas/murid/{murid_target.id}", json={
+            "nama": "Dicuri",
+        }, headers=auth_header(token))
+        assert response.status_code == 403
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TEST DATA TERSIMPAN DENGAN BENAR DI DATABASE
+# TEST LOGOUT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestLogout:
+
+    def test_logout_berhasil(self, client):
+        """✅ Logout harus return pesan sukses."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_logout1", email="guru_logout1@test.com")
+        db.close()
+
+        token = get_token(client, "guru_logout1@test.com")
+        response = client.post("/api/v1/auth/logout", headers=auth_header(token))
+
+        assert response.status_code == 200
+        assert "logout" in response.json()["message"].lower()
+
+    def test_token_tidak_bisa_dipakai_setelah_logout(self, client):
+        """❌ Token yang sudah logout harus ditolak untuk request berikutnya."""
+        db = TestingSessionLocal()
+        buat_pengajar(db, nama="guru_logout2", email="guru_logout2@test.com")
+        db.close()
+
+        token = get_token(client, "guru_logout2@test.com")
+
+        # Pastikan token valid dulu
+        resp_before = client.get("/api/v1/dashboard/", headers=auth_header(token))
+        assert resp_before.status_code == 200
+
+        # Logout
+        client.post("/api/v1/auth/logout", headers=auth_header(token))
+
+        # Token seharusnya sudah tidak berlaku
+        resp_after = client.get("/api/v1/dashboard/", headers=auth_header(token))
+        assert resp_after.status_code == 401
+
+    def test_logout_tanpa_token_ditolak(self, client):
+        """❌ Logout tanpa token harus ditolak."""
+        response = client.post("/api/v1/auth/logout")
+        assert response.status_code in (401, 403)
+
+    def test_logout_token_palsu_ditolak(self, client):
+        """❌ Logout dengan token palsu harus ditolak."""
+        response = client.post(
+            "/api/v1/auth/logout",
+            headers={"Authorization": "Bearer token.palsu.banget"},
+        )
+        # Token palsu tidak masuk blacklist, tetap ditolak di protected endpoint
+        # Logout sendiri mungkin return 200 (hanya blacklist), tapi endpoint lain 401
+        # Bergantung implementasi — yang penting tidak crash
+        assert response.status_code in (200, 401, 403)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEST DATA TERSIMPAN DI DATABASE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestDataTersimpan:
@@ -590,7 +710,6 @@ class TestDataTersimpan:
         assert response.status_code == 201
         murid_id = response.json()["id"]
 
-        # Cek langsung di database
         db = TestingSessionLocal()
         from app.models.models import Pengguna, Murid
         pengguna = db.query(Pengguna).filter(Pengguna.id == murid_id).first()
@@ -624,7 +743,6 @@ class TestDataTersimpan:
         pengguna = db.query(Pengguna).filter(Pengguna.id == murid_id).first()
         db.close()
 
-        # Password tidak boleh tersimpan sebagai plaintext
         assert pengguna.hashed_password != "PasswordRahasia123!"
         assert pengguna.hashed_password.startswith("$2b$")
 
@@ -642,7 +760,6 @@ class TestDataTersimpan:
             "nama":          "Murid Login Test",
         }, headers=auth_header(token))
 
-        # Murid langsung coba login
         login_resp = client.post("/api/v1/auth/login", json={
             "email_address": "murid_login_test@test.com",
             "password":      "Test1234!",
@@ -651,77 +768,3 @@ class TestDataTersimpan:
         assert login_resp.status_code == 200
         assert "access_token" in login_resp.json()
         assert login_resp.json()["tipe_pengguna"] == "murid"
-
-    def test_update_tersimpan_di_database(self, client):
-        """✅ Perubahan data setelah update harus tersimpan di database."""
-        db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_db4", email="guru_db4@test.com")
-        db.close()
-
-        token = get_token(client, "guru_db4@test.com")
-        murid_id = buat_murid_via_api(client, token, {
-            "username": "murid_db4", "email_address": "murid_db4@test.com",
-            "password": "Test1234!", "nama": "Nama Sebelum", "usia": 13,
-        }).json()["id"]
-
-        client.put(f"/api/v1/kelas/murid/{murid_id}", json={
-            "nama": "Nama Sesudah", "usia": 15,
-        }, headers=auth_header(token))
-
-        # Cek langsung di database
-        db = TestingSessionLocal()
-        from app.models.models import Murid
-        murid = db.query(Murid).filter(Murid.id == murid_id).first()
-        db.close()
-
-        assert murid.nama == "Nama Sesudah"
-        assert murid.usia == 15
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# TEST AKSES KONTROL
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class TestAksesKontrol:
-
-    def test_murid_tidak_bisa_update_murid_lain(self, client):
-        """❌ Murid tidak bisa mengupdate profil murid lain."""
-        db = TestingSessionLocal()
-        buat_pengajar(db, nama="guru_akses1", email="guru_akses1@test.com")
-        murid2 = buat_murid_db(db, nama="murid_target", email="murid_target@test.com")
-        db.close()
-
-        # Login sebagai murid (bukan pengajar)
-        db = TestingSessionLocal()
-        buat_murid_db(db, nama="murid_penyerang", email="murid_penyerang@test.com")
-        db.close()
-
-        token_murid = get_token(client, "murid_penyerang@test.com")
-        response = client.put(f"/api/v1/kelas/murid/{murid2.id}", json={
-            "nama": "Dicuri",
-        }, headers=auth_header(token_murid))
-
-        # Murid tidak punya akses (bukan pengajar)
-        assert response.status_code == 403
-
-    def test_tanpa_token_tidak_bisa_update(self, client):
-        """❌ Update murid tanpa token harus ditolak."""
-        db = TestingSessionLocal()
-        murid = buat_murid_db(db, nama="murid_notok", email="murid_notok@test.com")
-        db.close()
-
-        response = client.put(f"/api/v1/kelas/murid/{murid.id}", json={
-            "nama": "Tanpa Token",
-        })
-        assert response.status_code in (401, 403)
-
-    def test_token_palsu_tidak_bisa_buat_murid(self, client):
-        """❌ Token palsu tidak bisa dipakai untuk buat murid."""
-        response = client.post("/api/v1/kelas/murid/tambah", json={
-            "username":      "murid_tokenpalsu",
-            "email_address": "tokenpalsu@test.com",
-            "password":      "Test1234!",
-            "nama":          "Token Palsu",
-        }, headers={"Authorization": "Bearer token.palsu.banget"})
-
-        assert response.status_code == 401

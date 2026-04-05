@@ -16,7 +16,7 @@ from app.core.database import Base, engine
 from app.models import models  # noqa: F401
 
 # Import routers
-from app.routers import auth, dashboard, log, laporan, plan, kelas, diagnostic
+from app.routers import auth, dashboard, log, laporan, plan, kelas, diagnostic, murid
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -68,7 +68,7 @@ app.include_router(log.router,         prefix=PREFIX)
 app.include_router(laporan.router,     prefix=PREFIX)
 app.include_router(plan.router,        prefix=PREFIX)
 app.include_router(diagnostic.router,  prefix=PREFIX)
-app.include_router(murid_router,      prefix=PREFIX)
+app.include_router(murid.router,      prefix=PREFIX)
 
 # ── Root ──────────────────────────────────────────────────────────────────────
 @app.get("/", tags=["Root"])
