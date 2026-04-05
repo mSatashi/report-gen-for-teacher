@@ -64,8 +64,8 @@ def clean_tables():
     yield
     db = TestingSessionLocal()
     try:
-        from app.models.models import KelasMusrid, Kelas, Murid, Pengajar, Pengguna
-        db.query(KelasMusrid).delete()
+        from app.models.models import KelasMurid, Kelas, Murid, Pengajar, Pengguna
+        db.query(KelasMurid).delete()
         db.query(Kelas).delete()
         db.query(Murid).delete()
         db.query(Pengajar).delete()

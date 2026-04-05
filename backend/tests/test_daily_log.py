@@ -67,11 +67,11 @@ def clean_tables():
     db = TestingSessionLocal()
     try:
         from app.models.models import (
-            LogPertemuan, KelasMusrid, Kelas,
+            LogPertemuan, KelasMurid, Kelas,
             Murid, Pengajar, Pengguna,
         )
         db.query(LogPertemuan).delete()
-        db.query(KelasMusrid).delete()
+        db.query(KelasMurid).delete()
         db.query(Kelas).delete()
         db.query(Murid).delete()
         db.query(Pengajar).delete()
