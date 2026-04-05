@@ -16,3 +16,24 @@ export interface KelasResponse {
 }
 
 export interface Toast { id: number; message: string; type: "success" | "error" }
+
+export interface SiswaPayload {
+  username: string;
+  email_address: string;
+  password: string;
+  nama: string;
+  usia: string;
+  level: string;
+  credit_total: string;
+}
+ 
+export interface SiswaResponse {
+  id: string;
+  username: string;
+  email_address: string;
+  nama: string;
+  usia: string;
+  level: string;
+  credit_total: number;
+  credit_use: number;
+}

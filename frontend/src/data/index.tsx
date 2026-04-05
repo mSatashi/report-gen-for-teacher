@@ -9,7 +9,7 @@ import {
   IconPending,
   IconKelas,
 } from "../icons";
-import type { NavItem, StatCard, Student, Activity, Kelas } from "../types";
+import type { NavItem, StatCard, Student, Activity } from "../types";
 
 export const NAV_ITEMS: NavItem[] = [
   { kind: "section", label: "Main Menu" },
@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavItem[] = [
   { kind: "link", label: "Learning Plan", route: "learningPlan", icon: <IconCalendar /> },
   { kind: "section", label: "Master Data" },
   { kind: "link", label: "Kelas", route: "masterKelas", icon: <IconKelas /> },
+  { kind: "link", label: "Siswa", route: "masterSiswa", icon: <IconStudents /> },
   { kind: "section", label: "Report" },
   { kind: "link", label: "Report Editor", route: "reportEditor", icon: <IconReport /> },
   { kind: "section", label: "IF5200 - PPT" },
@@ -112,15 +113,3 @@ export const ACTIVITIES: Activity[] = [
   },
 ];
 
-export const initialKelas: Kelas[] = [
-  {
-    id: "k1",
-    nama: "10A",
-    tingkat: "10",
-    waliKelas: "Bu Sari",
-    tahunAjaran: "2024/2025",
-    siswa: [
-      { id: "s1", nama: "Aisya Putri", nis: "10001", jenisKelamin: "P", tanggalLahir: "2008-03-12", alamat: "Jl. Mawar No.1" },
-    ],
-  },
-];

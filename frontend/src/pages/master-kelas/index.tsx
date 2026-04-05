@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { styles } from "./styles";
 import { IconChevron, IconClose, IconEdit, IconPlus, IconTrash, IconUsers } from "../../icons";
 import type { Kelas, Siswa } from "../../types";
-import { initialKelas } from "../../data";
 import { useKelasApi } from "./useKelasApi";
 import type { KelasResponse, Toast } from "../../service/payload";
 
@@ -22,10 +21,6 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 
 const emptyKelas = (): Omit<Kelas, "id" | "siswa"> => ({
   nama: "", mata_pelajaran: "", pengajar_id: "", kredit: "", jadwal: "",
-});
-
-const emptySiswa = (): Omit<Siswa, "id"> => ({
-  nama: "", nis: "", jenisKelamin: "L", tanggalLahir: "", alamat: "",
 });
 
 let toastId = 0;
@@ -101,7 +96,6 @@ export default function MasterKelas() {
   };
 
   const isModalKelas = modal === "add-kelas" || modal === "edit-kelas";
-  const isModalSiswa = modal === "add-siswa" || modal === "edit-siswa";
 
   const mapApiToKelas = (data: KelasResponse): Kelas => ({
     id: data.id,

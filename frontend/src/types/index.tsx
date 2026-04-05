@@ -41,9 +41,12 @@ export interface Kelas {
 
 export interface Siswa {
   id: string;
+  username: string;
+  email_address: string;
+  password?: string;
   nama: string;
-  nis: string;
-  jenisKelamin: "L" | "P";
-  tanggalLahir: string;
-  alamat: string;
+  usia: string;
+  level: string;
+  credit_total: number;
+  credit_use?: number;
 }

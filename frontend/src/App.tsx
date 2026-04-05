@@ -13,6 +13,7 @@ import LoginPage from "./pages/login";
 import { loginAPI, type AuthUser } from "./service/authService";
 import MasterKelas from "./pages/master-kelas";
 import { setUnauthorizedHandler } from "./service/apiFetch";
+import MasterSiswa from "./pages/master-siswa";
 
 // Helper token
 const TOKEN_KEY = "auth_token";
@@ -102,6 +103,8 @@ const App: React.FC = () => {
         return <ReportEditor />;
       case "masterKelas":
         return <MasterKelas />;
+      case "masterSiswa":
+        return <MasterSiswa />;
       default:
         return (
           <div style={styles.pageNotFound}>
