@@ -68,13 +68,13 @@ def clean_tables():
     db = TestingSessionLocal()
     try:
         from app.models.models import (
-            LogPertemuan, Laporan, RencanaStudi, KelasMusrid,
+            LogPertemuan, Laporan, RencanaStudi, KelasMurid,
             Kelas, Murid, Pengajar, Pengguna,
         )
         db.query(LogPertemuan).delete()
         db.query(Laporan).delete()
         db.query(RencanaStudi).delete()
-        db.query(KelasMusrid).delete()
+        db.query(KelasMurid).delete()
         db.query(Kelas).delete()
         db.query(Murid).delete()
         db.query(Pengajar).delete()
@@ -156,9 +156,9 @@ def buat_kelas(db, pengajar_id, nama="Kelas Test", mata_pelajaran="Matematika"):
 
 def daftarkan_murid(db, kelas_id, murid_id):
     """Daftarkan murid ke kelas."""
-    from app.models.models import KelasMusrid
+    from app.models.models import KelasMurid
 
-    km = KelasMusrid(kelas_id=kelas_id, murid_id=murid_id)
+    km = KelasMurid(kelas_id=kelas_id, murid_id=murid_id)
     db.add(km)
     db.commit()
 

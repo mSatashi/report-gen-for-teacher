@@ -47,5 +47,27 @@ export const styles: Record<string, CSSProperties> = {
     flex: 1,
     overflowY: "auto",
     padding: "28px 28px 40px",
-  }
+  },
+  pageNotFound: { 
+    color: "#9ca3af", 
+    fontSize: 14, 
+    padding: 8 
+  },
 };
+
+export const sidebarStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+
+  /* Desktop: show desktop sidebar, hide mobile drawer */
+  .desktop-sidebar  { display: flex; }
+  .mobile-sidebar-drawer { display: none; }
+  .mobile-menu-btn  { display: none !important; }
+
+  @media (max-width: 1023px) {
+    .desktop-sidebar        { display: none !important; }
+    .mobile-sidebar-drawer  { display: flex !important; }
+    .mobile-menu-btn        { display: flex !important; }
+  }
+`;

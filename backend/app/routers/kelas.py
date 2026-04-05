@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.core.database import get_db
-from app.models.models import Pengguna, Kelas, KelasMusrid, Murid
+from app.models.models import Pengguna, Kelas, KelasMurid, Murid
 from app.schemas.schemas import (
     KelasCreate, KelasUpdate, KelasResponse,
     MuridCreate, MuridUpdate, MuridResponse, TambahMuridKeKelas
@@ -94,7 +94,7 @@ def list_murid_kelas(
     db: Session = Depends(get_db),
 ):
     """Ambil daftar murid dalam satu kelas."""
-    km_rows = db.query(KelasMusrid).filter(KelasMusrid.kelas_id == kelas_id).all()
+    km_rows = db.query(KelasMurid).filter(KelasMurid.kelas_id == kelas_id).all()
     result = []
     for km in km_rows:
         murid = db.query(Murid).filter(Murid.id == km.murid_id).first()
@@ -120,13 +120,13 @@ def tambah_murid_ke_kelas(
     db: Session = Depends(get_db),
 ):
     """Tambahkan murid yang sudah ada ke dalam kelas."""
-    existing = db.query(KelasMusrid).filter(
-        KelasMusrid.kelas_id == kelas_id,
-        KelasMusrid.murid_id == data.murid_id,
+    existing = db.query(KelasMurid).filter(
+        KelasMurid.kelas_id == kelas_id,
+        KelasMurid.murid_id == data.murid_id,
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Murid sudah ada di kelas ini")
-    db.add(KelasMusrid(kelas_id=kelas_id, murid_id=data.murid_id))
+    db.add(KelasMurid(kelas_id=kelas_id, murid_id=data.murid_id))
     db.commit()
     return {"message": "Murid berhasil ditambahkan ke kelas"}
 
@@ -138,9 +138,9 @@ def hapus_murid_dari_kelas(
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
 ):
-    km = db.query(KelasMusrid).filter(
-        KelasMusrid.kelas_id == kelas_id,
-        KelasMusrid.murid_id == murid_id,
+    km = db.query(KelasMurid).filter(
+        KelasMurid.kelas_id == kelas_id,
+        KelasMurid.murid_id == murid_id,
     ).first()
     if not km:
         raise HTTPException(status_code=404, detail="Murid tidak ada di kelas ini")

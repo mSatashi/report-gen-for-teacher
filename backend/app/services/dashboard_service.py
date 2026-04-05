@@ -4,7 +4,7 @@ Menyediakan data ringkasan untuk halaman Dashboard.
 """
 from datetime import date
 from sqlalchemy.orm import Session
-from app.models.models import Kelas, KelasMusrid, LogPertemuan, Laporan, RencanaStudi
+from app.models.models import Kelas, KelasMurid, LogPertemuan, Laporan, RencanaStudi
 from app.schemas.schemas import DashboardSummary
 
 
@@ -18,9 +18,9 @@ def get_dashboard_data(db: Session, pengajar_id: str) -> DashboardSummary:
 
     # Total siswa (unik)
     total_siswa = (
-        db.query(KelasMusrid)
-        .filter(KelasMusrid.kelas_id.in_(kelas_ids))
-        .distinct(KelasMusrid.murid_id)
+        db.query(KelasMurid)
+        .filter(KelasMurid.kelas_id.in_(kelas_ids))
+        .distinct(KelasMurid.murid_id)
         .count()
     )
 

@@ -35,6 +35,8 @@ __pycache__/
 *.pyo
 *.pyd
 
+frontend/node_modules/*
+
 # Virtual environments
 .venv/
 venv/
