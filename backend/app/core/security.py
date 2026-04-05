@@ -3,7 +3,7 @@ security.py
 Fungsi keamanan: hashing password (bcrypt langsung) + JWT token.
 """
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, Set
 
 import bcrypt
 from jose import JWTError, jwt
@@ -63,3 +63,19 @@ def decode_access_token(token: str) -> Optional[dict]:
         return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except JWTError:
         return None
+
+# -- Logout Token Blacklist (opsional) ─────────────────────────────────────────────
+_token_blacklist: Set[str] = set()
+ 
+ 
+def blacklist_token(token: str) -> None:
+    """
+    Masukkan token ke blacklist agar tidak bisa dipakai lagi.
+    Dipanggil saat logout.
+    """
+    _token_blacklist.add(token)
+ 
+ 
+def is_token_blacklisted(token: str) -> bool:
+    """Cek apakah token sudah diblacklist (sudah logout)."""
+    return token in _token_blacklist

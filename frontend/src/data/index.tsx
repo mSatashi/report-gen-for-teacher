@@ -7,6 +7,7 @@ import {
   IconLog,
   IconPlan,
   IconPending,
+  IconKelas,
 } from "../icons";
 import type { NavItem, StatCard, Student, Activity } from "../types";
 
@@ -15,6 +16,9 @@ export const NAV_ITEMS: NavItem[] = [
   { kind: "link", label: "Dashboards",    route: "home",         icon: <IconDashboard /> },
   { kind: "link", label: "Daily Log",     route: "dailyLog",     icon: <IconDailyLog /> },
   { kind: "link", label: "Learning Plan", route: "learningPlan", icon: <IconCalendar /> },
+  { kind: "section", label: "Master Data" },
+  { kind: "link", label: "Kelas", route: "masterKelas", icon: <IconKelas /> },
+  { kind: "link", label: "Siswa", route: "masterSiswa", icon: <IconStudents /> },
   { kind: "section", label: "Report" },
   { kind: "link", label: "Report Editor", route: "reportEditor", icon: <IconReport /> },
   { kind: "section", label: "IF5200 - PPT" },
@@ -108,3 +112,4 @@ export const ACTIVITIES: Activity[] = [
     tags: [{ label: "Perlu Ulang", color: "#fee2e2" }],
   },
 ];
+

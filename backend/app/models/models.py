@@ -68,7 +68,7 @@ class Murid(Base):
     credit_used    = Column(Integer, default=0)
 
     pengguna  = relationship("Pengguna", back_populates="murid")
-    kelas     = relationship("KelasMusrid", back_populates="murid")
+    kelas     = relationship("KelasMurid", back_populates="murid")
     laporan   = relationship("Laporan", back_populates="murid")
     knowledge_states = relationship("KnowledgeState", back_populates="murid")
     diagnostic_results = relationship("DiagnosticResult", back_populates="murid")
@@ -90,12 +90,12 @@ class Kelas(Base):
     created_at   = Column(DateTime, default=datetime.utcnow)
 
     pengajar     = relationship("Pengajar", back_populates="kelas_diampu")
-    murid_list   = relationship("KelasMusrid", back_populates="kelas")
+    murid_list   = relationship("KelasMurid", back_populates="kelas")
     log_pertemuan = relationship("LogPertemuan", back_populates="kelas")
     rencana_studi = relationship("RencanaStudi", back_populates="kelas")
 
 
-class KelasMusrid(Base):
+class KelasMurid(Base):
     """Tabel pivot kelas <-> murid (many-to-many)."""
     __tablename__ = "kelas_murid"
     __table_args__ = (UniqueConstraint("kelas_id", "murid_id"),)

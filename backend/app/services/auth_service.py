@@ -9,7 +9,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
+from app.core.security import hash_password, verify_password, create_access_token, decode_access_token, blacklist_token, is_token_blacklisted
 from app.models.models import Pengguna, Pengajar, Murid
 from app.schemas.schemas import RegisterRequest, LoginRequest, TokenResponse
 
@@ -58,17 +58,40 @@ def login_user(db: Session, data: LoginRequest) -> TokenResponse:
         user_id=user.id,
     )
 
+def logout_user(token: str) -> dict:
+    """
+    Logout pengguna dengan memblacklist JWT token-nya.
+    Karena JWT stateless, cara ini membuat token langsung tidak valid
+    tanpa perlu menyimpan state ke database — cukup tambahkan ke blacklist
+    in-memory (atau Redis untuk multi-worker).
+    """
+    blacklist_token(token)
+    return {"message": "Logout berhasil. Token telah dinonaktifkan."}
+
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    db: Session = Depends(get_db),
-) -> Pengguna:
-    """Dependency FastAPI: decode JWT dan kembalikan user aktif."""
-    payload = decode_access_token(credentials.credentials)
+    credentials: "HTTPAuthorizationCredentials",
+    db: "Session",
+) -> "Pengguna":
+    """
+    Dependency FastAPI: decode JWT, cek blacklist, kembalikan user aktif.
+    Versi ini menolak token yang sudah logout.
+    """
+    from fastapi import HTTPException
+    from fastapi.security import HTTPAuthorizationCredentials
+ 
+    token = credentials.credentials
+ 
+    # Tolak jika token sudah diblacklist (sudah logout)
+    if is_token_blacklisted(token):
+        raise HTTPException(status_code=401, detail="Token sudah tidak valid (sudah logout)")
+ 
+    payload = decode_access_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail="Token tidak valid atau sudah expired")
-
-    user = db.query(Pengguna).filter(Pengguna.id == payload.get("sub")).first()
+ 
+    from app.models.models import Pengguna as PenggunaModel
+    user = db.query(PenggunaModel).filter(PenggunaModel.id == payload.get("sub")).first()
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="Pengguna tidak ditemukan")
     return user
