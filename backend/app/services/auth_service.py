@@ -70,8 +70,8 @@ def logout_user(token: str) -> dict:
 
 
 def get_current_user(
-    credentials: "HTTPAuthorizationCredentials",
-    db: "Session",
+     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
 ) -> "Pengguna":
     """
     Dependency FastAPI: decode JWT, cek blacklist, kembalikan user aktif.
