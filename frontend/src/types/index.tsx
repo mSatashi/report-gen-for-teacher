@@ -35,7 +35,7 @@ export interface Kelas {
   pengajar_id: string;
   kredit: number;
   jadwal: string;
-  created_at: string;
+  created_at?: string;
   siswa: Siswa[];
 }
 
