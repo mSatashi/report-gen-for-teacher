@@ -68,7 +68,7 @@ app.include_router(log.router,         prefix=PREFIX)
 app.include_router(laporan.router,     prefix=PREFIX)
 app.include_router(plan.router,        prefix=PREFIX)
 app.include_router(diagnostic.router,  prefix=PREFIX)
-
+app.include_router(murid_router,      prefix=PREFIX)
 
 # ── Root ──────────────────────────────────────────────────────────────────────
 @app.get("/", tags=["Root"])

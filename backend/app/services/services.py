@@ -18,7 +18,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token
 from app.models.models import (
-    Pengguna, Murid, Pengajar, Kelas, KelasMusrid,
+    Pengguna, Murid, Pengajar, Kelas, KelasMurid,
     LogPertemuan, DraftAnalisis, RencanaStudi, Laporan,
     KnowledgeState, DiagnosticResult, StudentEvaluation, LessonPlan
 )
@@ -135,8 +135,8 @@ class MuridService:
         if kelas_id:
             result = await db.execute(
                 select(Murid)
-                .join(KelasMusrid, KelasMusrid.murid_id == Murid.id)
-                .where(KelasMusrid.kelas_id == kelas_id)
+                .join(KelasMurid, KelasMurid.murid_id == Murid.id)
+                .where(KelasMurid.kelas_id == kelas_id)
                 .offset(skip).limit(limit)
             )
         else:
@@ -148,8 +148,8 @@ class MuridService:
         """Ambil semua murid yang berada di kelas milik pengajar tertentu."""
         result = await db.execute(
             select(Murid)
-            .join(KelasMusrid, KelasMusrid.murid_id == Murid.id)
-            .join(Kelas, Kelas.id == KelasMusrid.kelas_id)
+            .join(KelasMurid, KelasMurid.murid_id == Murid.id)
+            .join(Kelas, Kelas.id == KelasMurid.kelas_id)
             .where(Kelas.pengajar_id == pengajar_id)
             .distinct()
         )
@@ -194,13 +194,13 @@ class KelasService:
     @staticmethod
     async def tambah_murid_ke_kelas(db: AsyncSession, kelas_id: str, murid_id: str) -> bool:
         existing = await db.execute(
-            select(KelasMusrid).where(
-                and_(KelasMusrid.kelas_id == kelas_id, KelasMusrid.murid_id == murid_id)
+            select(KelasMurid).where(
+                and_(KelasMurid.kelas_id == kelas_id, KelasMurid.murid_id == murid_id)
             )
         )
         if existing.scalar_one_or_none():
             return False  # sudah ada
-        km = KelasMusrid(kelas_id=kelas_id, murid_id=murid_id)
+        km = KelasMurid(kelas_id=kelas_id, murid_id=murid_id)
         db.add(km)
         await db.flush()
         return True
@@ -208,8 +208,8 @@ class KelasService:
     @staticmethod
     async def hapus_murid_dari_kelas(db: AsyncSession, kelas_id: str, murid_id: str) -> bool:
         result = await db.execute(
-            select(KelasMusrid).where(
-                and_(KelasMusrid.kelas_id == kelas_id, KelasMusrid.murid_id == murid_id)
+            select(KelasMurid).where(
+                and_(KelasMurid.kelas_id == kelas_id, KelasMurid.murid_id == murid_id)
             )
         )
         km = result.scalar_one_or_none()
@@ -539,8 +539,8 @@ class LaporanService:
         result = await db.execute(
             select(Laporan)
             .join(Murid, Murid.id == Laporan.murid_id)
-            .join(KelasMusrid, KelasMusrid.murid_id == Murid.id)
-            .join(Kelas, Kelas.id == KelasMusrid.kelas_id)
+            .join(KelasMurid, KelasMurid.murid_id == Murid.id)
+            .join(Kelas, Kelas.id == KelasMurid.kelas_id)
             .where(
                 and_(
                     Kelas.pengajar_id == pengajar_id,
@@ -557,8 +557,8 @@ class LaporanService:
         result = await db.execute(
             select(func.count(Laporan.id))
             .join(Murid, Murid.id == Laporan.murid_id)
-            .join(KelasMusrid, KelasMusrid.murid_id == Murid.id)
-            .join(Kelas, Kelas.id == KelasMusrid.kelas_id)
+            .join(KelasMurid, KelasMurid.murid_id == Murid.id)
+            .join(Kelas, Kelas.id == KelasMurid.kelas_id)
             .where(
                 and_(
                     Kelas.pengajar_id == pengajar_id,
@@ -733,8 +733,8 @@ class DashboardService:
         """Ambil semua data yang dibutuhkan halaman dashboard."""
         total_siswa_result = await db.execute(
             select(func.count(Murid.id))
-            .join(KelasMusrid, KelasMusrid.murid_id == Murid.id)
-            .join(Kelas, Kelas.id == KelasMusrid.kelas_id)
+            .join(KelasMurid, KelasMurid.murid_id == Murid.id)
+            .join(Kelas, Kelas.id == KelasMurid.kelas_id)
             .where(Kelas.pengajar_id == pengajar_id)
         )
         total_siswa = total_siswa_result.scalar() or 0

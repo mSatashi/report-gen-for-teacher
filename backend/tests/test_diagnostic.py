@@ -67,11 +67,11 @@ def clean_tables():
     try:
         from app.models.models import (
             DiagnosticResult, KnowledgeState,
-            KelasMusrid, Kelas, Murid, Pengajar, Pengguna,
+            KelasMurid, Kelas, Murid, Pengajar, Pengguna,
         )
         db.query(DiagnosticResult).delete()
         db.query(KnowledgeState).delete()
-        db.query(KelasMusrid).delete()
+        db.query(KelasMurid).delete()
         db.query(Kelas).delete()
         db.query(Murid).delete()
         db.query(Pengajar).delete()
