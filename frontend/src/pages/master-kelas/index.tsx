@@ -1,45 +1,45 @@
 import { useEffect, useState } from "react";
 import { styles } from "./styles";
 import { IconChevron, IconClose, IconEdit, IconPlus, IconTrash, IconUsers } from "../../icons";
-import type { Kelas, Siswa } from "../../types";
+import type { Kelas } from "../../types";
 import { useKelasApi } from "./useKelasApi";
 import type { KelasResponse, Toast } from "../../service/payload";
 
 type ModalMode = "add-kelas" | "edit-kelas" | "add-siswa" | "edit-siswa" | null;
 
-const jkBadge = (jk: string): React.CSSProperties => ({
-  display: "inline-block",
-  background: jk === "P" ? "#FDF2F8" : "#EFF8FF",
-  color: jk === "P" ? "#D53F8C" : "#3182CE",
-  borderRadius: "6px",
-  padding: "2px 10px",
-  fontSize: "11px",
-  fontWeight: 700,
-});
+// const jkBadge = (jk: string): React.CSSProperties => ({
+//   display: "inline-block",
+//   background: jk === "P" ? "#FDF2F8" : "#EFF8FF",
+//   color: jk === "P" ? "#D53F8C" : "#3182CE",
+//   borderRadius: "6px",
+//   padding: "2px 10px",
+//   fontSize: "11px",
+//   fontWeight: 700,
+// });
 
-const uid = () => Math.random().toString(36).slice(2, 9);
+// const uid = () => Math.random().toString(36).slice(2, 9);
 
 const emptyKelas = (): Omit<Kelas, "id" | "siswa"> => ({
-  nama: "", mata_pelajaran: "", pengajar_id: "", kredit: "", jadwal: "",
+  nama: "", mata_pelajaran: "", pengajar_id: "", kredit: 0, jadwal: "",
 });
 
 let toastId = 0;
 
 export default function MasterKelas() {
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [, setToasts] = useState<Toast[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [modal, setModal] = useState<ModalMode>(null);
   const [kelasForm, setKelasForm] = useState(emptyKelas());
-  const [siswaForm, setSiswaForm] = useState(emptySiswa());
+  // const [siswaForm, setSiswaForm] = useState(emptySiswa());
   const [editingKelasId, setEditingKelasId] = useState<string | null>(null);
-  const [editingSiswaId, setEditingSiswaId] = useState<string | null>(null);
-  const [targetKelasId, setTargetKelasId] = useState<string | null>(null);
+  // const [editingSiswaId, setEditingSiswaId] = useState<string | null>(null);
+  // const [targetKelasId, setTargetKelasId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "kelas" | "siswa"; kelasId: string; siswaId?: string } | null>(null);
 
-  const { status, errorMsg, loadKelas, submitCreateKelas, submitUpdateKelas, submitDeleteKelas} = useKelasApi();
+  const { errorMsg, loadKelas, submitCreateKelas, submitUpdateKelas, submitDeleteKelas} = useKelasApi();
 
-  const isLoading = status === "loading";
+  // const isLoading = status === "loading";
 
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
@@ -58,42 +58,42 @@ export default function MasterKelas() {
   };
 
   // ── Siswa CRUD ──
-  const openAddSiswa = (kelasId: string) => {
-    setSiswaForm(emptySiswa());
-    setEditingSiswaId(null);
-    setTargetKelasId(kelasId);
-    setModal("add-siswa");
-  };
+  // const openAddSiswa = (kelasId: string) => {
+  //   // setSiswaForm(emptySiswa());
+  //   setEditingSiswaId(null);
+  //   setTargetKelasId(kelasId);
+  //   setModal("add-siswa");
+  // };
 
-  const openEditSiswa = (kelasId: string, s: Siswa) => {
-    setSiswaForm({ nama: s.nama, nis: s.nis, jenisKelamin: s.jenisKelamin, tanggalLahir: s.tanggalLahir, alamat: s.alamat });
-    setEditingSiswaId(s.id);
-    setTargetKelasId(kelasId);
-    setModal("edit-siswa");
-  };
+  // const openEditSiswa = (kelasId: string, s: Siswa) => {
+  //   // setSiswaForm({ nama: s.nama, nis: s.nis, jenisKelamin: s.jenisKelamin, tanggalLahir: s.tanggalLahir, alamat: s.alamat });
+  //   setEditingSiswaId(s.id);
+  //   setTargetKelasId(kelasId);
+  //   setModal("edit-siswa");
+  // };
 
-  const saveSiswa = () => {
-    if (!siswaForm.nama.trim() || !targetKelasId) return;
-    setKelasList((prev) =>
-      prev.map((k) => {
-        if (k.id !== targetKelasId) return k;
-        if (editingSiswaId) {
-          return { ...k, siswa: k.siswa.map((s) => s.id === editingSiswaId ? { ...s, ...siswaForm } : s) };
-        }
-        return { ...k, siswa: [...k.siswa, { id: uid(), ...siswaForm }] };
-      })
-    );
-    setModal(null);
-  };
+  // const saveSiswa = () => {
+  //   if (!siswaForm.nama.trim() || !targetKelasId) return;
+  //   setKelasList((prev) =>
+  //     prev.map((k) => {
+  //       if (k.id !== targetKelasId) return k;
+  //       if (editingSiswaId) {
+  //         return { ...k, siswa: k.siswa.map((s) => s.id === editingSiswaId ? { ...s, ...siswaForm } : s) };
+  //       }
+  //       return { ...k, siswa: [...k.siswa, { id: uid(), ...siswaForm }] };
+  //     })
+  //   );
+  //   setModal(null);
+  // };
 
-  const deleteSiswa = (kelasId: string, siswaId: string) => {
-    setKelasList((prev) =>
-      prev.map((k) =>
-        k.id === kelasId ? { ...k, siswa: k.siswa.filter((s) => s.id !== siswaId) } : k
-      )
-    );
-    setDeleteConfirm(null);
-  };
+  // const deleteSiswa = (kelasId: string, siswaId: string) => {
+  //   setKelasList((prev) =>
+  //     prev.map((k) =>
+  //       k.id === kelasId ? { ...k, siswa: k.siswa.filter((s) => s.id !== siswaId) } : k
+  //     )
+  //   );
+  //   setDeleteConfirm(null);
+  // };
 
   const isModalKelas = modal === "add-kelas" || modal === "edit-kelas";
 
@@ -251,7 +251,7 @@ export default function MasterKelas() {
             </div>
 
             {/* Siswa Table */}
-            {isOpen && (
+            {/* {isOpen && (
               <>
                 <div style={styles.tableWrapper}>
                   {kelas.siswa.length === 0 ? (
@@ -296,7 +296,7 @@ export default function MasterKelas() {
                   </button>
                 </div>
               </>
-            )}
+            )} */}
           </div>
         );
       })}
@@ -322,7 +322,7 @@ export default function MasterKelas() {
             <div style={styles.formGroup}>
               <label style={styles.label}>Kredit *</label>
               <input style={styles.input} placeholder="Masukkan jumlah sesi/kredit" value={kelasForm.kredit}
-                onChange={(e) => setKelasForm((f) => ({ ...f, kredit: e.target.value }))} />
+                onChange={(e) => setKelasForm((f) => ({ ...f, kredit: Number(e.target.value) }))} />
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Jadwal</label>
@@ -341,7 +341,7 @@ export default function MasterKelas() {
       )}
 
       {/* ── Modal Siswa ── */}
-      {isModalSiswa && (
+      {/* {isModalSiswa && (
         <div style={styles.overlay} onClick={() => setModal(null)}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button style={styles.closeBtn} onClick={() => setModal(null)}><IconClose /></button>
@@ -391,7 +391,7 @@ export default function MasterKelas() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* ── Delete Confirm ── */}
       {deleteConfirm && (
@@ -409,7 +409,7 @@ export default function MasterKelas() {
               <button style={{ ...styles.btnSave, background: "linear-gradient(135deg, #E53E3E, #C53030)" }}
                 onClick={() => {
                   if (deleteConfirm.type === "kelas") deleteKelas(deleteConfirm.kelasId);
-                  else deleteSiswa(deleteConfirm.kelasId, deleteConfirm.siswaId!);
+                  //else deleteSiswa(deleteConfirm.kelasId, deleteConfirm.siswaId!);
                 }}>
                 Ya, Hapus
               </button>

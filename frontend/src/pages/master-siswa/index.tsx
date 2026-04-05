@@ -15,16 +15,16 @@ type Toast = {
 };
 
 
-const uid = () => Math.random().toString(36).slice(2, 9);
+// const uid = () => Math.random().toString(36).slice(2, 9);
 
 const emptySiswa = (): Omit<Siswa, "id"> => ({
   username: "",
   email_address: "",
-  password: "",
+  password: undefined,
   nama: "",
   usia: "",
   level: "",
-  credit_total: Number(""),
+  credit_total: 0,
 });
 
 let toastId = 0;
@@ -37,18 +37,18 @@ export default function MasterSiswa({ initialData = [] }: Props) {
   const [siswaList, setSiswaList] = useState<Siswa[]>(initialData);
   const [modal, setModal] = useState<ModalMode>(null);
   const [siswaForm, setSiswaForm] = useState(emptySiswa());
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [, setExpanded] = useState<Record<string, boolean>>({});
   const [editingSiswaId, setEditingSiswaId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [keyword, setKeyword] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [focused, setFocused] = useState<string | null>(null);
+  // const [password, setPassword] = useState("");
+  const [showPassword, ] = useState(false);
+  const [, setFocused] = useState<string | null>(null);
 
-  const { status, errorMsg, submitCreateSiswa, submitUpdateSiswa} = useSiswaApi();
+  const { errorMsg, submitCreateSiswa, submitUpdateSiswa} = useSiswaApi();
   
-    const isLoading = status === "loading";
+    // const isLoading = status === "loading";
 
   const showToast = (message: string, type: ToastType) => {
     const id = ++toastId;
@@ -386,7 +386,7 @@ export default function MasterSiswa({ initialData = [] }: Props) {
                 value={siswaForm.credit_total}
                 placeholder="Masukkan credit total"
                 onChange={(e) =>
-                  setSiswaForm((f) => ({ ...f, credit_total: e.target.value }))
+                  setSiswaForm((f) => ({ ...f, credit_total: Number(e.target.value) }))
                 }
                 style={styles.input}
               />

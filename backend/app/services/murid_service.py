@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional
  
 from fastapi import HTTPException
@@ -5,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.models.models import Murid, Pengguna, KelasMurid
-from app.schemas.schemas import MuridResponse
+from app.schemas.schemas import MuridCreate, MuridResponse
  
 def create_murid(db: Session, data: MuridCreate) -> MuridResponse:
     """
@@ -51,7 +52,7 @@ def create_murid(db: Session, data: MuridCreate) -> MuridResponse:
         credit_total=murid.credit_total or 0,
         credit_used=murid.credit_used or 0,
     )
-    
+
 def get_all_murid(
     db: Session,
     skip: int = 0,
