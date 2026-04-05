@@ -20,11 +20,11 @@ export interface Toast { id: number; message: string; type: "success" | "error" 
 export interface SiswaPayload {
   username: string;
   email_address: string;
-  password: string;
+  password?: string;
   nama: string;
   usia: string;
   level: string;
-  credit_total: string;
+  credit_total?: number;
 }
  
 export interface SiswaResponse {
