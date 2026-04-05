@@ -11,7 +11,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [focused, setFocused] = useState<string | null>(null);
+  const [, setFocused] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

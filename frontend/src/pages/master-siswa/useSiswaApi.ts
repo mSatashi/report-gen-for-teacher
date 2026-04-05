@@ -8,10 +8,10 @@ export type ApiStatus = "idle" | "loading" | "success" | "error";
 interface UseSiswaApiReturn {
   status: ApiStatus;
   errorMsg: string | null;
-  loadSiswa: () => Promise<SiswaResponse[]>;
+  // loadSiswa: () => Promise<SiswaResponse[]>;
   submitCreateSiswa: (payload: SiswaPayload) => Promise<SiswaResponse | null>;
   submitUpdateSiswa: (id: string, payload: SiswaPayload) => Promise<SiswaResponse | null>;
-  submitDeleteSiswa: (id: string) => Promise<boolean>;
+  // submitDeleteSiswa: (id: string) => Promise<boolean>;
   resetStatus: () => void; 
 }
 
