@@ -5,13 +5,13 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
  
 from app.core.database import get_db
-from app.schemas.schemas import MuridCreate, uridResponse
+from app.schemas.schemas import MuridCreate, MuridResponse
 from app.services.auth_service import get_current_user, require_pengajar
 from app.services.murid_service import create_murid, get_all_murid, get_murid_by_id, delete_murid
 from app.models.models import Pengguna
  
 # ── Murid router ──────────────────────────────────────────────────────────────
-murid_router = APIRouter(prefix="/murid", tags=["Murid"])
+router = APIRouter(prefix="/murid", tags=["Murid"])
  
 @router.post("/", response_model=MuridResponse, status_code=201)
 def tambah_siswa(
@@ -21,8 +21,8 @@ def tambah_siswa(
 ):
     """Buat akun siswa baru. Hanya bisa dilakukan oleh pengajar."""
     return create_murid(db, data)
-    
-@murid_router.get("/", response_model=List[MuridResponse])
+
+@router.get("/", response_model=List[MuridResponse])
 def list_all_murid(
     skip: int = Query(0, ge=0, description="Offset paginasi"),
     limit: int = Query(100, ge=1, le=500, description="Jumlah maksimal data"),
@@ -38,7 +38,7 @@ def list_all_murid(
     return get_all_murid(db, skip=skip, limit=limit, search=search)
  
  
-@murid_router.get("/{murid_id}", response_model=MuridResponse)
+@router.get("/{murid_id}", response_model=MuridResponse)
 def detail_murid(
     murid_id: str,
     db: Session = Depends(get_db),
@@ -51,7 +51,7 @@ def detail_murid(
     return get_murid_by_id(db, murid_id)
  
  
-@murid_router.delete("/{murid_id}")
+@router.delete("/{murid_id}")
 def hapus_murid(
     murid_id: str,
     db: Session = Depends(get_db),

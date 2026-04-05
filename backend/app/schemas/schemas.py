@@ -1,10 +1,22 @@
+# =============================================================================
+# FIX 1 ► GANTI SELURUH ISI: backend/app/schemas/schemas.py
+#
+# Root cause yang diperbaiki:
+#   - Pydantic v2 tidak lagi pakai `class Config: from_attributes = True`
+#     → diganti `model_config = ConfigDict(from_attributes=True)`
+#   - MuridResponse tidak bisa di-serialize langsung dari ORM object Murid
+#     karena field username/email_address ada di tabel Pengguna, bukan Murid.
+#     → field dibuat Optional dengan default None agar serialisasi tidak crash
+#       saat endpoint kelas.py mengembalikan Murid ORM langsung.
+# =============================================================================
+
 """
 schemas.py
-Pydantic schemas untuk request & response FastAPI.
+Pydantic v2 schemas untuk request & response FastAPI.
 """
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -52,17 +64,23 @@ class MuridUpdate(BaseModel):
 
 
 class MuridResponse(BaseModel):
-    id: str
-    username: str
-    email_address: str
-    nama: Optional[str]
-    usia: Optional[int]
-    level: Optional[str]
-    credit_total: int
-    credit_used: int
+    """
+    Response schema untuk data murid.
+    username & email_address dibuat Optional karena beberapa endpoint
+    (mis. list_murid_kelas di kelas.py) mengisi field ini secara manual
+    dari join query, sedangkan endpoint lain mengembalikan ORM Murid
+    yang tidak punya field tersebut secara langsung.
+    """
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    id: str
+    username: Optional[str] = None
+    email_address: Optional[str] = None
+    nama: Optional[str] = None
+    usia: Optional[int] = None
+    level: Optional[str] = None
+    credit_total: int = 0
+    credit_used: int = 0
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -84,16 +102,15 @@ class KelasUpdate(BaseModel):
 
 
 class KelasResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     nama: str
-    mata_pelajaran: Optional[str]
-    pengajar_id: Optional[str]
-    kredit: int
-    jadwal: Optional[str]
+    mata_pelajaran: Optional[str] = None
+    pengajar_id: Optional[str] = None
+    kredit: int = 0
+    jadwal: Optional[str] = None
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class TambahMuridKeKelas(BaseModel):
@@ -110,8 +127,8 @@ class LogPertemuanCreate(BaseModel):
     tanggal: date
     topik: str
     nilai: Optional[float] = None
-    tingkat_pemahaman: Optional[str] = None       # sangat_paham | paham | cukup | perlu_review
-    tingkat_keterlibatan: Optional[str] = None    # sangat_aktif | aktif | kurang_fokus
+    tingkat_pemahaman: Optional[str] = None
+    tingkat_keterlibatan: Optional[str] = None
     kompetensi_dicapai: Optional[str] = None
     target_materi_berikutnya: Optional[str] = None
     kendala: Optional[str] = None
@@ -134,24 +151,30 @@ class LogPertemuanUpdate(BaseModel):
 
 
 class LogPertemuanResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     kelas_id: str
-    murid_id: Optional[str]
+    murid_id: Optional[str] = None
     tanggal: date
     topik: str
-    nilai: Optional[float]
-    tingkat_pemahaman: Optional[str]
-    tingkat_keterlibatan: Optional[str]
-    kompetensi_dicapai: Optional[str]
-    target_materi_berikutnya: Optional[str]
-    kendala: Optional[str]
-    catatan: Optional[str]
-    durasi_menit: Optional[int]
-    metode_belajar: Optional[str]
+    nilai: Optional[float] = None
+    tingkat_pemahaman: Optional[str] = None
+    tingkat_keterlibatan: Optional[str] = None
+    kompetensi_dicapai: Optional[str] = None
+    target_materi_berikutnya: Optional[str] = None
+    kendala: Optional[str] = None
+    catatan: Optional[str] = None
+    durasi_menit: Optional[int] = None
+    metode_belajar: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+
+class BulkUploadResponse(BaseModel):
+    total_baris: int
+    berhasil: int
+    gagal: int
+    detail_error: List[Dict[str, Any]] = []
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -168,25 +191,24 @@ class LaporanCreate(BaseModel):
 
 class LaporanUpdate(BaseModel):
     konten: Optional[str] = None
-    status: Optional[str] = None   # draft | final | terkirim
+    status: Optional[str] = None
 
 
 class LaporanResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     murid_id: str
-    kelas_id: Optional[str]
+    kelas_id: Optional[str] = None
     konten: str
     tipe_laporan: str
     status: str
-    pdf_path: Optional[str]
+    pdf_path: Optional[str] = None
     tanggal: datetime
-    tanggal_dikirim: Optional[datetime]
+    tanggal_dikirim: Optional[datetime] = None
     is_ai_generated: bool
-    periode_mulai: Optional[date]
-    periode_selesai: Optional[date]
-
-    class Config:
-        from_attributes = True
+    periode_mulai: Optional[date] = None
+    periode_selesai: Optional[date] = None
 
 
 class KirimLaporanRequest(BaseModel):
@@ -199,18 +221,17 @@ class KirimLaporanRequest(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class RencanaStudiResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     kelas_id: str
-    murid_id: Optional[str]
+    murid_id: Optional[str] = None
     waktu: datetime
-    daftar_rekomendasi_materi: Optional[List[str]]
-    estimasi_waktu_selesai: Optional[datetime]
-    catatan_analisa: Optional[str]
-    jadwal_mingguan: Optional[Dict[str, Any]]
-    version: int
-
-    class Config:
-        from_attributes = True
+    daftar_rekomendasi_materi: Optional[List[str]] = None
+    estimasi_waktu_selesai: Optional[datetime] = None
+    catatan_analisa: Optional[str] = None
+    jadwal_mingguan: Optional[Dict[str, Any]] = None
+    version: int = 1
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -225,25 +246,13 @@ class DiagnosticCreate(BaseModel):
 
 
 class DiagnosticResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     murid_id: str
     topik: str
     diagnostic_score: float
     created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# UPLOAD / BULK
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class BulkUploadResponse(BaseModel):
-    total_baris: int
-    berhasil: int
-    gagal: int
-    detail_error: List[Dict[str, Any]] = []
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -255,5 +264,5 @@ class DashboardSummary(BaseModel):
     log_hari_ini: int
     plan_aktif: int
     report_pending: int
-    aktivitas_terbaru: List[Dict[str, Any]]
-    progress_siswa: List[Dict[str, Any]]
+    aktivitas_terbaru: List[Dict[str, Any]] = []
+    progress_siswa: List[Dict[str, Any]] = []
