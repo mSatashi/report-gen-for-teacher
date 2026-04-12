@@ -1,0 +1,25 @@
+Yang berubah & kenapa
+config.py — ini file baru yang sebelumnya belum ada. Pakai pydantic_settings.BaseSettings yang otomatis membaca dari file .env. Semua nilai seperti DATABASE_URL, SECRET_KEY, SMTP_PASSWORD, dll didefinisikan di sini sebagai field, bukan hardcode.
+
+database.py — sebelumnya mungkin DATABASE_URL ditulis langsung sebagai string. Sekarang diubah jadi:
+
+python
+from app.core.config import settings
+DATABASE_URL = os.environ.get("DATABASE_URL", settings.DATABASE_URL)
+os.environ.get di bagian depan ini penting supaya unit test tetap bisa override ke SQLite tanpa mengganti .env.
+
+security.py — SECRET_KEY dan ALGORITHM tidak lagi hardcode, tapi dibaca dari settings. Juga ada perbaikan bcrypt truncation bug (potong password di 72 byte).
+
+.env.example — template yang bisa langsung disalin jadi .env.
+
+Cara setup
+bash
+# 1. Salin template ke .env
+cp .env.example .env
+
+# 2. Edit .env, isi nilai yang sesuai
+#    Minimal wajib diganti: DATABASE_URL dan SECRET_KEY
+
+# 3. Generate SECRET_KEY yang kuat
+python -c "import secrets; print(secrets.token_hex(32))"
+Pastikan file .env ada di folder backend/ (satu level dengan main.py), bukan di dalam subfolder app/.
