@@ -1,12 +1,12 @@
 import { apiFetch } from "./apiFetch";
 import type { SiswaPayload, SiswaResponse } from "./payload";
 
-// /** GET /murid — ambil semua murid */
-// export async function fetchSiswaList(): Promise<SiswaResponse[]> {
-//   const res = await apiFetch(`/murid`);
-//   if (!res.ok) throw new Error(`Gagal memuat data murid (${res.status})`);
-//   return res.json();
-// }
+/** GET /murid — ambil semua data siswa */
+export async function fetchSiswaList(): Promise<SiswaResponse[]> {
+  const res = await apiFetch(`/murid`);
+  if (!res.ok) throw new Error(`Gagal memuat data murid (${res.status})`);
+  return res.json();
+}
 
 /** POST /murid — buat murid baru */
 export async function createSiswa(payload: SiswaPayload): Promise<SiswaResponse> {

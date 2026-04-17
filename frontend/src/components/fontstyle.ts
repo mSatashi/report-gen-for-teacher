@@ -8,5 +8,11 @@ export const fonts: Record<string, CSSProperties> = {
     fontWeight: 700, 
     color: colors.eerieBlack,
     margin: 0
-  }
+  },
+
+  normal700: {
+    fontSize: "16px", 
+    fontWeight: 700, 
+    color: colors.dark,
+  } 
 };

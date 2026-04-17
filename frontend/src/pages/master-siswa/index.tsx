@@ -1,19 +1,9 @@
 import { useMemo, useState } from "react";
 import { styles } from "./styles";
 import { IconClose, IconEdit, IconPlus, IconTrash, IconUsers } from "../../icons";
-import type { Siswa } from "../../types";
+import type { ModalMode, Siswa, Toast, ToastType } from "../../types";
 import { useSiswaApi } from "./useSiswaApi";
 import type { SiswaResponse } from "../../service/payload";
-
-type ModalMode = "add-siswa" | "edit-siswa" | null;
-type ToastType = "success" | "error";
-
-type Toast = {
-  id: number;
-  message: string;
-  type: ToastType;
-};
-
 
 // const uid = () => Math.random().toString(36).slice(2, 9);
 

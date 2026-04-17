@@ -165,9 +165,9 @@ const App: React.FC = () => {
         <div
           style={styles.toolbar}
         >
-          <h1 style={fonts.h1}>
+          <div style={fonts.normal700}>
             {pageTitle}
-          </h1>
+          </div>
         </div>
 
         {/* Content */}

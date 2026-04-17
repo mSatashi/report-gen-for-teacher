@@ -50,3 +50,12 @@ export interface Siswa {
   credit_total: number;
   credit_use?: number;
 }
+
+export type ModalMode = "add-siswa" | "edit-siswa" | null;
+export type ToastType = "success" | "error";
+
+export type Toast = {
+  id: number;
+  message: string;
+  type: ToastType;
+};
