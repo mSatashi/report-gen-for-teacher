@@ -1,21 +1,21 @@
 import React from "react";
-import type { LogEntry } from "../components/types";
 import { PENGUASAAN_BADGE, btnAddStyle } from "../components/constants";
-import type { Siswa } from "../../../types";
+import type { Kelas, Siswa } from "../../../types";
+import type { DailyLogResponse } from "../../../service/payload";
 
 interface DailyListSiswaProps {
   kelasSiswa: Siswa[];
-  logData: LogEntry[];
-  onDetail: (siswaId: number) => void;
+  logDataSiswa: DailyLogResponse[];
+  onDetail: (siswaId: string) => void;
   onAddSiswa: () => void;
   onBack: () => void;
-  namaMapel?: string;
+  dataKelas?: Kelas | null;
 }
 
 const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
   kelasSiswa,
-  logData,
-  namaMapel,
+  logDataSiswa,
+  dataKelas,
   onDetail,
   onAddSiswa,
   onBack,
@@ -23,7 +23,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
 
   /** Hitung ringkasan log per siswa */
   const getSiswaStats = (namaSiswa: string) => {
-    const logs = logData.filter((l) => l.siswa === namaSiswa);
+    const logs = logDataSiswa.filter((l) => l.siswa === namaSiswa);
     const lastLog = logs[logs.length - 1];
     return { total: logs.length, lastLog };
   };
@@ -33,21 +33,21 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
 
       {/* Page heading */}
       <div style={{ marginBottom: 20, flexShrink: 0 }}>
-        {namaMapel && (
+        {dataKelas && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <span onClick={onBack} style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }}>
               Daily Log
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
-            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{namaMapel}</span>
+            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{dataKelas?.mata_pelajaran}</span>
           </div>
         )}
         <h2 style={{ fontSize: 24, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>
-          {namaMapel ? `Siswa — ${namaMapel}` : "Daftar Siswa"}
+          {dataKelas ? `Siswa — ${dataKelas.mata_pelajaran}` : "Daftar Siswa"}
         </h2>
         <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
-          {namaMapel
-            ? `Daftar siswa yang mengikuti ${namaMapel}`
+          {dataKelas
+            ? `Daftar siswa yang mengikuti ${dataKelas.mata_pelajaran} beserta progres belajar mereka`
             : "Kelola data siswa dan lihat progres belajar"}
         </p>
       </div>
@@ -97,7 +97,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
                 {[
                   { label: "No",             width: 50    },
                   { label: "Nama Siswa",     width: "auto" },
-                  { label: "Kelas",          width: 100   },
+                  { label: "Level",          width: 100   },
                   { label: "Total Log",      width: 100   },
                   { label: "Log Terakhir",   width: "auto" },
                   { label: "Pemahaman",      width: 130   },
@@ -143,7 +143,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
                         <span style={{ fontWeight: 500, color: "#111827" }}>{siswa.nama}</span>
                       </div>
                     </td>
-                    <td style={{ padding: "12px 14px", color: "#6b7280" }}>{siswa.kelas}</td>
+                    <td style={{ padding: "12px 14px", color: "#6b7280" }}>{siswa.level}</td>
                     <td style={{ padding: "12px 14px" }}>
                       <span
                         style={{

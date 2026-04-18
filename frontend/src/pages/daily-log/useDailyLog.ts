@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 
-import type { SiswaResponse } from "../../service/payload";
+import type { DailyLogPayload, DailyLogResponse, SiswaResponse } from "../../service/payload";
 import { fetchSiswaByKelas } from "../../service/kelasAPI";
+import { createDailyLog, fetchLogSiswa } from "../../service/dailyLogAPI";
 
 export type ApiStatus = "idle" | "loading" | "success" | "error";
 
@@ -9,9 +10,8 @@ interface UseDailyLogReturn {
   status: ApiStatus;
   errorMsg: string | null;
   loadSiswaByKelas: (kelasId: string) => Promise<SiswaResponse[]>;
-//   submitCreateSiswa: (payload: SiswaPayload) => Promise<SiswaResponse | null>;
-//   submitUpdateSiswa: (id: string, payload: SiswaPayload) => Promise<SiswaResponse | null>;
-//   submitDeleteSiswa: (id: string) => Promise<boolean>;
+  loadLogSiswa: (siswaId: string) => Promise<DailyLogResponse[]>;
+  submitCreateLog: (payload: DailyLogPayload) => Promise<DailyLogResponse | null>;
   resetStatus: () => void; 
 }
 
@@ -39,10 +39,43 @@ export function useDailyLog(): UseDailyLogReturn {
     }
   }, []);
 
+  const loadLogSiswa = useCallback(async (siswaId: string): Promise<DailyLogResponse[]> => {
+    setStatus("loading");
+    setErrorMsg(null);
+    try {
+      const data = await fetchLogSiswa(siswaId);
+      setStatus("success");
+      return data;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
+      setStatus("error");
+      setErrorMsg(msg);
+      return [];
+    }
+  }, []);
+
+  const submitCreateLog = useCallback(
+  async (payload: DailyLogPayload): Promise<DailyLogResponse | null> => {
+    setStatus("loading");
+    setErrorMsg(null);
+    try {
+      const data = await createDailyLog(payload);
+      setStatus("success");
+      return data;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Gagal membuat log";
+      setStatus("error");
+      setErrorMsg(msg);
+      return null;
+    }
+  }, []);
+
   return {
     status,
     errorMsg,
     loadSiswaByKelas,
+    loadLogSiswa,
+    submitCreateLog,
     resetStatus,
   };
 }

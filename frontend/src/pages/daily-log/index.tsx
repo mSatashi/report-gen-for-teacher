@@ -7,17 +7,15 @@ import DailyLogFormMapel from "./form-makul";
 import DailyListSiswa   from "./list-siswa";
 
 // ── Types & constants ─────────────────────────────────────────────────────────
-import type { LogEntry, FormState, MakulEntry, MakulFormState } from "./components/types";
+import type { LogEntry, FormState, MakulEntry, MakulFormState, TingkatPemahaman, TingkatKeterlibatan } from "./components/types";
 import {
   INITIAL_LOG_DATA,
   INITIAL_MAKUL_DATA,
-  INITIAL_SISWA_DATA,
-  INITIAL_MAKUL_SISWA,
 } from "./components/constants";
 import DailyLogDetailSiswa from "./detail-log-siswa";
 import { useKelasApi } from "../master-kelas/useKelasApi";
 import type { Kelas, Siswa } from "../../types";
-import type { KelasResponse } from "../../service/payload";
+import type { DailyLogPayload, DailyLogResponse, KelasResponse } from "../../service/payload";
 import { useDailyLog } from "./useDailyLog";
 
 // ─── View names ───────────────────────────────────────────────────────────────
@@ -33,20 +31,23 @@ const DailyLogPage: React.FC = () => {
   const [view, setView] = useState<ActiveView>("index");
 
   // ── Data state ──────────────────────────────────────────────────────────────
-  const [logData,   setLogData]   = useState<LogEntry[]>(INITIAL_LOG_DATA);
+  // const [logData,   setLogData]   = useState<LogEntry[]>(INITIAL_LOG_DATA);
   const [mapelData, setmapelData] = useState<MakulEntry[]>(INITIAL_MAKUL_DATA);
   // const [mapelSiswa] = useState(INITIAL_MAKUL_SISWA);
   // const [siswaData]               = useState(INITIAL_SISWA_DATA);
 
   const [selectedKelasId, setSelectKelasId] = useState<string | null>(null);
-  const [selectedSiswaId, setSelectedSiswaId] = useState<number | null>(null);
+  const [selectedSiswaId, setSelectedSiswaId] = useState<string | null>(null);
   const [editLogId, setEditLogId] = useState<number | null>(null);
 
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
-  const [KelasSiswa, setKelasSiswa] = useState<Siswa[]>([]);
+  const [kelasSiswa, setKelasSiswa] = useState<Siswa[]>([]);
+  const [kelasSiswaMap, setKelasSiswaMap] = useState<Record<string, number>>({});
+  const [selectedSiswa, setSelectedSiswa] = useState<Siswa | null>(null);
+  const [logDataSiswa, setLogDataSiswa] = useState<DailyLogResponse[]>([]);
 
   const { loadKelas } = useKelasApi();
-  const { loadSiswaByKelas } = useDailyLog();
+  const { loadSiswaByKelas, loadLogSiswa, submitCreateLog } = useDailyLog();
 
   const mapApiToKelas = (data: KelasResponse): Kelas => ({
     id: data.id,
@@ -59,26 +60,46 @@ const DailyLogPage: React.FC = () => {
     siswa: [],
   });
 
+  useEffect(() => {
+    loadKelas().then(async (data) => {
+      if (data.length) {
+        const mapped = data.map(mapApiToKelas);
+        setKelasList(mapped);
 
-  /** handle list siswa yang ada di dalam kelas/matapelajaran */
-  const handleSiswaByKelas = () => {
+        // Fetch jumlah siswa per kelas secara paralel
+        const counts = await Promise.all(
+          mapped.map(async (kelas) => {
+            const siswa = await loadSiswaByKelas(kelas.id);
+            return { id: kelas.id, count: siswa?.length ?? 0 };
+          })
+        );
+
+        const map: Record<string, number> = {};
+        counts.forEach(({ id, count }) => { map[id] = count; });
+        setKelasSiswaMap(map);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
     if (selectedKelasId === null) return;
+    /** handle list siswa yang ada di dalam kelas/matapelajaran */
     loadSiswaByKelas(selectedKelasId).then((data) => {
       setKelasSiswa(data);
     });
-  };
+  }, [selectedKelasId]);
 
   useEffect(() => {
-    loadKelas().then((data) => {
-      if (data.length) setKelasList(data.map(mapApiToKelas));
+    if (selectedSiswaId === null) return;
+    /** handle log siswa yang dipilih */
+    loadLogSiswa(selectedSiswaId).then((data) => {
+      setLogDataSiswa(data);
     });
-
-    handleSiswaByKelas();
-  }, []);
+  }, [selectedSiswaId]);
 
 
   // ── Derived: prefill form jika mode edit ────────────────────────────────────
-  const selectedMakul = kelasList.find((m) => m.id === selectedKelasId) ?? null;
+  const selectKelasData = kelasList.find((m) => m.id === selectedKelasId) ?? null;
 
   // const siswaUntukMapel = selectedKelasId !== null
   //   ? mapelSiswa
@@ -94,68 +115,127 @@ const DailyLogPage: React.FC = () => {
 
   // const selectedSiswaEntry = siswaUntukMapel.find((s) => s.id === selectedSiswaId) ?? null;
 
-  const editEntry = logData.find((d) => d.id === editLogId);
-  const initialLogForm: Partial<FormState> | undefined = editEntry
-    ? {
-        siswa:        editEntry.siswa,
-        mapel:        editEntry.mapel,
-        topik:        editEntry.materi,
-        catatanGuru:  editEntry.catatan,
-        pemahaman:    editEntry.tingkat_penguasaan,
-        tanggal:      editEntry.tanggal,
-        durasi:       editEntry.durasi,
-        metode:       editEntry.metode,
-        keterlibatan: editEntry.keterlibatan,
-      }
-    : undefined;
+  const buildInitialLogForm = (
+    entry: DailyLogResponse | undefined
+  ): Partial<FormState> | undefined => {
+    if (!entry) return undefined;
+    return {
+      kelas_id: entry.kelas_id,
+      murid_id: entry.murid_id,
+      tanggal: entry.tanggal,
+      topik: entry.topik ?? "—",
+      nilai: entry.nilai,
+      tingkat_pemahaman: entry.tingkat_pemahaman,
+      tingkat_keterlibatan: entry.tingkat_keterlibatan,
+      kompetensi_dicapai: entry.kompetensi_dicapai,
+      target_materi_berikutnya: entry.target_materi_berikutnya,
+      kendala: entry.kendala ?? "—",
+      catatan: entry.catatan ?? "—",
+      durasi_menit: entry.durasi_menit,
+      metode_belajar: entry.metode_belajar,
+    };
+  };
+
+  const initialLogForm = buildInitialLogForm(logDataSiswa.find((d) => d.id === editLogId));
 
   // ── Handlers: Log ───────────────────────────────────────────────────────────
   const handleOpenAdd    = () => { setEditLogId(null); setView("formMapel"); };
   const handleOpenDetail = (id: string) => { setSelectKelasId(id); setView("listSiswa"); };
 
-  const handleSaveLog = (form: FormState) => {
+  // const handleSaveLog = (form: FormState) => {
+  //   if (editLogId !== null) {
+  //     setLogDataSiswa((prev) =>
+  //       prev.map((d) =>
+  //         d.id === editLogId
+  //           ? {
+  //               ...d,
+  //               siswa:             form.siswa,
+  //               idMapel:           form.idMapel,
+  //               mapel:             form.mapel,
+  //               materi:            form.topik ?? "—",
+  //               catatan:           form.catatanGuru ?? "—",
+  //               tingkat_penguasaan: form.pemahaman,
+  //               tanggal:           form.tanggal,
+  //               durasi:            form.durasi,
+  //               metode:            form.metode,
+  //               keterlibatan:      form.keterlibatan,
+  //             }
+  //           : d
+  //       )
+  //     );
+  //   } else {
+  //     setLogDataSiswa((prev) => [
+  //       ...prev,
+  //       {
+  //         id:                prev.length + 1,
+  //         siswa:             form.siswa,
+  //         idMapel:           form.idMapel,
+  //         mapel:             form.mapel,
+  //         materi:            form.topik ?? "—",
+  //         catatan:           form.catatanGuru ?? "—",
+  //         tingkat_penguasaan: form.pemahaman,
+  //         tanggal:           form.tanggal,
+  //         durasi:            form.durasi,
+  //         metode:            form.metode,
+  //         keterlibatan:      form.keterlibatan,
+  //       },
+  //     ]);
+  //   }
+  //   setView(selectedSiswaId !== null ? "detailSiswa" : selectedKelasId !== null ? "listSiswa" : "index");
+  // };
+
+  // ── Handlers: Makul ─────────────────────────────────────────────────────────
+  
+  const handleSaveLog = async (form: FormState) => {
+    if (!selectedSiswaId || !selectedKelasId) return;
+
     if (editLogId !== null) {
-      setLogData((prev) =>
+      // TODO: submitUpdateLog nanti
+      setLogDataSiswa((prev) =>
         prev.map((d) =>
           d.id === editLogId
             ? {
                 ...d,
-                siswa:             form.siswa,
-                idMapel:           form.idMapel,
-                mapel:             form.mapel,
-                materi:            form.topik ?? "—",
-                catatan:           form.catatanGuru ?? "—",
-                tingkat_penguasaan: form.pemahaman,
-                tanggal:           form.tanggal,
-                durasi:            form.durasi,
-                metode:            form.metode,
-                keterlibatan:      form.keterlibatan,
+                materi:             form.topik ?? "—",
+                catatan:            form.catatan ?? "—",
+                tingkat_penguasaan: form.tingkat_pemahaman,
+                tanggal:            form.tanggal,
+                durasi:             form.durasi_menit,
+                metode:             form.metode_belajar,
+                keterlibatan:       form.tingkat_keterlibatan,
               }
             : d
         )
       );
     } else {
-      setLogData((prev) => [
-        ...prev,
-        {
-          id:                prev.length + 1,
-          siswa:             form.siswa,
-          idMapel:           form.idMapel,
-          mapel:             form.mapel,
-          materi:            form.topik ?? "—",
-          catatan:           form.catatanGuru ?? "—",
-          tingkat_penguasaan: form.pemahaman,
-          tanggal:           form.tanggal,
-          durasi:            form.durasi,
-          metode:            form.metode,
-          keterlibatan:      form.keterlibatan,
-        },
-      ]);
+      // ✅ POST ke API
+      const payload: DailyLogPayload = {
+        kelas_id: selectedSiswaId,
+        murid_id: selectedSiswaId,
+        tanggal: form.tanggal,
+        topik: form.topik ?? "—",
+        nilai: form.nilai,
+        tingkat_pemahaman: form.tingkat_pemahaman,
+        tingkat_keterlibatan: form.tingkat_keterlibatan,
+        kompetensi_dicapai: form.kompetensi_dicapai,
+        target_materi_berikutnya: form.target_materi_berikutnya,
+        kendala: form.kendala ?? "—",
+        catatan: form.catatan ?? "—",
+        durasi_menit: form.durasi_menit,
+        metode_belajar: form.metode_belajar,
+      };
+
+      const result = await submitCreateLog(payload);
+      if (result) {
+        setLogDataSiswa((prev) => [...prev, result]); // ✅ append response dari server
+      } else {
+        return; // gagal, jangan pindah view
+      }
     }
+
     setView(selectedSiswaId !== null ? "detailSiswa" : selectedKelasId !== null ? "listSiswa" : "index");
   };
-
-  // ── Handlers: Makul ─────────────────────────────────────────────────────────
+  
   const handleSaveMapel = (form: MakulFormState) => {
     setmapelData((prev) => [
       ...prev,
@@ -168,13 +248,18 @@ const DailyLogPage: React.FC = () => {
   };
 
   // ── Routing ───────────────────────────────────────────────────────────────── 
-  if (view === "detailSiswa" && selectedKelasId !== null) {
+  if (view === "detailSiswa") {
+    if (!selectedSiswa) return null;
     return (
       <DailyLogDetailSiswa
-        // siswa={selectedSiswaEntry}
-        // namaMapel={selectedMakul.nama}
-        logData={logData}
+        dataSiswa={selectedSiswa}
+        dataKelas={selectKelasData}
+        logDataSiswa={logDataSiswa}
+        // onBack={() => setView("listSiswa")}
+        // onAddLog={() => { setEditLogId(null); setView("formLog"); }}
+        // onEditLog={(logId) => { setEditLogId(logId); setView("formLog"); }}
         onBack={() => setView("listSiswa")}
+        onBackToIndex={() => setView("index")}   // ✅
         onAddLog={() => { setEditLogId(null); setView("formLog"); }}
         onEditLog={(logId) => { setEditLogId(logId); setView("formLog"); }}
       />
@@ -182,12 +267,12 @@ const DailyLogPage: React.FC = () => {
   }
   
   if (view === "formLog") {
-    const isNewFromSiswa = editLogId === null && selectedSiswaEntry !== null;
+    const isNewFromSiswa = editLogId === null && selectedSiswa !== null;
     return (
       <DailyLogFormLog
         initialForm={initialLogForm}
-        lockedSiswa={isNewFromSiswa ? selectedSiswaEntry?.nama : undefined}
-        lockedMapel={isNewFromSiswa ? selectedMakul?.nama : undefined}
+        lockedSiswa={isNewFromSiswa ? selectedSiswa?.nama : undefined}
+        lockedMapel={isNewFromSiswa ? selectKelasData?.mata_pelajaran : undefined}
         onBack={() => setView(selectedSiswaId !== null ? "detailSiswa" : "listSiswa")}
         onSave={handleSaveLog}
       />
@@ -208,11 +293,15 @@ const DailyLogPage: React.FC = () => {
   if (view === "listSiswa") {
     return (
       <DailyListSiswa
-        kelasSiswa={KelasSiswa}
-        logData={logData}
-        namaMapel={selectedMakul?.nama}
-        onDetail={(makulSiswaId) => {
-          setSelectedSiswaId(makulSiswaId);
+        kelasSiswa={kelasSiswa}
+        logDataSiswa={logDataSiswa}
+        dataKelas={selectKelasData}
+        onDetail={(siswaId) => {          
+          const siswa = kelasSiswa.find((s) => s.id === siswaId);
+          console.log("siswa ditemukan:", siswa);
+          
+          setSelectedSiswa(siswa ?? null);
+          setSelectedSiswaId(siswaId);
           setView("detailSiswa");
         }}
         onAddSiswa={() => setView("formLog")}
@@ -225,6 +314,7 @@ const DailyLogPage: React.FC = () => {
   return (
     <DailyLogIndex
       kelasList={kelasList}
+      kelasSiswaMap={kelasSiswaMap}
       onAddMakul={handleOpenAdd}
       onDetail={handleOpenDetail}
     />

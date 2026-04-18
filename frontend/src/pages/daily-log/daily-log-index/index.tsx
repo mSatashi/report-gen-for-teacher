@@ -5,18 +5,12 @@ import { table } from "../../../components/tablestyle";
 
 interface DailyLogIndexProps {
   kelasList: Kelas[];
+  kelasSiswaMap: Record<string, number>;
   onAddMakul: () => void;
   onDetail: (id: string) => void;
 }
 
-const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ kelasList, onDetail }) => {
-
-  /** Hitung ringkasan log per siswa */
-  const getSiswaCounts = (idMapel: number) => {
-    // const siswa = mapelList.filter((l) => l.idMapel === idMapel);
-    // return { total: siswa.length };
-    return { total: 0 };
-  };
+const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ kelasList, kelasSiswaMap, onDetail }) => {
 
   return (
     <div style={styles.root}>
@@ -64,7 +58,7 @@ const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ kelasList, onDetail }) =>
                   <tr key={row.id} style={table.tdBorderBottom}>
                     <td style={table.tdNumber}>{idx + 1}</td>
                     <td style={table.td}>{row.mata_pelajaran}</td>
-                    <td style={table.td}>{0}</td>
+                    <td style={table.td}>{kelasSiswaMap[row.id] ?? 0}</td>
                     {/* <td style={{ padding: "12px 14px", color: colors.darkNavy }}>{row.deskripsi}</td> */}
                     <td style={table.tdPadding}>
                       <button
