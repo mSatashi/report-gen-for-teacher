@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { styles } from "./styles";
 import { IconClose, IconEdit, IconPlus, IconTrash, IconUsers } from "../../icons";
 import type { ModalMode, Siswa, Toast, ToastType } from "../../types";
@@ -29,14 +29,14 @@ export default function MasterSiswa({ initialData = [] }: Props) {
   const [siswaForm, setSiswaForm] = useState(emptySiswa());
   const [, setExpanded] = useState<Record<string, boolean>>({});
   const [editingSiswaId, setEditingSiswaId] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ siswaId?: string } | null>(null);
   const [keyword, setKeyword] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   // const [password, setPassword] = useState("");
   const [showPassword, ] = useState(false);
   const [, setFocused] = useState<string | null>(null);
 
-  const { errorMsg, submitCreateSiswa, submitUpdateSiswa} = useSiswaApi();
+  const { errorMsg, loadSiswa, submitCreateSiswa, submitUpdateSiswa, submitDeleteSiswa} = useSiswaApi();
   
     // const isLoading = status === "loading";
 
@@ -91,28 +91,6 @@ export default function MasterSiswa({ initialData = [] }: Props) {
       return;
     }
 
-    // if (editingSiswaId) {
-    //   setSiswaList((prev) =>
-    //     prev.map((s) =>
-    //       s.id === editingSiswaId
-    //         ? {
-    //             ...s,
-    //             ...siswaForm,
-    //           }
-    //         : s
-    //     )
-    //   );
-    //   showToast("Data siswa berhasil diperbarui ✓", "success");
-    // } else {
-    //   const newSiswa: Siswa = {
-    //     id: uid(),
-    //     ...siswaForm,
-    //   };
-
-    //   setSiswaList((prev) => [...prev, newSiswa]);
-    //   showToast(`Siswa ${newSiswa.nama} berhasil ditambahkan ✓`, "success");
-    // }
-
     if (editingSiswaId) {
       /** update */
       const result = await submitUpdateSiswa(editingSiswaId, siswaForm);
@@ -144,24 +122,45 @@ export default function MasterSiswa({ initialData = [] }: Props) {
     setModal(null);
   };
 
-  const deleteSiswa = (id: string) => {
-    setSiswaList((prev) => prev.filter((s) => s.id !== id));
+  // const deleteSiswa = async (id: string) => {
+  //   const ok = await submitDeleteSiswa(id);
+  //   if (ok) {
+  //     setSiswaList((prev) => prev.filter((s) => s.id !== id));
+  //     showToast("Siswa berhasil dihapus", "success");
+  //   } else {
+  //     showToast(errorMsg ?? "Gagal menghapus siswa", "error");
+  //   }
+  // };
+
+  const deleteSiswa = async (id: string) => {
+    const ok = await submitDeleteSiswa(id);
+    if (ok) {
+      setSiswaList((prev) => prev.filter((s) => s.id !== id));
+      showToast("Siswa berhasil dihapus", "success");
+    } else {
+      showToast(errorMsg ?? "Gagal menghapus siswa", "error");
+    }
     setDeleteConfirm(null);
-    showToast("Siswa berhasil dihapus", "success");
   };
 
   const selectedSiswa = siswaList.find((s) => s.id === deleteConfirm);
   const isModalSiswa = modal === "add-siswa" || modal === "edit-siswa";
   
-    const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
-      id: data.id,
-      nama: data.nama,
-      email_address: data.email_address,
-      username: data.username,
-      usia: data.usia,
-      level: data.level,
-      credit_total: data.credit_total,
+  const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
+    id: data.id,
+    nama: data.nama,
+    email_address: data.email_address,
+    username: data.username,
+    usia: data.usia,
+    level: data.level,
+    credit_total: data.credit_total,
+  });
+
+  useEffect(() => {
+    loadSiswa().then((data) => {
+      if (data.length) setSiswaList(data.map(mapApiToSiswa));
     });
+  }, []);
 
   return (
     <div style={styles.root}>
@@ -268,7 +267,8 @@ export default function MasterSiswa({ initialData = [] }: Props) {
 
                         <button
                           type="button"
-                          onClick={() => setDeleteConfirm(s.id)}
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ siswaId: s.id }); }}
+                          // onClick={() => setDeleteConfirm({ siswaId: s.id })}
                           style={styles.btnDanger}
                           title="Hapus siswa"
                         >
@@ -356,16 +356,14 @@ export default function MasterSiswa({ initialData = [] }: Props) {
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>Level</label>
-                <input
-                  type="text"
-                  value={siswaForm.level}
-                  placeholder="Masukkan level"
-                  onChange={(e) =>
-                    setSiswaForm((f) => ({ ...f, level: e.target.value }))
-                  }
-                  style={styles.input}
-                />
+                <label style={styles.label}>Jenis Kelamin</label>
+                <select style={styles.select} value={siswaForm.level}
+                  onChange={(e) => setSiswaForm((f) => ({ ...f, level: e.target.value}))}>
+                  <option value="">-- Pilih --</option>
+                  <option value="SD">SD</option>
+                  <option value="SMP">SMP</option>
+                  <option value="SMA">SMA</option>
+                </select>
               </div>
             </div>
 
@@ -416,7 +414,10 @@ export default function MasterSiswa({ initialData = [] }: Props) {
               </button>
               <button
                 type="button"
-                onClick={() => deleteSiswa(deleteConfirm)}
+                onClick={() => {
+                  if (deleteConfirm?.siswaId)
+                    deleteSiswa(deleteConfirm.siswaId);
+                }}
                 style={styles.btnDanger}
               >
                 <IconTrash />
