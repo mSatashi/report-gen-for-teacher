@@ -35,5 +35,5 @@ export interface SiswaResponse {
   usia: string;
   level: string;
   credit_total: number;
-  credit_use: number;
+  credit_used?: number;
 }

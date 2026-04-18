@@ -29,7 +29,6 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
   onAddLog,
   onEditLog,
 }) => {
-
   const [activeTab, setActiveTab] = useState<Tab>("Semua");
 
   // Filter log hanya milik siswa ini di mapel ini

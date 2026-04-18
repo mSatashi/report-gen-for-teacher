@@ -1,10 +1,9 @@
 import React from "react";
-import type { LogEntry } from "../components/types";
+import type { LogEntry, SiswaJoined } from "../components/types";
 import { PENGUASAAN_BADGE, btnAddStyle } from "../components/constants";
-import type { Siswa } from "../../../types";
 
 interface DailyListSiswaProps {
-  kelasSiswa: Siswa[];
+  siswaData: SiswaJoined[];
   logData: LogEntry[];
   onDetail: (siswaId: number) => void;
   onAddSiswa: () => void;
@@ -13,14 +12,13 @@ interface DailyListSiswaProps {
 }
 
 const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
-  kelasSiswa,
+  siswaData,
   logData,
   namaMapel,
   onDetail,
   onAddSiswa,
   onBack,
 }) => {
-
   /** Hitung ringkasan log per siswa */
   const getSiswaStats = (namaSiswa: string) => {
     const logs = logData.filter((l) => l.siswa === namaSiswa);
@@ -68,7 +66,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
         {/* Card header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexShrink: 0 }}>
           <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>
-            List Siswa ({kelasSiswa.length})
+            List Siswa ({siswaData.length})
           </span>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <button
@@ -120,7 +118,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
               </tr>
             </thead>
             <tbody>
-              {kelasSiswa.map((siswa, idx) => {
+              {siswaData.map((siswa, idx) => {
                 const { total, lastLog } = getSiswaStats(siswa.nama);
                 const badge = lastLog ? PENGUASAAN_BADGE[lastLog.tingkat_penguasaan] : null;
 
@@ -203,7 +201,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
                 );
               })}
 
-              {kelasSiswa.length === 0 && (
+              {siswaData.length === 0 && (
                 <tr>
                   <td colSpan={7} style={{ padding: "40px 14px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
                     Belum ada data siswa.

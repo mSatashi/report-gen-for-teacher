@@ -48,7 +48,7 @@ export interface Siswa {
   usia: string;
   level: string;
   credit_total: number;
-  credit_use?: number;
+  credit_used?: number;
 }
 
 export type ModalMode = "add-siswa" | "edit-siswa" | null;

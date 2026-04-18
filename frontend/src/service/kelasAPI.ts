@@ -52,7 +52,7 @@ export async function deleteKelasApi(id: string): Promise<void> {
   if (!res.ok) throw new Error(`Gagal menghapus kelas (${res.status})`);
 }
 
-/** GET /kelas/:kelasId/siswa — ambil semua siswa dalam kelas */
+/** GET /kelas/:kelasId/murid — ambil semua siswa dalam kelas */
 export async function fetchSiswaByKelas(kelasId: string): Promise<SiswaResponse[]> {
   const res = await apiFetch(`/kelas/${kelasId}/murid`);
   if (!res.ok) throw new Error(`Gagal memuat data siswa (${res.status})`);
