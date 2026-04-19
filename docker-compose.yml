@@ -21,6 +21,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
+      - db_net
 
   # ── Ollama (Model AI Lokal) ────────────────────────────────────────────────
   ollama:
@@ -31,6 +34,8 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    networks:
+      - internal
 
   # ── FastAPI Backend ───────────────────────────────────────────────────────
   backend:
@@ -39,13 +44,15 @@ services:
       dockerfile: Dockerfile
     container_name: adaptive_backend
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    # Port 8000 TIDAK lagi diekspos ke host secara langsung.
+    # Backend hanya bisa diakses lewat Nginx (lebih aman).
     env_file:
       - .env
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      # Izinkan request dari Nginx (hostname "nginx" di jaringan Docker)
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,19 +60,66 @@ services:
         condition: service_started
     volumes:
       - ./uploads:/app/uploads
+    networks:
+      - internal
+      - db_net
 
   # ── React Frontend ────────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Karena Nginx bertindak sebagai proxy, browser hanya perlu tahu /api/v1
+        # bukan http://backend:8000 — ini yang di-embed ke bundle JavaScript
+        VITE_API_URL: /api/v1
     container_name: adaptive_frontend
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    # Port 3000 TIDAK diekspos ke host — hanya diakses Nginx internal
     depends_on:
       - backend
+    networks:
+      - internal
 
+# ── Nginx Reverse Proxy ───────────────────────────────────────────────────
+# Satu-satunya service yang membuka port ke dunia luar (port 80)
+# Nginx bertindak sebagai:
+#   1. Reverse proxy untuk backend API (/api/v1/*)
+#   2. Proxy untuk frontend React (/* semua route lain)
+#   3. Proxy untuk static files PDF (/uploads/*)
+nginx:
+  build:
+    context: ./nginx
+    dockerfile: Dockerfile
+  container_name: adaptive_nginx
+  restart: unless-stopped
+  ports:
+    - "80:80"     # HTTP — satu-satunya port yang terbuka ke luar
+    # - "443:443" # HTTPS — aktifkan jika sudah setup SSL/TLS (lihat README)
+  depends_on:
+    - backend
+    - frontend
+  networks:
+    - internal
+  # Mount config nginx dari host agar mudah diedit tanpa rebuild image
+  volumes:
+    - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+  healthcheck:
+    test: ["CMD", "nginx", "-t"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+
+networks:
+  # Jaringan utama: nginx, frontend, backend, ollama saling berkomunikasi
+  internal:
+    driver: bridge
+  # Jaringan database: hanya backend dan postgres
+  # (isolasi — nginx dan frontend tidak bisa langsung konek ke DB)
+  db_net:
+    driver: bridge
+    
 volumes:
   postgres_data:
   ollama_data:
