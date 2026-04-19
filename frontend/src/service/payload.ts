@@ -98,3 +98,15 @@ export interface DailyLogResponse {
   metode_belajar: string;
   created_at: string;
 }
+
+export interface GenerateplanResponse {
+  id: string;
+  kelas_id: string;
+  murid_id?: string;
+  waktu: string;
+  daftar_rekomendasi_materi: string[];
+  estimasi_waktu_selesai: string;
+  catatan_analisa: string;
+  jadwal_mingguan: Record<string, string[]>;
+  version: number;
+}
