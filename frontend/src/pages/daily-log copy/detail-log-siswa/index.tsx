@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import type { LogEntry, TingkatPemahaman } from "../components/types";
 import { PENGUASAAN_BADGE, btnAddStyle } from "../components/constants";
-import type { Kelas, Siswa } from "../../../types";
-import type { DailyLogResponse } from "../../../service/payload";
 
 interface SiswaInfo {
   id: number;
@@ -12,11 +10,10 @@ interface SiswaInfo {
 }
 
 interface DailyLogDetailSiswaProps {
-  dataSiswa: Siswa;
-  dataKelas?: Kelas | null;
-  logDataSiswa: DailyLogResponse[];          // semua log — difilter by siswa + idMapel
-  onBack: () => void;           // kembali ke listSiswa
-  onBackToIndex: () => void;  
+  siswa: SiswaInfo;
+  namaMapel: string;
+  logData: LogEntry[];          // semua log — difilter by siswa + idMapel
+  onBack: () => void;           // kembali ke list siswa
   onAddLog: () => void;
   onEditLog: (logId: number) => void;
 }
@@ -25,19 +22,18 @@ const TABS = ["Semua", "Sangat Paham", "Paham", "Cukup", "Perlu Review"] as cons
 type Tab = (typeof TABS)[number];
 
 const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
-  dataSiswa,
-  dataKelas,
-  logDataSiswa,
-  onBackToIndex,
+  siswa,
+  namaMapel,
+  logData,
   onBack,
   onAddLog,
   onEditLog,
 }) => {
-
   const [activeTab, setActiveTab] = useState<Tab>("Semua");
 
-  const siswaLogs = logDataSiswa.filter(
-    (l) => l.siswa === dataSiswa.nama
+  // Filter log hanya milik siswa ini di mapel ini
+  const siswaLogs = logData.filter(
+    (l) => l.siswa === siswa.nama && l.idMapel === siswa.idMapel
   );
 
   const countByLevel = (level: TingkatPemahaman) =>
@@ -48,7 +44,8 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
       ? siswaLogs
       : siswaLogs.filter((l) => l.tingkat_penguasaan === activeTab);
 
-  const initials = dataSiswa.nama.split(" ").map((w) => w[0]).slice(0, 2).join("");
+  // Inisial avatar
+  const initials = siswa.nama.split(" ").map((w) => w[0]).slice(0, 2).join("");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
@@ -58,15 +55,15 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
         <div>
           {/* Breadcrumb: Daily Log › Matematika › Aisya Putri */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={onBackToIndex}>
+            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={() => { onBack(); onBack(); }}>
               Daily Log
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
             <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={onBack}>
-              {dataKelas?.mata_pelajaran}
+              {namaMapel}
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
-            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{dataSiswa.nama}</span>
+            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{siswa.nama}</span>
           </div>
 
           {/* Siswa info row */}
@@ -76,10 +73,10 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
             </div>
             <div>
               <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: "0 0 2px" }}>
-                {dataSiswa.nama}
+                {siswa.nama}
               </h2>
               <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
-                {dataSiswa.level} · {dataKelas?.mata_pelajaran}
+                {siswa.kelas} · {namaMapel}
               </p>
             </div>
           </div>

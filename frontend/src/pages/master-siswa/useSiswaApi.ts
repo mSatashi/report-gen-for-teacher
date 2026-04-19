@@ -1,17 +1,17 @@
 import { useState, useCallback } from "react";
 
 import type { SiswaPayload, SiswaResponse } from "../../service/payload";
-import { createSiswa, updateSiswa } from "../../service/siswaAPI";
+import { createSiswa, deleteSiswaApi, fetchSiswaList, updateSiswa } from "../../service/siswaAPI";
 
 export type ApiStatus = "idle" | "loading" | "success" | "error";
 
 interface UseSiswaApiReturn {
   status: ApiStatus;
   errorMsg: string | null;
-  // loadSiswa: () => Promise<SiswaResponse[]>;
+  loadSiswa: () => Promise<SiswaResponse[]>;
   submitCreateSiswa: (payload: SiswaPayload) => Promise<SiswaResponse | null>;
   submitUpdateSiswa: (id: string, payload: SiswaPayload) => Promise<SiswaResponse | null>;
-  // submitDeleteSiswa: (id: string) => Promise<boolean>;
+  submitDeleteSiswa: (id: string) => Promise<boolean>;
   resetStatus: () => void; 
 }
 
@@ -24,20 +24,20 @@ export function useSiswaApi(): UseSiswaApiReturn {
     setErrorMsg(null);
   };
 
-  // const loadSiswa = useCallback(async (): Promise<SiswaResponse[]> => {
-  //   setStatus("loading");
-  //   setErrorMsg(null);
-  //   try {
-  //     const data = await fetchSiswaList();
-  //     setStatus("success");
-  //     return data;
-  //   } catch (err) {
-  //     const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
-  //     setStatus("error");
-  //     setErrorMsg(msg);
-  //     return [];
-  //   }
-  // }, []);
+  const loadSiswa = useCallback(async (): Promise<SiswaResponse[]> => {
+    setStatus("loading");
+    setErrorMsg(null);
+    try {
+      const data = await fetchSiswaList();
+      setStatus("success");
+      return data;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Terjadi kesalahan";
+      setStatus("error");
+      setErrorMsg(msg);
+      return [];
+    }
+  }, []);
 
   const submitCreateSiswa = useCallback(
     async (payload: SiswaPayload): Promise<SiswaResponse | null> => {
@@ -75,20 +75,20 @@ export function useSiswaApi(): UseSiswaApiReturn {
     []
   );
 
-  // const submitDeleteSiswa = useCallback(async (id: string): Promise<boolean> => {
-  //   setStatus("loading");
-  //   setErrorMsg(null);
-  //   try {
-  //     await deleteSiswaApi(id);
-  //     setStatus("success");
-  //     return true;
-  //   } catch (err) {
-  //     const msg = err instanceof Error ? err.message : "Gagal menghapus Siswa";
-  //     setStatus("error");
-  //     setErrorMsg(msg);
-  //     return false;
-  //   }
-  // }, []);
+  const submitDeleteSiswa = useCallback(async (id: string): Promise<boolean> => {
+    setStatus("loading");
+    setErrorMsg(null);
+    try {
+      await deleteSiswaApi(id);
+      setStatus("success");
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Gagal menghapus Siswa";
+      setStatus("error");
+      setErrorMsg(msg);
+      return false;
+    }
+  }, []);
 
   // interface UseSiswaApiReturn {
   //   siswaStatus: ApiStatus;
@@ -172,10 +172,10 @@ export function useSiswaApi(): UseSiswaApiReturn {
   return {
     status,
     errorMsg,
-    // loadSiswa,
+    loadSiswa,
     submitCreateSiswa,
     submitUpdateSiswa,
-    // submitDeleteSiswa,
+    submitDeleteSiswa,
     resetStatus,
 
     // siswaStatus,

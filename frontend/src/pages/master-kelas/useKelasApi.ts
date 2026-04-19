@@ -4,14 +4,11 @@ import {
   updateKelas,
   deleteKelasApi,
   fetchKelasList,
-  // fetchSiswaByKelas,
-  // createSiswa,
-  // updateSiswa,
-  // deleteSiswaApi,
-  // SiswaPayload,
-  // SiswaResponse,
+  addSiswaKelas,
+  siswaDalamKelas,
+  deleteSiswaKelas,
 } from "../../service/kelasAPI";
-import type { KelasPayload, KelasResponse } from "../../service/payload";
+import type { addSiswaPayload, KelasPayload, KelasResponse, messageResponse, SiswaResponse } from "../../service/payload";
 
 export type ApiStatus = "idle" | "loading" | "success" | "error";
 
@@ -22,6 +19,9 @@ interface UseKelasApiReturn {
   submitCreateKelas: (payload: KelasPayload) => Promise<KelasResponse | null>;
   submitUpdateKelas: (id: string, payload: KelasPayload) => Promise<KelasResponse | null>;
   submitDeleteKelas: (id: string) => Promise<boolean>;
+  loadSiswaKelas: (kelasId: string) => Promise<SiswaResponse[] | null>;
+  addSiswa: (kelasId: string, payload: addSiswaPayload) => Promise<messageResponse | null>;
+  submitDeleteSiswaKelas: (kelasId: string, siswaId: string) => Promise<boolean>;
   resetStatus: () => void;
 }
 
@@ -100,6 +100,57 @@ export function useKelasApi(): UseKelasApiReturn {
     }
   }, []);
 
+  const loadSiswaKelas = useCallback(
+    async (kelasId: string): Promise<SiswaResponse[] | null> => {
+      setStatus("loading");
+      setErrorMsg(null);
+      try {
+        const data = await siswaDalamKelas(kelasId);
+        setStatus("success");
+        return data;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Gagal memuat siswa";
+        setStatus("error");
+        setErrorMsg(msg);
+        return null;
+      }
+    },
+    []
+  );
+
+  const addSiswa = useCallback(
+    async (kelasId: string, payload: addSiswaPayload): Promise<messageResponse | null> => {
+      setStatus("loading");
+      setErrorMsg(null);
+      try {
+        const data = await addSiswaKelas(kelasId, payload);
+        setStatus("success");
+        return data;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Gagal menambahkan siswa";
+        setStatus("error");
+        setErrorMsg(msg);
+        return null;
+      }
+    },
+    []
+  );
+
+  const submitDeleteSiswaKelas = useCallback(async (kelasId: string, siswaId: string): Promise<boolean> => {
+    setStatus("loading");
+    setErrorMsg(null);
+    try {
+      await deleteSiswaKelas(kelasId, siswaId);
+      setStatus("success");
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Gagal menghapus siswa";
+      setStatus("error");
+      setErrorMsg(msg);
+      return false;
+    }
+  }, []);
+
   // interface UseSiswaApiReturn {
   //   siswaStatus: ApiStatus;
   //   siswaErrorMsg: string | null;
@@ -164,20 +215,7 @@ export function useKelasApi(): UseKelasApiReturn {
 //     []
 //   );
  
-//   const submitDeleteSiswa = useCallback(async (siswaId: string): Promise<boolean> => {
-//     setSiswaStatus("loading");
-//     setSiswaErrorMsg(null);
-//     try {
-//       await deleteSiswaApi(siswaId);
-//       setSiswaStatus("success");
-//       return true;
-//     } catch (err) {
-//       const msg = err instanceof Error ? err.message : "Gagal menghapus siswa";
-//       setSiswaStatus("error");
-//       setSiswaErrorMsg(msg);
-//       return false;
-//     }
-//   }, []);
+
 
   return {
     status,
@@ -186,13 +224,9 @@ export function useKelasApi(): UseKelasApiReturn {
     submitCreateKelas,
     submitUpdateKelas,
     submitDeleteKelas,
+    loadSiswaKelas,
+    addSiswa,
+    submitDeleteSiswaKelas,
     resetStatus,
-
-    // siswaStatus,
-    // siswaErrorMsg,
-    // loadSiswa,
-    // submitCreateSiswa,
-    // submitUpdateSiswa,
-    // submitDeleteSiswa,
   };
 }

@@ -17,9 +17,9 @@ interface DailyLogFormLogProps {
 }
 
 const DEFAULT_FORM: FormState = {
-  murid_id: "Aisya Putri",
+  siswa: "Aisya Putri",
   tanggal: new Date().toISOString().split("T")[0],
-  kelas_id: 1,
+  idMapel: 1,
   mapel: "Matematika",
   topik: "",
   durasi: "90",
@@ -136,8 +136,8 @@ const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSi
                 ) : (
                   <input
                     type="text"
-                    value={form.murid_id}
-                    onChange={set("murid_id")}
+                    value={form.siswa}
+                    onChange={set("siswa")}
                     placeholder="Nama siswa"
                     style={inputStyle}
                   />
@@ -160,7 +160,7 @@ const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSi
                 {lockedMapel ? (
                   <div style={styles.lockedFieldStyle}>{lockedMapel}</div>
                 ) : (
-                  <select value={form.kelas_id} onChange={set("kelas_id")} style={inputStyle}>
+                  <select value={form.mapel} onChange={set("mapel")} style={inputStyle}>
                     {MAPEL_OPTIONS.map((m) => <option key={m}>{m}</option>)}
                   </select>
                 )}
@@ -177,12 +177,12 @@ const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSi
 
               <div>
                 <Label text="Durasi (menit)" />
-                <input type="number" value={form.durasi_menit} onChange={set("durasi_menit")} style={inputStyle} min={0} />
+                <input type="number" value={form.durasi} onChange={set("durasi")} style={inputStyle} min={0} />
               </div>
 
               <div>
                 <Label text="Metode Belajar" />
-                <select value={form.metode_belajar} onChange={set("metode_belajar")} style={inputStyle}>
+                <select value={form.metode} onChange={set("metode")} style={inputStyle}>
                   {METODE_OPTIONS.map((m) => <option key={m}>{m}</option>)}
                 </select>
               </div>
@@ -199,11 +199,11 @@ const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSi
             <Label text="Tingkat Pemahaman Siswa" />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
               {PEMAHAMAN_OPTIONS.map((opt) => {
-                const active = form.tingkat_pemahaman === opt.value;
+                const active = form.pemahaman === opt.value;
                 return (
                   <button
                     key={opt.value}
-                    onClick={() => setForm((f) => ({ ...f, tingkat_pemahaman: opt.value }))}
+                    onClick={() => setForm((f) => ({ ...f, pemahaman: opt.value }))}
                     style={{
                       border: active ? "none" : "1px solid #e5e7eb",
                       borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600,
@@ -222,11 +222,11 @@ const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSi
             <Label text="Tingkat Keterlibatan" />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
               {KETERLIBATAN_OPTIONS.map((opt) => {
-                const active = form.tingkat_keterlibatan === opt.value;
+                const active = form.keterlibatan === opt.value;
                 return (
                   <button
                     key={opt.value}
-                    onClick={() => setForm((f) => ({ ...f, tingkat_keterlibatan: opt.value }))}
+                    onClick={() => setForm((f) => ({ ...f, keterlibatan: opt.value }))}
                     style={{
                       border: active ? "none" : "1px solid #e5e7eb",
                       borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600,
@@ -244,17 +244,17 @@ const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSi
 
             <Label text="Catatan Guru" />
             <textarea
-              value={form.catatan} onChange={set("catatan")}
+              value={form.catatanGuru} onChange={set("catatanGuru")}
               placeholder="cth: Siswa mampu memahami konsep dengan baik..."
               style={{ ...textareaStyle, marginBottom: 16 }}
             />
 
-            {/* <Label text="Rekomendasi Tindak Lanjut" />
+            <Label text="Rekomendasi Tindak Lanjut" />
             <input
               type="text" value={form.rekTindakLanjut} onChange={set("rekTindakLanjut")}
               placeholder="cth: Review konsep sebelum lanjut ke materi berikutnya"
               style={inputStyle}
-            /> */}
+            />
           </div>
         </div>
 
@@ -273,18 +273,18 @@ const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSi
 
             <div>
               <Label text="Target Materi Berikutnya" />
-              <input type="text" value={form.target_materi_berikutnya} onChange={set("target_materi_berikutnya")} placeholder="cth: Persamaan kuadrat" style={inputStyle} />
+              <input type="text" value={form.targetMateri} onChange={set("targetMateri")} placeholder="cth: Persamaan kuadrat" style={inputStyle} />
             </div>
 
             <div>
               <Label text="Skor / Penilaian" optional />
-              <input type="text" value={form.nilai} onChange={set("nilai")} placeholder="cth: 85" style={inputStyle} />
+              <input type="text" value={form.skor} onChange={set("skor")} placeholder="cth: 85" style={inputStyle} />
             </div>
 
             <div>
               <Label text="Kompetensi Dicapai" />
               <textarea
-                value={form.kompetensi_dicapai} onChange={set("kompetensi_dicapai")}
+                value={form.kompetensi} onChange={set("kompetensi")}
                 placeholder="cth: Siswa mampu menyelesaikan persamaan linear satu variabel"
                 style={textareaStyle}
               />

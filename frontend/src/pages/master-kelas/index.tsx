@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { styles } from "./styles";
 import { IconChevron, IconClose, IconEdit, IconPlus, IconTrash, IconUsers } from "../../icons";
-import type { Kelas } from "../../types";
+import type { Kelas, Siswa } from "../../types";
 import { useKelasApi } from "./useKelasApi";
-import type { KelasResponse, Toast } from "../../service/payload";
+import type { KelasResponse, SiswaResponse, Toast } from "../../service/payload";
+import { addSiswaKelas } from "../../service/kelasAPI";
+import { useSiswaApi } from "../master-siswa/useSiswaApi";
 
 type ModalMode = "add-kelas" | "edit-kelas" | "add-siswa" | "edit-siswa" | null;
 
@@ -17,7 +19,6 @@ type ModalMode = "add-kelas" | "edit-kelas" | "add-siswa" | "edit-siswa" | null;
 //   fontWeight: 700,
 // });
 
-// const uid = () => Math.random().toString(36).slice(2, 9);
 
 const emptyKelas = (): Omit<Kelas, "id" | "siswa"> => ({
   nama: "", mata_pelajaran: "", pengajar_id: "", kredit: 0, jadwal: "",
@@ -27,17 +28,20 @@ let toastId = 0;
 
 export default function MasterKelas() {
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
+  const [siswaList, setSiswaList] = useState<Siswa[]>([]);
+  const [siswaAll, setSiswaAll] = useState<Siswa[]>([]);
   const [, setToasts] = useState<Toast[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [modal, setModal] = useState<ModalMode>(null);
   const [kelasForm, setKelasForm] = useState(emptyKelas());
-  // const [siswaForm, setSiswaForm] = useState(emptySiswa());
+  const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
   const [editingKelasId, setEditingKelasId] = useState<string | null>(null);
-  // const [editingSiswaId, setEditingSiswaId] = useState<string | null>(null);
-  // const [targetKelasId, setTargetKelasId] = useState<string | null>(null);
+  const [, setEditingSiswaId] = useState<string | null>(null);
+  const [targetKelasId, setTargetKelasId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "kelas" | "siswa"; kelasId: string; siswaId?: string } | null>(null);
 
-  const { errorMsg, loadKelas, submitCreateKelas, submitUpdateKelas, submitDeleteKelas} = useKelasApi();
+  const { errorMsg, loadKelas, submitCreateKelas, submitUpdateKelas, submitDeleteKelas, loadSiswaKelas, submitDeleteSiswaKelas } = useKelasApi();
+  const { loadSiswa } = useSiswaApi();
 
   // const isLoading = status === "loading";
 
@@ -58,44 +62,14 @@ export default function MasterKelas() {
   };
 
   // ── Siswa CRUD ──
-  // const openAddSiswa = (kelasId: string) => {
-  //   // setSiswaForm(emptySiswa());
-  //   setEditingSiswaId(null);
-  //   setTargetKelasId(kelasId);
-  //   setModal("add-siswa");
-  // };
-
-  // const openEditSiswa = (kelasId: string, s: Siswa) => {
-  //   // setSiswaForm({ nama: s.nama, nis: s.nis, jenisKelamin: s.jenisKelamin, tanggalLahir: s.tanggalLahir, alamat: s.alamat });
-  //   setEditingSiswaId(s.id);
-  //   setTargetKelasId(kelasId);
-  //   setModal("edit-siswa");
-  // };
-
-  // const saveSiswa = () => {
-  //   if (!siswaForm.nama.trim() || !targetKelasId) return;
-  //   setKelasList((prev) =>
-  //     prev.map((k) => {
-  //       if (k.id !== targetKelasId) return k;
-  //       if (editingSiswaId) {
-  //         return { ...k, siswa: k.siswa.map((s) => s.id === editingSiswaId ? { ...s, ...siswaForm } : s) };
-  //       }
-  //       return { ...k, siswa: [...k.siswa, { id: uid(), ...siswaForm }] };
-  //     })
-  //   );
-  //   setModal(null);
-  // };
-
-  // const deleteSiswa = (kelasId: string, siswaId: string) => {
-  //   setKelasList((prev) =>
-  //     prev.map((k) =>
-  //       k.id === kelasId ? { ...k, siswa: k.siswa.filter((s) => s.id !== siswaId) } : k
-  //     )
-  //   );
-  //   setDeleteConfirm(null);
-  // };
+  const openAddSiswa = (kelasId: string) => {
+    setEditingSiswaId(null);
+    setTargetKelasId(kelasId);
+    setModal("add-siswa");
+  };
 
   const isModalKelas = modal === "add-kelas" || modal === "edit-kelas";
+  const isModalSiswa = modal === "add-siswa" || modal === "edit-siswa";
 
   const mapApiToKelas = (data: KelasResponse): Kelas => ({
     id: data.id,
@@ -108,11 +82,32 @@ export default function MasterKelas() {
     siswa: [],
   });
 
+  const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
+    id: data.id,
+    nama: data.nama,
+    email_address: data.email_address,
+    username: data.username,
+    usia: data.usia,
+    level: data.level,
+    credit_total: data.credit_total,
+    credit_used: data.credit_used,
+  });
+
   useEffect(() => {
     loadKelas().then((data) => {
       if (data.length) setKelasList(data.map(mapApiToKelas));
     });
-  }, []);
+
+    loadSiswa().then((data) => {
+      if (data.length) setSiswaAll(data.map(mapApiToSiswa));
+    });
+
+    if (targetKelasId) {
+      loadSiswaKelas(targetKelasId).then((data) => {
+        if (data && data.length) setSiswaList(data.map(mapApiToSiswa));
+      });
+    }
+  }, [targetKelasId]);
 
   const totalSiswa = kelasList.reduce((a, k) => a + k.siswa.length, 0);
 
@@ -172,6 +167,55 @@ export default function MasterKelas() {
     setDeleteConfirm(null);
   };
 
+  const saveSiswa = async () => {
+    if (!targetKelasId) {
+      showToast("Kelas belum dipilih", "error");
+      return;
+    }
+    
+    for (const siswaId of selectedSiswaIds) {
+      const payload = { murid_id: siswaId };
+      const result = await addSiswaKelas(targetKelasId, payload);
+
+      if (result) {
+        showToast("Siswa berhasil ditambahkan ✓", "success");
+      } else {
+        showToast(errorMsg ?? "Gagal menambahkan siswa", "error");
+        return; // stop jika salah satu gagal
+      }
+      // try {
+      //   const result = await addSiswaKelas(targetKelasId, payload);
+      //   if (result) {
+      //     showToast("Siswa berhasil ditambahkan ✓", "success");
+      //   } else {
+      //     showToast(errorMsg ?? "Gagal menambahkan siswa", "error");
+      //     return; // stop jika salah satu gagal
+      //   }
+      //   // showToast("Siswa berhasil ditambahkan ✓", "success");
+      // } catch (err) {
+      //   console.log("Error detail:", err); // lihat pesan dari backend
+      //   showToast(err instanceof Error ? err.message : "Gagal menambahkan siswa", "error");
+      //   return;
+      // }
+    }
+    setModal(null);
+  };
+
+  const availableSiswa = siswaAll.filter(
+    (s) => !siswaList.some((ks) => ks.id === s.id)
+  );
+
+  const deleteSiswaKelas = async (id: string, idKelas: string) => {
+    const ok = await submitDeleteSiswaKelas(idKelas, id);
+    if (ok) {
+      setSiswaList((prev) => prev.filter((s) => s.id !== id));
+      showToast("Siswa berhasil dihapus", "success");
+    } else {
+      showToast(errorMsg ?? "Gagal menghapus siswa", "error");
+    }
+    setDeleteConfirm(null);
+  };
+
   return (
     <div style={styles.root}>
       {/* ── Header ── */}
@@ -221,7 +265,7 @@ export default function MasterKelas() {
         return (
           <div key={kelas.id} style={styles.kelasCard}>
             {/* Header */}
-            <div style={styles.kelasHeader} onClick={() => toggleExpand(kelas.id)}>
+            <div style={styles.kelasHeader} onClick={() => { toggleExpand(kelas.id); setTargetKelasId(kelas.id); }}>
               <div style={styles.kelasTitle}>
                 <div style={styles.kelasBadge}>Kelas {kelas.nama}</div>
                 <div style={styles.kelasMeta}>
@@ -235,7 +279,7 @@ export default function MasterKelas() {
                     Jadwal&nbsp;<span style={styles.metaLabel}>{kelas.jadwal}</span>
                   </span>
                   <span style={styles.siswaCount}>
-                    <IconUsers /> {kelas.siswa.length} siswa
+                    <IconUsers /> {siswaList.length} siswa
                   </span>
                 </div>
               </div>
@@ -251,36 +295,31 @@ export default function MasterKelas() {
             </div>
 
             {/* Siswa Table */}
-            {/* {isOpen && (
+            {isOpen && (
               <>
                 <div style={styles.tableWrapper}>
-                  {kelas.siswa.length === 0 ? (
+                  {siswaList.length === 0 ? (
                     <div style={styles.emptyState}>Belum ada siswa di kelas ini.</div>
                   ) : (
                     <table style={styles.siswaTable}>
                       <thead>
                         <tr>
                           <th style={styles.th}>#</th>
-                          <th style={styles.th}>NIS</th>
                           <th style={styles.th}>Nama Siswa</th>
-                          <th style={styles.th}>JK</th>
-                          <th style={styles.th}>Tgl Lahir</th>
-                          <th style={styles.th}>Alamat</th>
+                          <th style={styles.th}>Total Credit</th>
+                          <th style={styles.th}>Credit Used</th>
                           <th style={styles.th}>Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {kelas.siswa.map((s, i) => (
+                        {siswaList.map((s, i) => (
                           <tr key={s.id}>
                             <td style={{ ...styles.td, color: "#8A9BB0", fontWeight: 600 }}>{i + 1}</td>
-                            <td style={{ ...styles.td, fontFamily: "monospace", fontSize: "12px" }}>{s.nis}</td>
                             <td style={{ ...styles.td, fontWeight: 600 }}>{s.nama}</td>
-                            <td style={styles.td}><span style={jkBadge(s.jenisKelamin)}>{s.jenisKelamin === "P" ? "Perempuan" : "Laki-laki"}</span></td>
-                            <td style={styles.td}>{s.tanggalLahir || "–"}</td>
-                            <td style={{ ...styles.td, color: "#6B7FA3", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.alamat || "–"}</td>
+                            <td style={{ ...styles.td, fontFamily: "monospace", fontSize: "12px" }}>{s.credit_total || "–"}</td>
+                            <td style={{ ...styles.td, fontFamily: "monospace", fontSize: "12px" }}>{s.credit_used || "–"}</td>
                             <td style={styles.td}>
                               <div style={{ display: "flex", gap: "6px" }}>
-                                <button style={styles.btnEdit} onClick={() => openEditSiswa(kelas.id, s)}><IconEdit /></button>
                                 <button style={styles.btnDanger} onClick={() => setDeleteConfirm({ type: "siswa", kelasId: kelas.id, siswaId: s.id })}><IconTrash /></button>
                               </div>
                             </td>
@@ -296,7 +335,7 @@ export default function MasterKelas() {
                   </button>
                 </div>
               </>
-            )} */}
+            )}
           </div>
         );
       })}
@@ -341,7 +380,7 @@ export default function MasterKelas() {
       )}
 
       {/* ── Modal Siswa ── */}
-      {/* {isModalSiswa && (
+      {isModalSiswa && (
         <div style={styles.overlay} onClick={() => setModal(null)}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button style={styles.closeBtn} onClick={() => setModal(null)}><IconClose /></button>
@@ -349,38 +388,26 @@ export default function MasterKelas() {
             <div style={styles.modalSubtitle}>
               Kelas: <b>{kelasList.find((k) => k.id === targetKelasId)?.nama}</b>
             </div>
-
-            <div style={styles.row2}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Nama Siswa *</label>
-                <input style={styles.input} placeholder="Nama lengkap" value={siswaForm.nama}
-                  onChange={(e) => setSiswaForm((f) => ({ ...f, nama: e.target.value }))} />
-              </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>NIS</label>
-                <input style={styles.input} placeholder="Nomor induk siswa" value={siswaForm.nis}
-                  onChange={(e) => setSiswaForm((f) => ({ ...f, nis: e.target.value }))} />
-              </div>
-            </div>
-            <div style={styles.row2}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Jenis Kelamin</label>
-                <select style={styles.select} value={siswaForm.jenisKelamin}
-                  onChange={(e) => setSiswaForm((f) => ({ ...f, jenisKelamin: e.target.value as "L" | "P" }))}>
-                  <option value="L">Laki-laki</option>
-                  <option value="P">Perempuan</option>
-                </select>
-              </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Tanggal Lahir</label>
-                <input type="date" style={styles.input} value={siswaForm.tanggalLahir}
-                  onChange={(e) => setSiswaForm((f) => ({ ...f, tanggalLahir: e.target.value }))} />
-              </div>
-            </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Alamat</label>
-              <input style={styles.input} placeholder="Alamat lengkap" value={siswaForm.alamat}
-                onChange={(e) => setSiswaForm((f) => ({ ...f, alamat: e.target.value }))} />
+              <label style={styles.label}>Siswa</label>
+              <select
+                multiple
+                style={{ ...styles.select, height: 150 }}
+                value={selectedSiswaIds}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
+                  setSelectedSiswaIds(selected);
+                }}
+              >
+                {availableSiswa.map((siswa) => (
+                  <option key={siswa.id} value={siswa.id}>
+                    {siswa.nama}
+                  </option>
+                ))}
+              </select>
+              <p style={{ fontSize: 12, color: "gray" }}>
+                Tahan Ctrl / Cmd untuk pilih lebih dari satu
+              </p>
             </div>
 
             <div style={styles.modalFooter}>
@@ -391,7 +418,7 @@ export default function MasterKelas() {
             </div>
           </div>
         </div>
-      )} */}
+      )}
 
       {/* ── Delete Confirm ── */}
       {deleteConfirm && (
@@ -402,14 +429,14 @@ export default function MasterKelas() {
             <div style={{ ...styles.modalSubtitle, textAlign: "center", marginBottom: "0" }}>
               {deleteConfirm.type === "kelas"
                 ? `Hapus kelas "${kelasList.find((k) => k.id === deleteConfirm.kelasId)?.nama}"? Semua siswa dalam kelas ini akan ikut terhapus.`
-                : `Hapus siswa "${kelasList.find((k) => k.id === deleteConfirm.kelasId)?.siswa.find((s) => s.id === deleteConfirm.siswaId)?.nama}"?`}
+                : `Hapus siswa "${siswaList.find((s) => s.id === deleteConfirm.siswaId)?.nama}"?`}
             </div>
             <div style={{ ...styles.modalFooter, justifyContent: "center" }}>
               <button style={styles.btnCancel} onClick={() => setDeleteConfirm(null)}>Batal</button>
               <button style={{ ...styles.btnSave, background: "linear-gradient(135deg, #E53E3E, #C53030)" }}
                 onClick={() => {
                   if (deleteConfirm.type === "kelas") deleteKelas(deleteConfirm.kelasId);
-                  //else deleteSiswa(deleteConfirm.kelasId, deleteConfirm.siswaId!);
+                  else deleteSiswaKelas(deleteConfirm.siswaId!, deleteConfirm.kelasId);
                 }}>
                 Ya, Hapus
               </button>
