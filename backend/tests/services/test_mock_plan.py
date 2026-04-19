@@ -16,7 +16,7 @@ import uuid
 import asyncio
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, AsyncMock, patch
-from tests.test_helpers import fake_id, fake_pengguna, fake_murid, fake_kelas, fake_rencana, fake_knowledge_state, mock_db
+from tests.test_helpers import fake_id, fake_pengguna, fake_murid, fake_kelas, fake_rencana_studi, fake_knowledge_state, mock_db
 import pytest
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -214,7 +214,7 @@ class TestGetRencana:
         from app.services.plan_service import get_rencana_by_id
 
         db = mock_db()
-        rencana = fake_rencana()
+        rencana = fake_rencana_studi()
         db.first.return_value = rencana
 
         result = get_rencana_by_id(db, rencana.id)
@@ -238,7 +238,7 @@ class TestGetRencana:
 
         db = mock_db()
         kelas_id = fake_id()
-        db.all.return_value = [fake_rencana(kelas_id=kelas_id) for _ in range(3)]
+        db.all.return_value = [fake_rencana_studi(kelas_id=kelas_id) for _ in range(3)]
 
         result = get_rencana_by_kelas(db, kelas_id)
 
@@ -261,7 +261,7 @@ class TestGetRencana:
 
         db = mock_db()
         murid_id = fake_id()
-        db.all.return_value = [fake_rencana(murid_id=murid_id)]
+        db.all.return_value = [fake_rencana_studi(murid_id=murid_id)]
 
         get_rencana_by_kelas(db, fake_id(), murid_id=murid_id)
 
