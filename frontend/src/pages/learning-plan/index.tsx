@@ -68,23 +68,23 @@ const mapApiToKelas = (data: KelasResponse): Kelas => ({
   siswa: [],
 });
 
-const mapApiToPlan = (data: GenerateplanResponse): GenerateplanResponse => ({
-  id: data.id,
-  kelas_id: data.kelas_id,
-  murid_id: data.murid_id,
-  waktu: data.waktu,
-  daftar_rekomendasi_material: data.daftar_rekomendasi_material,
-  estimasi_waktu_selesai: data.estimasi_waktu_selesai,
-  catatan_analisa: data.catatan_analisa,
-  jadwal_mingguan: data.jadwal_mingguan,
-  version: data.version,
-});
+// const mapApiToPlan = (data: GenerateplanResponse): GenerateplanResponse => ({
+//   id: data.id,
+//   kelas_id: data.kelas_id,
+//   murid_id: data.murid_id,
+//   waktu: data.waktu,
+//   daftar_rekomendasi_material: data.daftar_rekomendasi_material,
+//   estimasi_waktu_selesai: data.estimasi_waktu_selesai,
+//   catatan_analisa: data.catatan_analisa,
+//   jadwal_mingguan: data.jadwal_mingguan,
+//   version: data.version,
+// });
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const PlanList: React.FC = () => {
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
-  const [planList, setPlanList] = useState<GenerateplanResponse[]>([]);
+  // const [planList, setPlanList] = useState<GenerateplanResponse[]>([]);
   const [isLoadingKelas, setIsLoadingKelas] = useState(true);
 
   // rows keyed by kelas.id — diinisialisasi dinamis saat data masuk

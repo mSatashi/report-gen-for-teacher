@@ -1,11 +1,12 @@
 import React, { useEffect } from "react";
 // import { SCHEDULE } from "../constants";
 // import type { Session } from "../types";
-import type { GenerateplanResponse, KelasResponse } from "../../../service/payload";
+import type { GenerateplanResponse } from "../../../service/payload";
+import type { Kelas } from "../../../types";
 
 interface Props {
-  kelas: KelasResponse;
-  plan: GenerateplanResponse;
+  kelas: Kelas;
+  plan: GenerateplanResponse | null;
   onBack: () => void;
   onGenerated?: (kelasId: string) => void;
 }
@@ -172,7 +173,7 @@ const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
 
         {/* Day headers */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 12 }}>
-          {plan.daftar_rekomendasi_materi.map((val) => (
+          {plan?.daftar_rekomendasi_materi.map((val) => (
             <div
               key={val}
               style={{
