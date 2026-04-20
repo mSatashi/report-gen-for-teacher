@@ -1,41 +1,40 @@
 import React, { useEffect, useState } from "react";
 
-// ── Sub-pages ─────────────────────────────────────────────────────────────────
 import DailyLogIndex    from "./daily-log-index";
 import DailyLogFormLog  from "./form";
 import DailyLogFormMapel from "./form-makul";
 import DailyListSiswa   from "./list-siswa";
 
-// ── Types & constants ─────────────────────────────────────────────────────────
-import type { LogEntry, FormState, MakulEntry, MakulFormState, TingkatPemahaman, TingkatKeterlibatan } from "./components/types";
+import type { FormState, MakulEntry, MakulFormState } from "./components/types";
 import {
-  INITIAL_LOG_DATA,
   INITIAL_MAKUL_DATA,
 } from "./components/constants";
 import DailyLogDetailSiswa from "./detail-log-siswa";
 import { useKelasApi } from "../master-kelas/useKelasApi";
 import type { Kelas, Siswa } from "../../types";
-import type { DailyLogPayload, DailyLogResponse, KelasResponse } from "../../service/payload";
+import type { DailyLogPayload, DailyLogResponse, KelasResponse, ReportGeneratorPayload, Toast } from "../../service/payload";
 import { useDailyLog } from "./useDailyLog";
+import { createReportGenerator } from "../../service/reportAPI";
 
-// ─── View names ───────────────────────────────────────────────────────────────
 type ActiveView =
   | "index"         // Daftar semua log
   | "detailMapel"   // detail makul
   | "formLog"       // Tambah / edit log
   | "formMapel"     // Kelola mata pelajaran
   | "detailSiswa"   // detail siswa
-  | "listSiswa";    // Daftar siswa
+  | "listSiswa"    // Daftar siswa
+  | "reportEditor";
 
-const DailyLogPage: React.FC = () => {
+let toastId = 0;
+
+interface DailyLogPageProps {
+  onNavigate: (route: string) => void;
+}
+
+const DailyLogPage: React.FC<DailyLogPageProps> = ({ onNavigate }) => {
   const [view, setView] = useState<ActiveView>("index");
 
-  // ── Data state ──────────────────────────────────────────────────────────────
-  // const [logData,   setLogData]   = useState<LogEntry[]>(INITIAL_LOG_DATA);
   const [mapelData, setmapelData] = useState<MakulEntry[]>(INITIAL_MAKUL_DATA);
-  // const [mapelSiswa] = useState(INITIAL_MAKUL_SISWA);
-  // const [siswaData]               = useState(INITIAL_SISWA_DATA);
-
   const [selectedKelasId, setSelectKelasId] = useState<string | null>(null);
   const [selectedSiswaId, setSelectedSiswaId] = useState<string | null>(null);
   const [editLogId, setEditLogId] = useState<number | null>(null);
@@ -45,6 +44,7 @@ const DailyLogPage: React.FC = () => {
   const [kelasSiswaMap, setKelasSiswaMap] = useState<Record<string, number>>({});
   const [selectedSiswa, setSelectedSiswa] = useState<Siswa | null>(null);
   const [logDataSiswa, setLogDataSiswa] = useState<DailyLogResponse[]>([]);
+  const [, setToasts] = useState<Toast[]>([]);
 
   const { loadKelas } = useKelasApi();
   const { loadSiswaByKelas, loadLogSiswa, submitCreateLog } = useDailyLog();
@@ -98,7 +98,6 @@ const DailyLogPage: React.FC = () => {
   }, [selectedSiswaId]);
 
 
-  // ── Derived: prefill form jika mode edit ────────────────────────────────────
   const selectKelasData = kelasList.find((m) => m.id === selectedKelasId) ?? null;
 
   // const siswaUntukMapel = selectedKelasId !== null
@@ -141,56 +140,11 @@ const DailyLogPage: React.FC = () => {
   // ── Handlers: Log ───────────────────────────────────────────────────────────
   const handleOpenAdd    = () => { setEditLogId(null); setView("formMapel"); };
   const handleOpenDetail = (id: string) => { setSelectKelasId(id); setView("listSiswa"); };
-
-  // const handleSaveLog = (form: FormState) => {
-  //   if (editLogId !== null) {
-  //     setLogDataSiswa((prev) =>
-  //       prev.map((d) =>
-  //         d.id === editLogId
-  //           ? {
-  //               ...d,
-  //               siswa:             form.siswa,
-  //               idMapel:           form.idMapel,
-  //               mapel:             form.mapel,
-  //               materi:            form.topik ?? "—",
-  //               catatan:           form.catatanGuru ?? "—",
-  //               tingkat_penguasaan: form.pemahaman,
-  //               tanggal:           form.tanggal,
-  //               durasi:            form.durasi,
-  //               metode:            form.metode,
-  //               keterlibatan:      form.keterlibatan,
-  //             }
-  //           : d
-  //       )
-  //     );
-  //   } else {
-  //     setLogDataSiswa((prev) => [
-  //       ...prev,
-  //       {
-  //         id:                prev.length + 1,
-  //         siswa:             form.siswa,
-  //         idMapel:           form.idMapel,
-  //         mapel:             form.mapel,
-  //         materi:            form.topik ?? "—",
-  //         catatan:           form.catatanGuru ?? "—",
-  //         tingkat_penguasaan: form.pemahaman,
-  //         tanggal:           form.tanggal,
-  //         durasi:            form.durasi,
-  //         metode:            form.metode,
-  //         keterlibatan:      form.keterlibatan,
-  //       },
-  //     ]);
-  //   }
-  //   setView(selectedSiswaId !== null ? "detailSiswa" : selectedKelasId !== null ? "listSiswa" : "index");
-  // };
-
-  // ── Handlers: Makul ─────────────────────────────────────────────────────────
   
   const handleSaveLog = async (form: FormState) => {
     if (!selectedSiswaId || !selectedKelasId) return;
 
     if (editLogId !== null) {
-      // TODO: submitUpdateLog nanti
       setLogDataSiswa((prev) =>
         prev.map((d) =>
           d.id === editLogId
@@ -208,7 +162,6 @@ const DailyLogPage: React.FC = () => {
         )
       );
     } else {
-      // ✅ POST ke API
       const payload: DailyLogPayload = {
         kelas_id: selectedSiswaId,
         murid_id: selectedSiswaId,
@@ -227,7 +180,7 @@ const DailyLogPage: React.FC = () => {
 
       const result = await submitCreateLog(payload);
       if (result) {
-        setLogDataSiswa((prev) => [...prev, result]); // ✅ append response dari server
+        setLogDataSiswa((prev) => [...prev, result]);
       } else {
         return; // gagal, jangan pindah view
       }
@@ -247,7 +200,29 @@ const DailyLogPage: React.FC = () => {
     setmapelData((prev) => prev.filter((m) => m.id !== id));
   };
 
-  // ── Routing ───────────────────────────────────────────────────────────────── 
+  
+  const showToast = (message: string, type: "success" | "error") => {
+    const id = ++toastId;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
+  };
+
+  const handleGenerate = async (siswaId: string, kelasId: string) => {
+    const payload: ReportGeneratorPayload = {
+      murid_id: siswaId,
+      kelas_id: kelasId,
+    };
+
+    const result = await createReportGenerator(payload);
+    if (result) {
+      showToast("Kelas berhasil diperbarui ✓", "success");
+      onNavigate("reportEditor");
+    } else {
+      return;
+    }
+  }
+
+  
   if (view === "detailSiswa") {
     if (!selectedSiswa) return null;
     return (
@@ -304,6 +279,7 @@ const DailyLogPage: React.FC = () => {
           setSelectedSiswaId(siswaId);
           setView("detailSiswa");
         }}
+        onGenerate={handleGenerate}
         onAddSiswa={() => setView("formLog")}
         onBack={() => setView("index")}
       />

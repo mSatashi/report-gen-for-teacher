@@ -98,3 +98,39 @@ export interface DailyLogResponse {
   metode_belajar: string;
   created_at: string;
 }
+
+export interface GenerateplanResponse {
+  id: string;
+  kelas_id: string;
+  murid_id?: string;
+  waktu: string;
+  daftar_rekomendasi_materi: string[];
+  estimasi_waktu_selesai: string;
+  catatan_analisa: string;
+  jadwal_mingguan: Record<string, string[]>;
+  version: number;
+}
+
+export interface ReportGeneratorResponse {
+  id: string;
+  murid_id: string;
+  kelas_id: string;
+  konten: string;
+  tipe_laporan: string;
+  status: string;
+  pdf_path: string;
+  tanggal: string;
+  tanggal_dikirim?: string;
+  is_ai_generated: boolean;
+  periode_mulai: string;
+  periode_selesai: string;
+}
+
+export interface ReportGeneratorPayload {  
+  murid_id: string;
+  kelas_id?: string;
+  periode_mulai?: string;
+  periode_selesai?: string;
+  tipe_laporan?: string;
+}
+
