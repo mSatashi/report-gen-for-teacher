@@ -35,5 +35,102 @@ export interface SiswaResponse {
   usia: string;
   level: string;
   credit_total: number;
-  credit_use: number;
+  credit_used?: number;
 }
+
+export interface addSiswaPayload {
+  murid_id: string,
+}
+
+export interface messageResponse {
+  message: string;
+}
+
+export interface DailyLogPayload {
+  // siswa: string;
+  // mapel: string;
+  // catatanGuru?: string;
+  // pemahaman: string;
+  // durasi: string;
+  // metode: string;
+  // keterlibatan: string;
+  
+  kelas_id: string;
+  murid_id: string;
+  tanggal: string;
+  topik?: string;
+  nilai: Float32Array;
+  tingkat_pemahaman: string;
+  tingkat_keterlibatan: string;
+  kompetensi_dicapai: string;
+  target_materi_berikutnya: string;
+  kendala?: string;
+  catatan?: string;
+  durasi_menit: number;
+  metode_belajar: string;
+}
+
+
+export interface DailyLogResponse {
+  id: number;
+  // siswa: string;
+  // idMapel: number;
+  // mapel: string;
+  // materi: string;
+  // catatan: string;
+  // tingkat_penguasaan: string;
+  // tanggal: string;
+  // durasi: string;
+  // metode: string;
+  // keterlibatan: string;
+  kelas_id: string;
+  murid_id: string;
+  tanggal: string;
+  topik?: string;
+  nilai: Float32Array;
+  tingkat_pemahaman: string;
+  tingkat_keterlibatan: string;
+  kompetensi_dicapai: string;
+  target_materi_berikutnya: string;
+  kendala?: string;
+  catatan?: string;
+  durasi_menit: number;
+  metode_belajar: string;
+  created_at: string;
+}
+
+export interface GenerateplanResponse {
+  id: string;
+  kelas_id: string;
+  murid_id?: string;
+  waktu: string;
+  daftar_rekomendasi_materi: string[];
+  estimasi_waktu_selesai: string;
+  catatan_analisa: string;
+  jadwal_mingguan: Record<string, string[]>;
+  version: number;
+}
+
+export interface ReportGeneratorResponse {
+  id: string;
+  murid_id: string;
+  kelas_id: string;
+  konten: string;
+  tipe_laporan: string;
+  status: string;
+  pdf_path: string;
+  tanggal: string;
+  tanggal_dikirim?: string;
+  is_ai_generated: boolean;
+  periode_mulai: string;
+  periode_selesai: string;
+}
+
+export interface ReportGeneratorPayload {  
+  murid_id: string;
+  kelas_id?: string;
+  periode_mulai?: string;
+  periode_selesai?: string;
+  tipe_laporan?: string;
+}
+

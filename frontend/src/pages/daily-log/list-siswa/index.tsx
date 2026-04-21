@@ -1,51 +1,65 @@
 import React from "react";
-import type { LogEntry, SiswaJoined } from "../components/types";
 import { PENGUASAAN_BADGE, btnAddStyle } from "../components/constants";
+import type { Kelas, Siswa } from "../../../types";
+import type { DailyLogResponse } from "../../../service/payload";
+import type { TingkatPemahaman } from "../components/types";
 
 interface DailyListSiswaProps {
-  siswaData: SiswaJoined[];
-  logData: LogEntry[];
-  onDetail: (siswaId: number) => void;
+  kelasSiswa: Siswa[];
+  logDataSiswa: DailyLogResponse[];
+  onDetail: (siswaId: string) => void;
   onAddSiswa: () => void;
+  onGenerate: (siswaId: string, kelasId: string) => void;
   onBack: () => void;
-  namaMapel?: string;
+  dataKelas?: Kelas | null;
 }
 
 const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
-  siswaData,
-  logData,
-  namaMapel,
+  kelasSiswa,
+  // logDataSiswa,
+  dataKelas,
   onDetail,
   onAddSiswa,
   onBack,
+  onGenerate,
 }) => {
+
   /** Hitung ringkasan log per siswa */
   const getSiswaStats = (namaSiswa: string) => {
-    const logs = logData.filter((l) => l.siswa === namaSiswa);
-    const lastLog = logs[logs.length - 1];
+    const logDataSiswa = [{
+      siswa: namaSiswa
+    }];
+    const logs = logDataSiswa.filter((l) => l.siswa === namaSiswa);
+    // const lastLog = logs[logs.length - 1];
+    const lastLog = {
+      tingkat_pemahaman: "Sangat Paham",
+      mapel: 'Fisika',
+      materi: 'Hukum Ohm',
+    }
     return { total: logs.length, lastLog };
   };
 
+  
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
 
       {/* Page heading */}
       <div style={{ marginBottom: 20, flexShrink: 0 }}>
-        {namaMapel && (
+        {dataKelas && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <span onClick={onBack} style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }}>
               Daily Log
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
-            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{namaMapel}</span>
+            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{dataKelas?.mata_pelajaran}</span>
           </div>
         )}
         <h2 style={{ fontSize: 24, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>
-          {namaMapel ? `Siswa — ${namaMapel}` : "Daftar Siswa"}
+          {dataKelas ? `Siswa — ${dataKelas.mata_pelajaran}` : "Daftar Siswa"}
         </h2>
         <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
-          {namaMapel
-            ? `Daftar siswa yang mengikuti ${namaMapel}`
+          {dataKelas
+            ? `Daftar siswa yang mengikuti ${dataKelas.mata_pelajaran} beserta progres belajar mereka`
             : "Kelola data siswa dan lihat progres belajar"}
         </p>
       </div>
@@ -66,7 +80,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
         {/* Card header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexShrink: 0 }}>
           <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>
-            List Siswa ({siswaData.length})
+            List Siswa ({kelasSiswa.length})
           </span>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <button
@@ -95,7 +109,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
                 {[
                   { label: "No",             width: 50    },
                   { label: "Nama Siswa",     width: "auto" },
-                  { label: "Kelas",          width: 100   },
+                  { label: "Level",          width: 100   },
                   { label: "Total Log",      width: 100   },
                   { label: "Log Terakhir",   width: "auto" },
                   { label: "Pemahaman",      width: 130   },
@@ -118,9 +132,9 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
               </tr>
             </thead>
             <tbody>
-              {siswaData.map((siswa, idx) => {
+              {kelasSiswa.map((siswa, idx) => {
                 const { total, lastLog } = getSiswaStats(siswa.nama);
-                const badge = lastLog ? PENGUASAAN_BADGE[lastLog.tingkat_penguasaan] : null;
+                const badge = lastLog ? PENGUASAAN_BADGE[lastLog.tingkat_pemahaman as TingkatPemahaman] : null;
 
                 return (
                   <tr key={siswa.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
@@ -141,7 +155,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
                         <span style={{ fontWeight: 500, color: "#111827" }}>{siswa.nama}</span>
                       </div>
                     </td>
-                    <td style={{ padding: "12px 14px", color: "#6b7280" }}>{siswa.kelas}</td>
+                    <td style={{ padding: "12px 14px", color: "#6b7280" }}>{siswa.level}</td>
                     <td style={{ padding: "12px 14px" }}>
                       <span
                         style={{
@@ -161,15 +175,15 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
                       {badge && lastLog ? (
                         <span
                           style={{
-                            background: badge.bg,
-                            color: badge.color,
+                            // background: badge.bg,
+                            // color: badge.color,
                             borderRadius: 6,
                             padding: "3px 10px",
                             fontSize: 12,
                             fontWeight: 600,
                           }}
                         >
-                          {lastLog.tingkat_penguasaan}
+                          {lastLog.tingkat_pemahaman}
                         </span>
                       ) : (
                         <span style={{ color: "#9ca3af", fontSize: 12 }}>Belum ada log</span>
@@ -187,6 +201,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
                         Detail
                       </button>
                       <button
+                        onClick={() => onGenerate(siswa.id, dataKelas?.id ?? "")}
                         style={{
                             background: "#f59e0b", color: "#fff", border: "none",
                             borderRadius: 8, padding: "5px 10px",
@@ -201,7 +216,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
                 );
               })}
 
-              {siswaData.length === 0 && (
+              {kelasSiswa.length === 0 && (
                 <tr>
                   <td colSpan={7} style={{ padding: "40px 14px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
                     Belum ada data siswa.

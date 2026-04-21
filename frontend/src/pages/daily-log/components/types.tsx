@@ -28,21 +28,19 @@ export interface MakulEntry {
 }
 
 export interface FormState {
-  siswa: string;
+  kelas_id: string;
+  murid_id: string;
   tanggal: string;
-  idMapel: number;
-  mapel: string;
-  topik: string;
-  durasi: string;
-  metode: string;
-  pemahaman: TingkatPemahaman;
-  keterlibatan: TingkatKeterlibatan;
-  catatanGuru: string;
-  rekTindakLanjut: string;
-  targetMateri: string;
-  skor: string;
-  kompetensi: string;
-  kendala: string;
+  topik?: string;
+  nilai: Float32Array;
+  tingkat_pemahaman: string;
+  tingkat_keterlibatan: string;
+  kompetensi_dicapai: string;
+  target_materi_berikutnya: string;
+  kendala?: string;
+  catatan?: string;
+  durasi_menit: number;
+  metode_belajar: string;
 }
 
 export interface MakulFormState {

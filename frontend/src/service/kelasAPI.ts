@@ -1,5 +1,5 @@
 import { apiFetch } from "./apiFetch";
-import type { KelasPayload, KelasResponse, SiswaPayload, SiswaResponse } from "./payload";
+import type { addSiswaPayload, KelasPayload, KelasResponse, messageResponse, SiswaResponse } from "./payload";
 
 /** GET /kelas — ambil semua kelas */
 export async function fetchKelasList(): Promise<KelasResponse[]> {
@@ -52,27 +52,36 @@ export async function deleteKelasApi(id: string): Promise<void> {
   if (!res.ok) throw new Error(`Gagal menghapus kelas (${res.status})`);
 }
 
-/** GET /kelas/:kelasId/siswa — ambil semua siswa dalam kelas */
+/** GET /kelas/:kelasId/murid — ambil semua siswa dalam kelas */
 export async function fetchSiswaByKelas(kelasId: string): Promise<SiswaResponse[]> {
   const res = await apiFetch(`/kelas/${kelasId}/murid`);
   if (!res.ok) throw new Error(`Gagal memuat data siswa (${res.status})`);
   return res.json();
 }
  
-/** POST /kelas/:kelasId/siswa — tambah siswa ke kelas */
-export async function createSiswa(
+/** POST /kelas/:kelasId/siswa — siswa di dalam kelas */
+export async function siswaDalamKelas(
+  kelasId: string
+): Promise<SiswaResponse[]> {
+  const res = await apiFetch(`/kelas/${kelasId}/murid`, {
+    method: "GET",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message ?? `Gagal menambahkan siswa (${res.status})`);
+  }
+  return res.json();
+}
+
+/** menambahkan data siswa ke dalam kelas */
+export async function addSiswaKelas(
   kelasId: string,
-  payload: SiswaPayload
-): Promise<SiswaResponse> {
+  payload: addSiswaPayload
+): Promise<messageResponse> {
   const res = await apiFetch(`/kelas/${kelasId}/murid`, {
     method: "POST",
     body: JSON.stringify({
-      username: payload.username,
-      email_address: payload.email_address,
-      nama: payload.nama,
-      usia: payload.usia,
-      level: payload.level,
-      credit_total: payload.credit_total,
+      murid_id: payload.murid_id,
     }),
   });
   if (!res.ok) {
@@ -80,6 +89,12 @@ export async function createSiswa(
     throw new Error(err?.message ?? `Gagal menambahkan siswa (${res.status})`);
   }
   return res.json();
+}
+
+/** DELETE /siswa/:id — hapus siswa */
+export async function deleteSiswaKelas(kelasId: string, siswaId: string): Promise<void> {
+  const res = await apiFetch(`/kelas/${kelasId}/murid/${siswaId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Gagal menghapus siswa (${res.status})`);
 }
  
 // /** PUT /siswa/:id — update data siswa */
@@ -105,26 +120,7 @@ export async function createSiswa(
 //   return res.json();
 // }
  
-// /** DELETE /siswa/:id — hapus siswa */
-// export async function deleteSiswaApi(siswaId: string): Promise<void> {
-//   const res = await apiFetch(`/siswa/${siswaId}`, { method: "DELETE" });
-//   if (!res.ok) throw new Error(`Gagal menghapus siswa (${res.status})`);
-// }
-//       username: string;
-//   email_address: string;
-//   nama: string;
-//   usia: string;
-//   level: string;
-//   credit_total: number;
-//   credit_use: number;
-//     }),
-//   });
-//   if (!res.ok) {
-//     const err = await res.json().catch(() => ({}));
-//     throw new Error(err?.message ?? `Gagal menambahkan siswa (${res.status})`);
-//   }
-//   return res.json();
-// }
+
  
 // /** PUT /siswa/:id — update data siswa */
 // export async function updateSiswa(

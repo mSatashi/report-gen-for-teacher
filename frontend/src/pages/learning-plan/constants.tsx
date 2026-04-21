@@ -1,4 +1,4 @@
-import type { DaySchedule, SubjectDetail, StatItem } from "./types";
+import type { DaySchedule, SubjectDetail, StatItem, SubjectMeta } from "./types";
 
 export const STUDENTS = ["Aisya Putri", "Rafi Santoso", "Nadia Fajar"];
 
@@ -50,4 +50,63 @@ export const SUBJECTS: SubjectDetail[] = [
   { name: "Matematika", sessions: 4, hours: 6,   completed: 1, color: "#3b82f6" },
   { name: "IPA",        sessions: 2, hours: 3,   completed: 1, color: "#22c55e" },
   { name: "Bahasa",     sessions: 3, hours: 4.5, completed: 0, color: "#f59e0b" },
+];
+
+// ─── Subject List page data ───────────────────────────────────────────────────
+
+export const SUBJECT_LIST: SubjectMeta[] = [
+  {
+    id: "matematika",
+    name: "Matematika",
+    icon: "∑",
+    description: "Aljabar, geometri, aritmatika, dan pemecahan masalah numerik.",
+    color: "#C8860A",
+    borderColor: "#C8860A",
+    bgColor: "#fffbeb",
+  },
+  {
+    id: "ipa",
+    name: "IPA",
+    icon: "⚗",
+    description: "Ilmu alam: ekosistem, materi, energi, dan sains kehidupan.",
+    color: "#2E7D52",
+    borderColor: "#2E7D52",
+    bgColor: "#f0fdf4",
+  },
+  {
+    id: "b-indonesia",
+    name: "Bahasa Indonesia",
+    icon: "✍",
+    description: "Membaca, menulis deskriptif, teks narasi, dan presentasi lisan.",
+    color: "#2471A3",
+    borderColor: "#2471A3",
+    bgColor: "#eff6ff",
+  },
+  {
+    id: "b-inggris",
+    name: "Bahasa Inggris",
+    icon: "🌐",
+    description: "Reading comprehension, vocabulary, writing, dan listening.",
+    color: "#C0392B",
+    borderColor: "#C0392B",
+    bgColor: "#fff1f2",
+  },
+  {
+    id: "ips",
+    name: "IPS",
+    icon: "🗺",
+    description: "Sejarah, geografi, ekonomi dasar, dan kehidupan sosial.",
+    color: "#7B3FA0",
+    borderColor: "#7B3FA0",
+    bgColor: "#faf5ff",
+  },
+  {
+    id: "seni",
+    name: "Seni & Budaya",
+    icon: "🎨",
+    description: "Eksplorasi visual, kolase, musik, dan ekspresi kreatif.",
+    color: "#17a2b8",
+    borderColor: "#17a2b8",
+    bgColor: "#ecfeff",
+  },
 ];

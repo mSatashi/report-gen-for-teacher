@@ -59,8 +59,12 @@ const App: React.FC = () => {
 
       setUser(authUser);
       setActiveRoute("home");
-    } catch (err: any) {
-      setLoginError(err.message ?? "Terjadi kesalahan.");
+    // } catch (err: any) {
+    //   setLoginError(err.message ?? "Terjadi kesalahan.");
+    // }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Terjadi kesalahan.";
+      setLoginError(message);
     }
   };
 
@@ -96,7 +100,7 @@ const App: React.FC = () => {
       case "home":
         return <DashboardPage />;
       case "dailyLog":
-        return <DailyLogPage />;
+        return <DailyLogPage onNavigate={setActiveRoute} />;
       case "learningPlan":
         return <LearningPlan />;
       case "reportEditor":
@@ -165,9 +169,9 @@ const App: React.FC = () => {
         <div
           style={styles.toolbar}
         >
-          <h1 style={fonts.h1}>
+          <div style={fonts.normal700}>
             {pageTitle}
-          </h1>
+          </div>
         </div>
 
         {/* Content */}
