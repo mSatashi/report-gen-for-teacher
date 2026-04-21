@@ -7,20 +7,12 @@ ON CONFLICT DO NOTHING;
  
 INSERT INTO pengajar (id) VALUES ('pengajar-001'), ('pengajar-002')
 ON CONFLICT DO NOTHING;
- 
--- Murid contoh
-INSERT INTO pengguna (id, username, email_address, hashed_password, tipe_pengguna, is_active)
+
+INSERT INTO murid (id, email_address, nama, usia, level, credit_total, credit_used, is_active)
 VALUES
-  ('murid-001', 'aisya_putri',   'aisya@email.com',  '$2b$12$LqMdnb9VV/4Bj3oE.WFbVeUpuv8bUhqBFKPiS72P4rE7jNi8vqr.a', 'murid', true),
-  ('murid-002', 'budi_santoso',  'budis@email.com',  '$2b$12$LqMdnb9VV/4Bj3oE.WFbVeUpuv8bUhqBFKPiS72P4rE7jNi8vqr.a', 'murid', true),
-  ('murid-003', 'nadia_fajar',   'nadia@email.com',  '$2b$12$LqMdnb9VV/4Bj3oE.WFbVeUpuv8bUhqBFKPiS72P4rE7jNi8vqr.a', 'murid', true)
-ON CONFLICT DO NOTHING;
- 
-INSERT INTO murid (id, nama, usia, level, credit_total, credit_used)
-VALUES
-  ('murid-001', 'Aisya Putri',   14, 'SMP Kelas 2', 24, 8),
-  ('murid-002', 'Budi Santoso',  15, 'SMA Kelas 1', 20, 5),
-  ('murid-003', 'Nadia Fajar',   13, 'SMP Kelas 1', 24, 3)
+  ('murid-001',  'aisya@email.com', 'Aisya Putri',   14, 'SMP Kelas 2', 24, 8, true),
+  ('murid-002',  'budis@email.com', 'Budi Santoso',  15, 'SMA Kelas 1', 20, 5, true),
+  ('murid-003', 'nadia@email.com', 'Nadia Fajar',   13, 'SMP Kelas 1', 24, 3, false)
 ON CONFLICT DO NOTHING;
  
 -- Kelas contoh

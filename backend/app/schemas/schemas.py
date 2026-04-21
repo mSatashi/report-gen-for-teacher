@@ -1,15 +1,3 @@
-# =============================================================================
-# FIX 1 ► GANTI SELURUH ISI: backend/app/schemas/schemas.py
-#
-# Root cause yang diperbaiki:
-#   - Pydantic v2 tidak lagi pakai `class Config: from_attributes = True`
-#     → diganti `model_config = ConfigDict(from_attributes=True)`
-#   - MuridResponse tidak bisa di-serialize langsung dari ORM object Murid
-#     karena field username/email_address ada di tabel Pengguna, bukan Murid.
-#     → field dibuat Optional dengan default None agar serialisasi tidak crash
-#       saat endpoint kelas.py mengembalikan Murid ORM langsung.
-# =============================================================================
-
 """
 schemas.py
 Pydantic v2 schemas untuk request & response FastAPI.
@@ -27,7 +15,7 @@ class RegisterRequest(BaseModel):
     username: str
     email_address: EmailStr
     password: str
-    tipe_pengguna: str = Field(..., pattern="^(pengajar|murid)$")
+    tipe_pengguna: str = Field(..., pattern="^(pengajar)$")
 
 
 class LoginRequest(BaseModel):
@@ -47,40 +35,28 @@ class TokenResponse(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class MuridCreate(BaseModel):
-    username: str
     email_address: EmailStr
-    password: str
     nama: str
     usia: Optional[int] = None
     level: Optional[str] = None
     credit_total: int = 0
-
-
-class MuridUpdate(BaseModel):
-    nama: Optional[str] = None
-    usia: Optional[int] = None
-    level: Optional[str] = None
-    credit_total: Optional[int] = None
+    is_active: bool = True
 
 
 class MuridResponse(BaseModel):
     """
     Response schema untuk data murid.
-    username & email_address dibuat Optional karena beberapa endpoint
-    (mis. list_murid_kelas di kelas.py) mengisi field ini secara manual
-    dari join query, sedangkan endpoint lain mengembalikan ORM Murid
-    yang tidak punya field tersebut secara langsung.
     """
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    username: Optional[str] = None
     email_address: Optional[str] = None
     nama: Optional[str] = None
     usia: Optional[int] = None
     level: Optional[str] = None
     credit_total: int = 0
     credit_used: int = 0
+    is_active: bool = True
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

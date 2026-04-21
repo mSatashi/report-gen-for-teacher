@@ -52,6 +52,8 @@ def fake_murid(
     credit_total: int = 10,
     credit_used: int = 0,
     uid: str = None,
+    is_active: bool = True,
+    email_address: str = "fake-murid@email.com",
 ) -> MagicMock:
     """
     Mock objek Murid ORM.
@@ -65,6 +67,8 @@ def fake_murid(
     obj.credit_total     = credit_total
     obj.credit_used      = credit_used
     obj.diagnostic_level = None
+    obj.is_active        = is_active
+    obj.email_address    = email_address
     return obj
  
  

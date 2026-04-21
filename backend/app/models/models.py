@@ -28,7 +28,7 @@ def _uuid() -> str:
 class Pengguna(Base):
     """
     Tabel induk semua pengguna sistem.
-    tipe_pengguna: 'pengajar' | 'murid' | 'admin'
+    tipe_pengguna: 'pengajar' | 'admin'
     """
     __tablename__ = "pengguna"
 
@@ -42,7 +42,6 @@ class Pengguna(Base):
 
     # Relasi polimorfik
     pengajar = relationship("Pengajar", back_populates="pengguna", uselist=False)
-    murid    = relationship("Murid",    back_populates="pengguna", uselist=False)
 
 
 class Pengajar(Base):
@@ -56,23 +55,23 @@ class Pengajar(Base):
 
 
 class Murid(Base):
-    """Profil tambahan untuk pengguna bertipe murid."""
     __tablename__ = "murid"
+    id            = Column(String(50), primary_key=True, default=_uuid)
+    email_address = Column(String(100), unique=True, nullable=False)
+    created_at    = Column(DateTime, default=datetime.utcnow)
 
-    id             = Column(String(50), ForeignKey("pengguna.id", ondelete="CASCADE"), primary_key=True)
-    nama           = Column(String(150))
-    usia           = Column(Integer)
-    level          = Column(String(50))
+    nama          = Column(String(150))
+    usia          = Column(Integer)
+    level         = Column(String(50))
     diagnostic_level = Column(String(50))
-    credit_total   = Column(Integer, default=0)
-    credit_used    = Column(Integer, default=0)
+    credit_total  = Column(Integer, default=0)
+    credit_used   = Column(Integer, default=0)
+    is_active       = Column(Boolean, default=True)
 
-    pengguna  = relationship("Pengguna", back_populates="murid")
-    kelas     = relationship("KelasMurid", back_populates="murid")
-    laporan   = relationship("Laporan", back_populates="murid")
-    knowledge_states = relationship("KnowledgeState", back_populates="murid")
+    kelas              = relationship("KelasMurid", back_populates="murid")
+    laporan            = relationship("Laporan", back_populates="murid")
+    knowledge_states   = relationship("KnowledgeState", back_populates="murid")
     diagnostic_results = relationship("DiagnosticResult", back_populates="murid")
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # KELAS

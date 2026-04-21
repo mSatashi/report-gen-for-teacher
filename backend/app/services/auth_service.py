@@ -10,14 +10,14 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import hash_password, verify_password, create_access_token, decode_access_token, blacklist_token, is_token_blacklisted
-from app.models.models import Pengguna, Pengajar, Murid
+from app.models.models import Pengguna, Pengajar
 from app.schemas.schemas import RegisterRequest, LoginRequest, TokenResponse
 
 bearer_scheme = HTTPBearer()
 
 
 def register_user(db: Session, data: RegisterRequest) -> Pengguna:
-    """Registrasi pengguna baru (pengajar atau murid)."""
+    """Registrasi pengguna baru (pengajar)."""
     if db.query(Pengguna).filter(Pengguna.email_address == data.email_address).first():
         raise HTTPException(status_code=400, detail="Email sudah terdaftar")
     if db.query(Pengguna).filter(Pengguna.username == data.username).first():
@@ -35,8 +35,6 @@ def register_user(db: Session, data: RegisterRequest) -> Pengguna:
 
     if data.tipe_pengguna == "pengajar":
         db.add(Pengajar(id=user_id))
-    elif data.tipe_pengguna == "murid":
-        db.add(Murid(id=user_id))
 
     db.commit()
     db.refresh(pengguna)
@@ -70,16 +68,13 @@ def logout_user(token: str) -> dict:
 
 
 def get_current_user(
-     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> "Pengguna":
     """
     Dependency FastAPI: decode JWT, cek blacklist, kembalikan user aktif.
     Versi ini menolak token yang sudah logout.
     """
-    from fastapi import HTTPException
-    from fastapi.security import HTTPAuthorizationCredentials
- 
     token = credentials.credentials
  
     # Tolak jika token sudah diblacklist (sudah logout)

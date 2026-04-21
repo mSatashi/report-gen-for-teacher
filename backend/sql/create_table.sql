@@ -9,14 +9,10 @@ CREATE TABLE IF NOT EXISTS pengguna (
     username        VARCHAR(100) NOT NULL UNIQUE,
     email_address   VARCHAR(100) NOT NULL UNIQUE,
     hashed_password VARCHAR(255) NOT NULL,
-    tipe_pengguna   VARCHAR(20)  NOT NULL CHECK (tipe_pengguna IN ('pengajar', 'murid', 'admin')),
+    tipe_pengguna   VARCHAR(20)  NOT NULL CHECK (tipe_pengguna IN ('pengajar', 'admin')),
     is_active       BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMP    NOT NULL DEFAULT NOW()
 );
- 
-COMMENT ON TABLE  pengguna IS 'Tabel induk semua pengguna sistem (pengajar dan murid)';
-COMMENT ON COLUMN pengguna.tipe_pengguna IS 'Nilai: pengajar | murid | admin';
- 
  
 -- =============================================================================
 -- 2. PENGAJAR  (profil tambahan pengajar)
@@ -26,30 +22,20 @@ CREATE TABLE IF NOT EXISTS pengajar (
         REFERENCES pengguna(id) ON DELETE CASCADE
 );
  
-COMMENT ON TABLE pengajar IS 'Profil tambahan untuk pengguna bertipe pengajar';
- 
- 
 -- =============================================================================
--- 3. MURID  (profil tambahan murid — TANPA kolom password)
+-- 3. MURID  (profil tambahan murid)
 -- =============================================================================
--- Catatan: password TIDAK disimpan di sini.
--- Otentikasi murid dilakukan via tabel pengguna (hashed_password).
 CREATE TABLE IF NOT EXISTS murid (
-    id               VARCHAR(50) PRIMARY KEY
-                         REFERENCES pengguna(id) ON DELETE CASCADE,
+    id               VARCHAR(50) PRIMARY KEY,
+    email_address   VARCHAR(100) NOT NULL UNIQUE,
     nama             VARCHAR(150),
     usia             INTEGER,
     level            VARCHAR(50),
     diagnostic_level VARCHAR(50),
     credit_total     INTEGER NOT NULL DEFAULT 0,
-    credit_used      INTEGER NOT NULL DEFAULT 0
+    credit_used      INTEGER NOT NULL DEFAULT 0,
+    is_active       BOOLEAN      NOT NULL DEFAULT TRUE
 );
- 
-COMMENT ON TABLE  murid IS 'Profil murid. Password ada di tabel pengguna, bukan di sini.';
-COMMENT ON COLUMN murid.diagnostic_level IS 'Level hasil tes diagnostik awal';
-COMMENT ON COLUMN murid.credit_total     IS 'Total sesi/kredit yang dialokasikan';
-COMMENT ON COLUMN murid.credit_used      IS 'Sesi/kredit yang sudah digunakan';
- 
  
 -- =============================================================================
 -- 4. KELAS
@@ -64,10 +50,6 @@ CREATE TABLE IF NOT EXISTS kelas (
     created_at     TIMESTAMP    NOT NULL DEFAULT NOW()
 );
  
-COMMENT ON TABLE  kelas IS 'Kelas belajar yang diajar pengajar';
-COMMENT ON COLUMN kelas.kredit IS 'Jumlah total sesi/pertemuan yang direncanakan';
- 
- 
 -- =============================================================================
 -- 5. KELAS_MURID  (tabel pivot many-to-many kelas <-> murid)
 -- =============================================================================
@@ -77,9 +59,6 @@ CREATE TABLE IF NOT EXISTS kelas_murid (
     joined_at TIMESTAMP   NOT NULL DEFAULT NOW(),
     PRIMARY KEY (kelas_id, murid_id)
 );
- 
-COMMENT ON TABLE kelas_murid IS 'Pivot tabel — murid yang terdaftar di kelas tertentu';
- 
  
 -- =============================================================================
 -- 6. LOG_PERTEMUAN  (daily log — F001 & F002)
