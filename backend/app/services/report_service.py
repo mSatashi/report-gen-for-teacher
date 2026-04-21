@@ -9,48 +9,41 @@ import os
 import uuid
 from datetime import datetime
 from typing import List, Optional
-
+ 
 import aiosmtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 from sqlalchemy.orm import Session
-
+ 
 from app.core.config import settings
 from app.models.models import Laporan, Murid, LogPertemuan, KnowledgeState
 from app.schemas.schemas import LaporanCreate, LaporanUpdate
 from app.ai.ai_service import narrative_engine
-
+ 
 logger = logging.getLogger(__name__)
-
 os.makedirs(settings.UPLOAD_DIR + "pdf/", exist_ok=True)
-
-
-# ── CRUD Laporan ─────────────────────────────────────────────────────────────
-
+ 
+ 
+# ── CRUD Laporan ──────────────────────────────────────────────────────────────
+ 
 def get_laporan_by_id(db: Session, laporan_id: str) -> Optional[Laporan]:
     return db.query(Laporan).filter(Laporan.id == laporan_id).first()
-
-
+ 
+ 
 def get_laporan_by_murid(
-    db: Session,
-    murid_id: str,
-    skip: int = 0,
-    limit: int = 50,
+    db: Session, murid_id: str, skip: int = 0, limit: int = 50
 ) -> List[Laporan]:
     return (
         db.query(Laporan)
         .filter(Laporan.murid_id == murid_id)
         .order_by(Laporan.tanggal.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
+        .offset(skip).limit(limit).all()
     )
-
-
+ 
+ 
 def get_laporan_pending(db: Session, pengajar_id: str) -> List[Laporan]:
-    """Ambil laporan berstatus 'draft' atau 'final' yang belum dikirim."""
     from app.models.models import Kelas
     kelas_ids = [k.id for k in db.query(Kelas).filter(Kelas.pengajar_id == pengajar_id).all()]
     return (
@@ -58,10 +51,9 @@ def get_laporan_pending(db: Session, pengajar_id: str) -> List[Laporan]:
         .filter(Laporan.kelas_id.in_(kelas_ids), Laporan.status != "terkirim")
         .all()
     )
-
-
+ 
+ 
 def update_laporan(db: Session, laporan_id: str, data: LaporanUpdate) -> Optional[Laporan]:
-    """F005 — Edit/override laporan yang sudah di-generate."""
     lap = get_laporan_by_id(db, laporan_id)
     if not lap:
         return None
@@ -70,44 +62,41 @@ def update_laporan(db: Session, laporan_id: str, data: LaporanUpdate) -> Optiona
     db.commit()
     db.refresh(lap)
     return lap
-
-
+ 
+ 
 def finalize_laporan(db: Session, laporan_id: str) -> Optional[Laporan]:
-    """Set status laporan menjadi 'final'."""
     return update_laporan(db, laporan_id, LaporanUpdate(status="final"))
-
-
-# ── Generate Laporan (AI) ─────────────────────────────────────────────────────
-
-async def generate_laporan(
-    db: Session,
-    data: LaporanCreate,
-) -> Laporan:
+ 
+ 
+# ── Generate Laporan (F003) ───────────────────────────────────────────────────
+ 
+async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
     """
     F003 — Generate laporan perkembangan otomatis via NarrativeEngine.
+ 
     Alur:
-    1. Ambil data murid & log pertemuan dari DB
-    2. Ambil knowledge state (BKT)
-    3. Kirim ke NarrativeEngine untuk generate narasi
-    4. Simpan hasilnya ke tabel laporan
+    1. Ambil Murid dari PostgreSQL
+    2. Ambil LogPertemuan dalam periode dari PostgreSQL
+    3. Ambil KnowledgeState (BKT) dari PostgreSQL
+    4. [BARU] Ambil RencanaStudi terbaru → pso_recommended_route
+    5. Kirim ke NarrativeEngine dengan pso_route + report_style
+    6. Simpan hasil ke tabel laporan (PostgreSQL)
     """
-    # 1. Data murid
+    # 1. Data murid (dari PostgreSQL)
     murid = db.query(Murid).filter(Murid.id == data.murid_id).first()
     if not murid:
         raise ValueError(f"Murid dengan id {data.murid_id} tidak ditemukan")
-
-    murid_pengguna = murid.pengguna
-    nama_murid     = murid.nama or murid_pengguna.username
-
-    # 2. Data kelas & mata pelajaran
+ 
+    nama_murid     = murid.nama or murid.pengguna.username
     mata_pelajaran = "Umum"
+ 
     if data.kelas_id:
         from app.models.models import Kelas
         kelas = db.query(Kelas).filter(Kelas.id == data.kelas_id).first()
         if kelas:
             mata_pelajaran = kelas.mata_pelajaran or kelas.nama
-
-    # 3. Ambil log pertemuan pada periode
+ 
+    # 2. Log pertemuan dalam periode (dari PostgreSQL)
     q = db.query(LogPertemuan).filter(LogPertemuan.murid_id == data.murid_id)
     if data.kelas_id:
         q = q.filter(LogPertemuan.kelas_id == data.kelas_id)
@@ -116,7 +105,7 @@ async def generate_laporan(
     if data.periode_selesai:
         q = q.filter(LogPertemuan.tanggal <= data.periode_selesai)
     logs = q.order_by(LogPertemuan.tanggal.asc()).all()
-
+ 
     log_data = [
         {
             "tanggal":              str(l.tanggal),
@@ -129,12 +118,35 @@ async def generate_laporan(
         }
         for l in logs
     ]
-
-    # 4. Knowledge state dari BKT
+ 
+    # 3. Knowledge state dari BKT (dari PostgreSQL)
     ks_rows = db.query(KnowledgeState).filter(KnowledgeState.murid_id == data.murid_id).all()
     knowledge_state = {ks.topik: float(ks.p_knowledge) for ks in ks_rows}
-
-    # 5. Generate narasi via LLM
+ 
+    # 4. [INTEGRASI 04_llm_evaluation.py] Ambil rekomendasi PSO dari RencanaStudi terbaru
+    pso_recommended_route: Optional[str] = None
+    if data.kelas_id:
+        from app.models.models import RencanaStudi
+        rencana = (
+            db.query(RencanaStudi)
+            .filter(
+                RencanaStudi.murid_id == data.murid_id,
+                RencanaStudi.kelas_id == data.kelas_id,
+            )
+            .order_by(RencanaStudi.waktu.desc())
+            .first()
+        )
+        if rencana and rencana.daftar_rekomendasi_materi:
+            materi = rencana.daftar_rekomendasi_materi
+            if isinstance(materi, list) and materi:
+                pso_recommended_route = f"Lanjut ke materi: {', '.join(materi[:3])}"
+            elif isinstance(materi, str):
+                pso_recommended_route = materi
+ 
+    # 5. [INTEGRASI] Gaya laporan dari request (default: Konstruktif dan Memotivasi)
+    report_style = getattr(data, "report_style", "Konstruktif dan Memotivasi")
+ 
+    # 6. Generate narasi via NarrativeEngine (LLM)
     konten = await narrative_engine.generate_report(
         nama_murid=nama_murid,
         mata_pelajaran=mata_pelajaran,
@@ -142,9 +154,11 @@ async def generate_laporan(
         periode_mulai=str(data.periode_mulai) if data.periode_mulai else None,
         periode_selesai=str(data.periode_selesai) if data.periode_selesai else None,
         knowledge_state=knowledge_state,
+        pso_recommended_route=pso_recommended_route,
+        report_style=report_style,
     )
-
-    # 6. Simpan ke DB
+ 
+    # 7. Simpan ke PostgreSQL
     laporan = Laporan(
         id=str(uuid.uuid4()),
         murid_id=data.murid_id,
@@ -161,125 +175,82 @@ async def generate_laporan(
     db.commit()
     db.refresh(laporan)
     return laporan
-
-
+ 
+ 
 # ── Generate PDF ──────────────────────────────────────────────────────────────
-
+ 
 def generate_pdf(laporan: Laporan) -> str:
-    """
-    Konversi konten laporan ke file PDF.
-    Mengembalikan path file PDF yang disimpan.
-    """
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import cm
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-        from reportlab.lib.enums import TA_LEFT, TA_CENTER
-
-        pdf_dir  = settings.UPLOAD_DIR + "pdf/"
-        pdf_path = os.path.join(pdf_dir, f"laporan_{laporan.id}.pdf")
-
-        doc = SimpleDocTemplate(
-            pdf_path,
-            pagesize=A4,
-            rightMargin=2*cm, leftMargin=2*cm,
-            topMargin=2*cm,   bottomMargin=2*cm,
-        )
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            "Title", parent=styles["Title"],
-            fontSize=14, alignment=TA_CENTER, spaceAfter=12
-        )
-        body_style = ParagraphStyle(
-            "Body", parent=styles["Normal"],
-            fontSize=11, leading=16, spaceAfter=8
-        )
-
-        story = []
-        story.append(Paragraph("Laporan Perkembangan Belajar Siswa", title_style))
-        story.append(Spacer(1, 0.5*cm))
-
-        for paragraph in laporan.konten.split("\n"):
-            if paragraph.strip():
-                story.append(Paragraph(paragraph.strip(), body_style))
+        from reportlab.lib.enums import TA_CENTER
+ 
+        pdf_path = os.path.join(settings.UPLOAD_DIR + "pdf/", f"laporan_{laporan.id}.pdf")
+        doc = SimpleDocTemplate(pdf_path, pagesize=A4,
+                                rightMargin=2*cm, leftMargin=2*cm,
+                                topMargin=2*cm,   bottomMargin=2*cm)
+        styles    = getSampleStyleSheet()
+        t_style   = ParagraphStyle("T", parent=styles["Title"],
+                                   fontSize=14, alignment=TA_CENTER, spaceAfter=12)
+        b_style   = ParagraphStyle("B", parent=styles["Normal"],
+                                   fontSize=11, leading=16, spaceAfter=8)
+        story = [Paragraph("Laporan Perkembangan Belajar Siswa", t_style), Spacer(1, 0.5*cm)]
+        for para in laporan.konten.split("\n"):
+            if para.strip():
+                story.append(Paragraph(para.strip(), b_style))
             else:
                 story.append(Spacer(1, 0.3*cm))
-
         doc.build(story)
         return pdf_path
-
     except ImportError:
-        logger.warning("reportlab tidak terinstall, PDF tidak dapat dibuat")
+        logger.warning("reportlab tidak terinstall")
         return ""
     except Exception as e:
         logger.error(f"Gagal generate PDF: {e}")
         return ""
-
-
-# ── Kirim Email ───────────────────────────────────────────────────────────────
-
+ 
+ 
+# ── Kirim Email (F006) ────────────────────────────────────────────────────────
+ 
 async def kirim_laporan_email(
-    laporan: Laporan,
-    email_tujuan: str,
-    nama_murid: str,
-    catatan: Optional[str] = None,
-    pdf_path: Optional[str] = None,
-    db: Optional[Session] = None,
-) -> bool:
-    """
-    F006 — Kirim laporan via email ke orang tua.
-    Melampirkan PDF jika tersedia.
-    """
+    laporan, email_tujuan, nama_murid, catatan=None, pdf_path=None, db=None
+):
     try:
         msg = MIMEMultipart()
         msg["From"]    = settings.EMAIL_FROM
         msg["To"]      = email_tujuan
         msg["Subject"] = f"Laporan Perkembangan Belajar – {nama_murid}"
-
         body = (
             f"Yth. Orang Tua/Wali dari {nama_murid},\n\n"
             f"Berikut kami sampaikan laporan perkembangan belajar {nama_murid}.\n\n"
             f"{laporan.konten}\n\n"
         )
         if catatan:
-            body += f"Catatan tambahan dari pengajar:\n{catatan}\n\n"
+            body += f"Catatan tambahan:\n{catatan}\n\n"
         body += "Hormat kami,\nTim Pengajar"
-
         msg.attach(MIMEText(body, "plain", "utf-8"))
-
-        # Lampirkan PDF jika ada
         if pdf_path and os.path.exists(pdf_path):
             with open(pdf_path, "rb") as f:
                 part = MIMEBase("application", "octet-stream")
                 part.set_payload(f.read())
             encoders.encode_base64(part)
-            part.add_header(
-                "Content-Disposition",
-                f"attachment; filename=laporan_{nama_murid}.pdf",
-            )
+            part.add_header("Content-Disposition",
+                            f"attachment; filename=laporan_{nama_murid}.pdf")
             msg.attach(part)
-
         await aiosmtplib.send(
-            msg,
-            hostname=settings.SMTP_HOST,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USERNAME,
-            password=settings.SMTP_PASSWORD,
+            msg, hostname=settings.SMTP_HOST, port=settings.SMTP_PORT,
+            username=settings.SMTP_USERNAME, password=settings.SMTP_PASSWORD,
             start_tls=True,
         )
-
-        # Update status laporan di DB
         if db:
-            laporan.status          = "terkirim"
+            laporan.status = "terkirim"
             laporan.tanggal_dikirim = datetime.utcnow()
             if pdf_path:
                 laporan.pdf_path = pdf_path
             db.commit()
-
-        logger.info(f"Laporan {laporan.id} berhasil dikirim ke {email_tujuan}")
         return True
-
     except Exception as e:
-        logger.error(f"Gagal kirim email laporan {laporan.id}: {e}")
+        logger.error(f"Gagal kirim email: {e}")
         return False
