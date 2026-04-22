@@ -1,85 +1,77 @@
-"""
-ai_service.py
-NarrativeEngine  — generate laporan perkembangan siswa via LLM.
-PlannerEngine    — generate rencana studi adaptif via LLM.
-Keduanya menggunakan OllamaClient dan menerapkan:
-  - Prompt sanitization (cegah injection)
-  - Few-shot prompting
-  - Temperature & top-p sesuai konfigurasi laporan (Section 4.3.2)
-"""
 import logging
 import re
 from typing import Any, Dict, List, Optional
-
+ 
 from app.ai.ollama_client import narrative_client, planner_client
-
+ 
 logger = logging.getLogger(__name__)
-
-# ── Prompt Sanitizer ─────────────────────────────────────────────────────────
-
+ 
+# ── Prompt Sanitizer (NF001) ──────────────────────────────────────────────────
 _INJECTION_PATTERNS = re.compile(
     r"(ignore previous|disregard|system:|<\|im_start\|>|forget your|jailbreak|"
     r"act as|pretend you|you are now|new instruction)",
     re.IGNORECASE,
 )
-
-
+ 
+ 
 def sanitize_prompt(text: str) -> str:
-    """
-    Membersihkan input pengguna dari pola prompt injection.
-    NF001 — pengamanan query AI.
-    """
+    """Bersihkan input dari pola prompt injection (NF001)."""
     if not text:
         return ""
-    cleaned = _INJECTION_PATTERNS.sub("[REMOVED]", text)
-    # Batasi panjang teks input agar tidak overflow context
-    return cleaned[:3000]
-
-
+    return _INJECTION_PATTERNS.sub("[REMOVED]", text)[:3000]
+ 
+ 
 # ═══════════════════════════════════════════════════════════════════════════════
-# NARRATIVE ENGINE — Generate Laporan
+# NARRATIVE ENGINE
 # ═══════════════════════════════════════════════════════════════════════════════
-
+ 
 NARRATIVE_SYSTEM_PROMPT = """
-Kamu adalah asisten pendidikan profesional yang bertugas menulis laporan perkembangan belajar siswa 
+Kamu adalah asisten pendidikan profesional yang bertugas menulis laporan perkembangan belajar siswa
 dalam Bahasa Indonesia yang formal namun hangat. Laporan harus:
 1. Berdasarkan data yang diberikan, tidak mengarang fakta
-2. Mencakup: ringkasan kemajuan, capaian akademik, perkembangan karakter, area pengembangan, rekomendasi
+2. Mencakup: ringkasan kemajuan, capaian akademik, area pengembangan, rencana selanjutnya, rekomendasi
 3. Ditulis dari sudut pandang pengajar kepada orang tua
-4. Tidak mengandung data sensitif yang tidak perlu
-5. Panjang sekitar 300-500 kata
+4. Panjang sekitar 300-500 kata
 Jangan tambahkan penjelasan atau komentar di luar isi laporan.
 """.strip()
-
+ 
+# Few-shot example sesuai Section 4.3.2 laporan (1-2 contoh)
 FEW_SHOT_LAPORAN = """
-Contoh format laporan:
+Contoh format laporan yang baik:
 ---
 Laporan Perkembangan Belajar Siswa
-Nama Siswa  : Aisya Putri
-Periode     : Februari – Maret 2025
+Nama Siswa    : Aisya Putri
+Periode       : Februari – Maret 2025
 Mata Pelajaran: Matematika
-
+ 
 RINGKASAN KEMAJUAN
-Selama periode ini, Aisya menunjukkan kemajuan yang konsisten dalam memahami konsep aljabar dasar...
-
+Selama periode ini, Aisya menunjukkan kemajuan yang konsisten dalam memahami konsep aljabar dasar.
+Tingkat kehadiran 100% mencerminkan komitmen yang tinggi terhadap proses belajar.
+ 
 CAPAIAN AKADEMIK
-Aisya berhasil menguasai persamaan linear satu variabel dengan tingkat pemahaman 78%...
-
+Aisya berhasil menguasai persamaan linear satu variabel dengan tingkat pemahaman 78%.
+Penguasaan topik bilangan bulat sudah sangat baik (di atas 85%).
+ 
 AREA PENGEMBANGAN
-Beberapa area yang masih perlu ditingkatkan: operasi bilangan negatif dan kecepatan membaca soal...
-
+Beberapa topik yang masih perlu ditingkatkan: operasi bilangan negatif dan kecepatan membaca soal.
+ 
+RENCANA BELAJAR BERIKUTNYA
+Berdasarkan analisis sistem BKT dan rekomendasi PSO, fokus periode berikutnya adalah
+penguatan materi fungsi kuadrat dan sistem persamaan linear sebagai fondasi untuk kalkulus.
+ 
 REKOMENDASI
-Untuk periode berikutnya, disarankan untuk: (1) Memperkuat pemahaman bilangan negatif...
+(1) Latihan soal variasi bilangan negatif 2x seminggu
+(2) Review aljabar dasar sebelum masuk ke topik baru
 ---
 """.strip()
-
-
+ 
+ 
 class NarrativeEngine:
     """
-    Menghasilkan narasi deskriptif laporan perkembangan siswa
-    berdasarkan data log pertemuan.
+    Generate laporan perkembangan siswa menggunakan LLM.
+    Data masukan dari PostgreSQL (via report_service.py), bukan dari CSV.
     """
-
+ 
     async def generate_report(
         self,
         nama_murid: str,
@@ -88,152 +80,190 @@ class NarrativeEngine:
         periode_mulai: Optional[str] = None,
         periode_selesai: Optional[str] = None,
         knowledge_state: Optional[Dict[str, float]] = None,
+        # [INTEGRASI 04_llm_evaluation.py] Parameter baru
+        pso_recommended_route: Optional[str] = None,
+        report_style: Optional[str] = None,
     ) -> str:
         """
         Generate narasi laporan perkembangan.
-
+ 
         Args:
-            nama_murid       : Nama siswa
-            mata_pelajaran   : Mata pelajaran / nama kelas
-            log_data         : List log pertemuan (topik, nilai, catatan, dll)
-            periode_mulai    : Tanggal awal periode laporan
-            periode_selesai  : Tanggal akhir periode laporan
-            knowledge_state  : Dict {topik: probabilitas_penguasaan} dari BKT
+            pso_recommended_route : Output dari PlannerEngine/PSO — topik berikutnya
+            report_style          : Gaya penulisan (Konstruktif/Formal/Ringkas/Detail)
         """
-        # Sanitasi semua input teks
         nama_murid     = sanitize_prompt(nama_murid)
         mata_pelajaran = sanitize_prompt(mata_pelajaran)
-
-        # Susun ringkasan data log
+ 
         log_summary = self._format_log_summary(log_data)
         bkt_summary = self._format_bkt_summary(knowledge_state or {})
-
+ 
+        # [INTEGRASI] Section PSO dalam prompt — sesuai pola 04_llm_evaluation.py
+        pso_section = ""
+        if pso_recommended_route:
+            pso_section = (
+                f"\nRencana Belajar Berikutnya (Rekomendasi Sistem PSO):\n"
+                f"{sanitize_prompt(pso_recommended_route)}\n"
+            )
+ 
+        # [INTEGRASI] Instruksi gaya penulisan
+        style_section = ""
+        if report_style:
+            style_section = (
+                f"\nGaya penulisan yang diinginkan: {sanitize_prompt(report_style)}.\n"
+                f"Pastikan nada dan struktur laporan mencerminkan gaya tersebut.\n"
+            )
+ 
         prompt = f"""
 {FEW_SHOT_LAPORAN}
-
+ 
 Sekarang buatkan laporan untuk data berikut:
-
+ 
 Nama Siswa    : {nama_murid}
 Mata Pelajaran: {mata_pelajaran}
 Periode       : {periode_mulai or "tidak ditentukan"} s/d {periode_selesai or "tidak ditentukan"}
-
-Data Log Pertemuan:
+ 
+Data Log Pertemuan (20 sesi terakhir):
 {log_summary}
-
-Estimasi Penguasaan Materi (dari sistem BKT):
+ 
+Estimasi Penguasaan Materi dari Sistem BKT:
 {bkt_summary}
-
+{pso_section}{style_section}
 Tuliskan laporan perkembangan lengkap sesuai format contoh di atas.
 """.strip()
-
+ 
         try:
             result = await narrative_client.generate(
                 prompt=prompt,
                 system_prompt=NARRATIVE_SYSTEM_PROMPT,
-                temperature=0.6,
-                top_p=0.9,
-                max_tokens=1024,
+                temperature=0.6,   # Tabel 10: 0.5–0.7
+                top_p=0.9,         # Tabel 10: 0.9
+                max_tokens=1024,   # Tabel 10: 512–1024
             )
-            return result if result else self._template_fallback(nama_murid, mata_pelajaran, log_data)
+            return result if result else self._template_fallback(
+                nama_murid, mata_pelajaran, log_data, knowledge_state, pso_recommended_route
+            )
         except Exception as e:
             logger.error(f"NarrativeEngine gagal: {e}")
-            return self._template_fallback(nama_murid, mata_pelajaran, log_data)
-
+            return self._template_fallback(
+                nama_murid, mata_pelajaran, log_data, knowledge_state, pso_recommended_route
+            )
+ 
     async def analyze_class_data(
         self,
         nama_kelas: str,
         log_data: List[Dict[str, Any]],
     ) -> str:
         """
-        Analisis data log pertemuan sebuah kelas secara keseluruhan.
-        Menghasilkan draft_analisis yang digunakan oleh PlannerEngine.
+        Analisis log pertemuan kelas → draft_analisis untuk PlannerEngine.
+        Tidak berubah dari versi sebelumnya.
         """
         log_summary = self._format_log_summary(log_data)
         prompt = f"""
 Analisis data pembelajaran berikut untuk kelas {sanitize_prompt(nama_kelas)}:
-
+ 
 {log_summary}
-
+ 
 Buat analisis singkat dalam Bahasa Indonesia yang mencakup:
 1. Topik yang sudah dikuasai dengan baik
 2. Topik yang masih perlu diperkuat
 3. Rata-rata nilai dan tren kemajuan
 4. Estimasi sisa kredit / sesi yang dibutuhkan
-5. Catatan khusus dari pengajar yang perlu diperhatikan
-
+5. Catatan khusus yang perlu diperhatikan
+ 
 Format: paragraf padat, maksimal 300 kata.
 """.strip()
-
+ 
         try:
             return await narrative_client.generate(prompt=prompt, temperature=0.5, max_tokens=512)
         except Exception as e:
             logger.error(f"Analisis kelas gagal: {e}")
-            return f"Analisis otomatis gagal. Silakan lakukan analisis manual untuk kelas {nama_kelas}."
-
+            return f"Analisis otomatis gagal untuk kelas {nama_kelas}. Lakukan analisis manual."
+ 
     # ── Helpers ───────────────────────────────────────────────────────────────
-
+ 
     def _format_log_summary(self, log_data: List[Dict]) -> str:
         if not log_data:
             return "Belum ada data log pertemuan."
         lines = []
-        for i, log in enumerate(log_data[-20:], 1):   # ambil 20 log terbaru
+        for i, log in enumerate(log_data[-20:], 1):
             lines.append(
-                f"{i}. [{log.get('tanggal', '-')}] Topik: {log.get('topik', '-')} | "
+                f"{i}. [{log.get('tanggal', '-')}] {log.get('topik', '-')} | "
                 f"Nilai: {log.get('nilai', '-')} | "
                 f"Pemahaman: {log.get('tingkat_pemahaman', '-')} | "
                 f"Catatan: {sanitize_prompt(str(log.get('catatan', '-')))}"
             )
         return "\n".join(lines)
-
+ 
     def _format_bkt_summary(self, knowledge_state: Dict[str, float]) -> str:
         if not knowledge_state:
             return "Data BKT belum tersedia."
         lines = []
-        for topik, prob in knowledge_state.items():
+        for topik, prob in sorted(knowledge_state.items(), key=lambda x: x[1]):
             persen = round(prob * 100, 1)
             status = "Dikuasai" if prob >= 0.7 else ("Sedang Dipelajari" if prob >= 0.4 else "Perlu Perhatian")
             lines.append(f"- {topik}: {persen}% ({status})")
         return "\n".join(lines)
-
+ 
     def _template_fallback(
-        self, nama: str, mapel: str, logs: List[Dict]
+        self,
+        nama: str,
+        mapel: str,
+        logs: List[Dict],
+        knowledge_state: Optional[Dict[str, float]] = None,
+        pso_route: Optional[str] = None,
     ) -> str:
-        """Template statis jika LLM tidak tersedia."""
+        """
+        Template statis jika LLM tidak tersedia.
+        [INTEGRASI] Disertakan info BKT + PSO sesuai _template_report() di 04_llm_evaluation.py.
+        """
         nilai_list = [l.get("nilai") for l in logs if l.get("nilai") is not None]
-        rata = round(sum(nilai_list) / len(nilai_list), 1) if nilai_list else "-"
+        rata       = round(sum(nilai_list) / len(nilai_list), 1) if nilai_list else "-"
         topik_list = list({l.get("topik") for l in logs if l.get("topik")})
+ 
+        bkt_line = ""
+        if knowledge_state:
+            dikuasai   = [t for t, p in knowledge_state.items() if p >= 0.7]
+            perlu_review = [t for t, p in knowledge_state.items() if p < 0.4]
+            bkt_line = (
+                f"\nStatus Pemahaman (BKT): {len(dikuasai)}/{len(knowledge_state)} topik dikuasai (≥70%)."
+            )
+            if perlu_review:
+                bkt_line += f"\nTopik perlu perhatian: {', '.join(perlu_review[:3])}."
+ 
+        pso_line = f"\nRencana Belajar Berikutnya (PSO): {pso_route}" if pso_route else ""
+ 
         return (
             f"Laporan Perkembangan Belajar — {nama}\n"
             f"Mata Pelajaran: {mapel}\n\n"
             f"Siswa telah mengikuti {len(logs)} sesi pembelajaran "
             f"dengan rata-rata nilai {rata}.\n"
-            f"Topik yang dipelajari: {', '.join(topik_list[:5]) or '-'}.\n\n"
-            f"(Laporan ini dibuat secara otomatis. Model AI tidak tersedia saat pembuatan.)"
+            f"Topik yang dipelajari: {', '.join(topik_list[:5]) or '-'}."
+            f"{bkt_line}{pso_line}\n\n"
+            f"(Laporan ini dibuat secara otomatis. Model AI tidak tersedia.)"
         )
-
-
+ 
+ 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PLANNER ENGINE — Generate Rencana Studi Adaptif
+# PLANNER ENGINE
 # ═══════════════════════════════════════════════════════════════════════════════
-
+ 
 PLANNER_SYSTEM_PROMPT = """
 Kamu adalah sistem perencanaan kurikulum adaptif untuk lembaga bimbingan belajar.
-Tugasmu adalah membuat jadwal dan urutan materi belajar yang optimal berdasarkan:
-- Data penguasaan siswa saat ini (dari BKT)
+Tugasmu membuat rencana studi optimal berdasarkan:
+- Data penguasaan siswa saat ini dari BKT (probabilitas per topik)
 - Jumlah sesi yang tersisa
-- Target kurikulum
-
-Berikan output dalam format JSON yang valid.
-Jangan tambahkan teks di luar JSON.
+- Target kurikulum yang harus dicapai
+ 
+Output dalam format JSON yang valid. Jangan tambahkan teks di luar JSON.
 """.strip()
-
-
+ 
+ 
 class PlannerEngine:
     """
-    Menghasilkan rencana studi adaptif berdasarkan draft analisis
-    dan knowledge state siswa (output BKT + PSO).
+    Generate rencana studi adaptif berdasarkan BKT + PSO via LLM.
+    Data masukan dari PostgreSQL (via plan_service.py), bukan dari CSV.
     """
-
+ 
     async def generate_rencana_studi(
         self,
         nama_murid: str,
@@ -245,53 +275,48 @@ class PlannerEngine:
     ) -> Dict[str, Any]:
         """
         Generate rencana studi adaptif.
-
-        Returns:
-            dict dengan keys:
-                - rekomendasi_materi: List[str]
-                - jadwal_mingguan: Dict (hari -> list materi)
-                - catatan_analisa: str
-                - estimasi_selesai_minggu: int
+        Fungsi evaluasi PSO: prioritaskan topik p_knowledge rendah (belum dikuasai).
+        Parameter PSO sesuai Tabel 9 laporan: N=30-50, w=0.4-0.9, c1=c2=1.5-2.5.
         """
         bkt_summary = "\n".join(
-            [f"- {t}: {round(p*100,1)}%" for t, p in knowledge_state.items()]
+            [f"- {t}: {round(p*100,1)}%" for t, p in sorted(knowledge_state.items(), key=lambda x: x[1])]
         ) or "Data BKT belum tersedia."
-
+ 
         target_str = ", ".join(target_kurikulum) if target_kurikulum else "Sesuai silabus standar"
-
+ 
         prompt = f"""
 Buat rencana studi adaptif untuk:
 - Siswa     : {sanitize_prompt(nama_murid)}
 - Pelajaran : {sanitize_prompt(mata_pelajaran)}
 - Sisa Sesi : {sisa_sesi} pertemuan
-
-Analisis kondisi belajar siswa:
+ 
+Analisis kondisi belajar (dari log dan BKT):
 {sanitize_prompt(draft_analisis)}
-
-Status penguasaan materi (BKT):
+ 
+Status penguasaan materi saat ini (BKT — urutan dari terendah):
 {bkt_summary}
-
-Target kurikulum yang harus dicapai:
+ 
+Target kurikulum:
 {sanitize_prompt(target_str)}
-
-Buat rencana studi dalam format JSON berikut (isi semua field):
+ 
+Buat rencana dalam format JSON berikut:
 {{
   "rekomendasi_materi": ["topik1", "topik2", ...],
   "jadwal_mingguan": {{
-    "Minggu 1": ["topik untuk minggu 1", ...],
-    "Minggu 2": ["topik untuk minggu 2", ...]
+    "Minggu 1": ["topik untuk minggu 1"],
+    "Minggu 2": ["topik untuk minggu 2"]
   }},
   "catatan_analisa": "penjelasan singkat mengapa urutan ini dipilih",
   "estimasi_selesai_minggu": 4,
   "prioritas_perhatian": ["topik yang paling perlu diperkuat"]
 }}
 """.strip()
-
+ 
         try:
             raw = await planner_client.generate(
                 prompt=prompt,
                 system_prompt=PLANNER_SYSTEM_PROMPT,
-                temperature=0.4,   # lebih rendah agar output JSON konsisten
+                temperature=0.4,   # lebih rendah agar JSON konsisten
                 top_p=0.9,
                 max_tokens=1024,
             )
@@ -299,43 +324,44 @@ Buat rencana studi dalam format JSON berikut (isi semua field):
         except Exception as e:
             logger.error(f"PlannerEngine gagal: {e}")
             return self._fallback_plan(mata_pelajaran, sisa_sesi, knowledge_state)
-
+ 
     def _parse_json_response(self, raw: str) -> Dict[str, Any]:
-        """Parse JSON dari response LLM, handle jika ada teks tambahan."""
         import json
-        # Cari blok JSON dalam response
         match = re.search(r"\{[\s\S]+\}", raw)
         if match:
             try:
                 return json.loads(match.group())
             except json.JSONDecodeError:
                 pass
-        logger.warning("Gagal parse JSON dari PlannerEngine, pakai fallback")
+        logger.warning("Gagal parse JSON dari PlannerEngine")
         return {}
-
+ 
     def _fallback_plan(
-        self,
-        mata_pelajaran: str,
-        sisa_sesi: int,
-        knowledge_state: Dict[str, float],
+        self, mata_pelajaran: str, sisa_sesi: int, knowledge_state: Dict[str, float]
     ) -> Dict[str, Any]:
-        """Rencana studi statis jika LLM gagal."""
-        topik_lemah = [t for t, p in knowledge_state.items() if p < 0.5]
+        """
+        Fallback statis: prioritaskan topik dengan p_knowledge rendah (PSO heuristik).
+        Sesuai logika fungsi evaluasi PSO di Section 4.3.2 laporan.
+        """
+        topik_lemah = sorted(
+            [(t, p) for t, p in knowledge_state.items() if p < 0.7],
+            key=lambda x: x[1]
+        )
+        rekomendasi = [t for t, _ in topik_lemah[:sisa_sesi]]
         topik_kuat  = [t for t, p in knowledge_state.items() if p >= 0.7]
-        rekomendasi = topik_lemah + [t for t in knowledge_state if t not in topik_lemah]
         return {
-            "rekomendasi_materi": rekomendasi[:sisa_sesi],
-            "jadwal_mingguan": {},
-            "catatan_analisa": (
-                f"Rencana dibuat secara statis (AI tidak tersedia). "
-                f"Prioritaskan topik yang penguasaannya di bawah 50%: {', '.join(topik_lemah[:3]) or '-'}. "
-                f"Topik yang sudah dikuasai: {', '.join(topik_kuat[:3]) or '-'}."
+            "rekomendasi_materi":      rekomendasi,
+            "jadwal_mingguan":         {},
+            "catatan_analisa":         (
+                f"Rencana statis (PSO tidak tersedia). "
+                f"Prioritaskan: {', '.join(rekomendasi[:3]) or '-'}. "
+                f"Sudah dikuasai: {', '.join(topik_kuat[:3]) or '-'}."
             ),
             "estimasi_selesai_minggu": max(1, sisa_sesi // 2),
-            "prioritas_perhatian": topik_lemah[:3],
+            "prioritas_perhatian":     rekomendasi[:3],
         }
-
-
+ 
+ 
 # ── Singleton instances ───────────────────────────────────────────────────────
 narrative_engine = NarrativeEngine()
 planner_engine   = PlannerEngine()

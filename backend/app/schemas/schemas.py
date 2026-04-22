@@ -182,11 +182,14 @@ class BulkUploadResponse(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class LaporanCreate(BaseModel):
-    murid_id: str
-    kelas_id: Optional[str] = None
-    periode_mulai: Optional[date] = None
+    murid_id:        str
+    kelas_id:        Optional[str]  = None
+    periode_mulai:   Optional[date] = None
     periode_selesai: Optional[date] = None
-    tipe_laporan: str = "perkembangan"
+    tipe_laporan:    str            = "perkembangan"
+    # [INTEGRASI 04_llm_evaluation.py] Gaya penulisan laporan
+    # Diteruskan ke NarrativeEngine sebagai instruksi gaya di prompt
+    report_style:    str            = "Konstruktif dan Memotivasi"
 
 
 class LaporanUpdate(BaseModel):
