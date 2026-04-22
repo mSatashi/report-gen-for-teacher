@@ -3,7 +3,7 @@ schemas.py
 Pydantic v2 schemas untuk request & response FastAPI.
 """
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 EducationLevel = Literal["SD-1", "SD-2", "SD-3", "SD-4", "SD-5", "SD-6", "SMP-1", "SMP-2", "SMP-3", "SMK-1", "SMK-2", "SMK-3", "SMK-4", "SMA-1", "SMA-2", "SMA-3"]
@@ -57,8 +57,8 @@ class MuridResponse(BaseModel):
     id: str
     email_address: Optional[str] = None
     nama: Optional[str] = None
-    education_level: [Optional]EducationLevel= None
-    jenis_kelamin: [Optional]JenisKelamin = None
+    education_level: Optional[EducationLevel]= None
+    jenis_kelamin: Optional[JenisKelamin] = None
     is_active: bool = True
 
 
