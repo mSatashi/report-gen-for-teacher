@@ -20,7 +20,7 @@ from app.core.security import hash_password, verify_password, create_access_toke
 from app.models.models import (
     Pengguna, Murid, Pengajar, Kelas, KelasMurid,
     LogPertemuan, DraftAnalisis, RencanaStudi, Laporan,
-    KnowledgeState, DiagnosticResult, StudentEvaluation, LessonPlan
+    KnowledgeState, DiagnosticResult, StudentEvaluation, LessonPlan, MataPelajaran
 )
 from app.schemas.schemas import (
     MuridCreate, PengajarCreate, KelasCreate, KelasUpdate,
@@ -240,6 +240,56 @@ class KelasService:
         )
         return result.scalars().all()
 
+# ═══════════════════════════════════════════════════════════════
+#  MATA PELAJARAN SERVICE
+# ═══════════════════════════════════════════════════════════════
+
+class MataPelajaranService:
+
+    @staticmethod
+    async def create(db: AsyncSession, data) -> MataPelajaran:
+        item = MataPelajaran(
+            id=str(uuid.uuid4()),
+            nama_mata_pelajaran=data.nama_mata_pelajaran,  
+            kredit=data.kredit,
+            hari=data.hari,
+            jam=data.jam,
+        )
+        db.add(item)
+        await db.flush()
+        return item
+
+    @staticmethod
+    async def get_all(db: AsyncSession) -> List[MataPelajaran]:
+        result = await db.execute(select(MataPelajaran))
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_by_id(db: AsyncSession, item_id: str) -> Optional[MataPelajaran]:
+        result = await db.execute(select(MataPelajaran).where(MataPelajaran.id == item_id))
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def update(db: AsyncSession, item_id: str, data) -> Optional[MataPelajaran]:
+        result = await db.execute(select(MataPelajaran).where(MataPelajaran.id == item_id))
+        item = result.scalar_one_or_none()
+        if not item:
+            return None
+        for key, val in data.model_dump(exclude_unset=True).items():
+            setattr(item, key, val)
+        item.updated_at = datetime.utcnow()
+        await db.flush()
+        return item
+
+    @staticmethod
+    async def delete(db: AsyncSession, item_id: str) -> bool:
+        result = await db.execute(select(MataPelajaran).where(MataPelajaran.id == item_id))
+        item = result.scalar_one_or_none()
+        if not item:
+            return False
+        await db.delete(item)
+        await db.flush()
+        return True
 
 # ═══════════════════════════════════════════════════════════════
 #  LOG PERTEMUAN SERVICE

@@ -12,9 +12,20 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.models import models  # noqa: F401
-from app.routers import auth, dashboard, log, laporan, plan, kelas, diagnostic, murid
-# [INTEGRASI] Router baru untuk inspeksi BKT
-from app.routers import bkt
+from app.routers import (
+    auth, 
+    dashboard, 
+    log, 
+    laporan, 
+    plan, 
+    kelas, 
+    diagnostic, 
+    murid, 
+    bkt, 
+    mata_pelajaran,
+    ks,
+    ai,
+)
  
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
@@ -73,8 +84,10 @@ app.include_router(laporan.router,     prefix=PREFIX)
 app.include_router(plan.router,        prefix=PREFIX)
 app.include_router(diagnostic.router,  prefix=PREFIX)
 app.include_router(murid.router,       prefix=PREFIX)
-# [INTEGRASI] Router BKT — inspeksi parameter dan knowledge state
 app.include_router(bkt.router,         prefix=PREFIX)
+app.include_router(mata_pelajaran.router, prefix=PREFIX)
+app.include_router(ks.router,          prefix=PREFIX)
+app.include_router(ai.router,          prefix=PREFIX)
  
  
 @app.get("/", tags=["Root"])
