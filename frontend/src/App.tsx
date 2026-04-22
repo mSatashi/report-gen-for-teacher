@@ -10,7 +10,7 @@ import ReportEditor from "./pages/report-editor";
 import { sidebarStyles, styles } from "./styles";
 import { fonts } from "./components/fontstyle";
 import LoginPage from "./pages/login";
-import { loginAPI, type AuthUser } from "./service/authService";
+import { loginAPI, logout, type AuthUser } from "./service/authService";
 import MasterKelas from "./pages/master-kelas";
 import { setUnauthorizedHandler } from "./service/apiFetch";
 import MasterSiswa from "./pages/master-siswa";
@@ -27,6 +27,7 @@ const App: React.FC = () => {
     } catch { return null; }
   });
   const [loginError, setLoginError] = useState<string>("");
+  const [loginLoading, setLoginLoading] = useState(false);
   const [activeRoute, setActiveRoute] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
@@ -49,6 +50,7 @@ const App: React.FC = () => {
   }) => {
     try {
       setLoginError("");
+      setLoginLoading(true);
       const authUser = await loginAPI({
         email: data.email,
         password: data.password,
@@ -59,29 +61,27 @@ const App: React.FC = () => {
 
       setUser(authUser);
       setActiveRoute("home");
-    // } catch (err: any) {
-    //   setLoginError(err.message ?? "Terjadi kesalahan.");
-    // }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Terjadi kesalahan.";
       setLoginError(message);
+    } finally {
+      setLoginLoading(false);
     }
   };
 
   /** Logout handler */
-  // const handleLogout = () => {
-  //   localStorage.removeItem(TOKEN_KEY);
-  //   localStorage.removeItem(USER_KEY);
-  //   setUser(null);
-  //   setActiveRoute("login");
-  // };
-
-  const handleLogout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setUser(null);
-    setActiveRoute("home");
-  };
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.warn("Logout API gagal, tetap logout lokal:", err);
+    } finally {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      setUser(null);
+      setActiveRoute("home");
+    }
+  }
 
   useEffect(() => {
     setUnauthorizedHandler(handleLogout);
@@ -90,7 +90,7 @@ const App: React.FC = () => {
 
   /** Jika belum login → tampilkan LoginPage saja  */
   if (!isLoggedIn) {
-    return <LoginPage onLogin={handleLogin} error={loginError} />;
+    return <LoginPage onLogin={handleLogin} error={loginError} loading={loginLoading} />;
   }
 
 
@@ -163,7 +163,11 @@ const App: React.FC = () => {
         style={styles.mainArea}
       >
         {/* Header */}
-        <Header onOpenMobileMenu={() => setMobileSidebarOpen(true)} />
+        <Header onOpenMobileMenu={() => setMobileSidebarOpen(true)}
+        // namaLengkap={user?.full_name ?? user?.name ?? "Pengguna"}
+        // email={user?.email ?? ""}
+          onSignOut={handleLogout}
+        />
 
         {/* Toolbar / page title */}
         <div

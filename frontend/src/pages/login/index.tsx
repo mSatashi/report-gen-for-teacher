@@ -1,21 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { loginStyles } from "./styles";
 
 interface LoginPageProps {
   onLogin?: (data: { email: string; password: string; captchaAnswer: string }) => void;
   error?: string;
+  loading?: boolean;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, error, loading = false }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [, setFocused] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     onLogin?.({ email, password, captchaAnswer: "" });
   };
 
