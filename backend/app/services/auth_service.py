@@ -3,7 +3,7 @@ auth_service.py
 Service untuk autentikasi: register, login, get current user.
 """
 import uuid
-from typing import Optional
+from typing import Optional, cast
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -46,16 +46,16 @@ def register_user(db: Session, data: RegisterRequest) -> Pengguna:
 def login_user(db: Session, data: LoginRequest) -> TokenResponse:
     """Login dan kembalikan JWT token."""
     user = db.query(Pengguna).filter(Pengguna.email_address == data.email_address).first()
-    if not user or not verify_password(data.password, user.hashed_password):
+    if not user or not verify_password(data.password, str(user.hashed_password)):
         raise HTTPException(status_code=401, detail="Email atau password salah")
-    if not user.is_active:
+    if not cast(bool, user.is_active):
         raise HTTPException(status_code=403, detail="Akun tidak aktif")
 
     token = create_access_token({"sub": user.id, "tipe": user.tipe_pengguna})
     return TokenResponse(
         access_token=token,
-        tipe_pengguna=user.tipe_pengguna,
-        user_id=user.id,
+        tipe_pengguna=str(user.tipe_pengguna),
+        user_id=str(user.id),
     )
 
 def logout_user(token: str) -> dict:
@@ -92,13 +92,13 @@ def get_current_user(
  
     from app.models.models import Pengguna as PenggunaModel
     user = db.query(PenggunaModel).filter(PenggunaModel.id == payload.get("sub")).first()
-    if not user or not user.is_active:
+    if not user or not cast(bool, user.is_active):
         raise HTTPException(status_code=401, detail="Pengguna tidak ditemukan")
     return user
 
 
 def require_pengajar(current_user: Pengguna = Depends(get_current_user)) -> Pengguna:
     """Dependency: hanya pengajar yang boleh akses endpoint ini."""
-    if current_user.tipe_pengguna != "pengajar":
+    if str(current_user.tipe_pengguna) != "pengajar":
         raise HTTPException(status_code=403, detail="Hanya pengajar yang dapat mengakses fitur ini")
     return current_user

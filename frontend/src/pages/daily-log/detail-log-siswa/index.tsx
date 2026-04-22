@@ -1,15 +1,8 @@
 import React, { useState } from "react";
-import type { LogEntry, TingkatPemahaman } from "../components/types";
+import type { TingkatPemahaman } from "../components/types";
 import { PENGUASAAN_BADGE, btnAddStyle } from "../components/constants";
 import type { Kelas, Siswa } from "../../../types";
 import type { DailyLogResponse } from "../../../service/payload";
-
-interface SiswaInfo {
-  id: number;
-  nama: string;
-  kelas: string;
-  idMapel: number;
-}
 
 interface DailyLogDetailSiswaProps {
   dataSiswa: Siswa;
@@ -37,16 +30,16 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
   const [activeTab, setActiveTab] = useState<Tab>("Semua");
 
   const siswaLogs = logDataSiswa.filter(
-    (l) => l.siswa === dataSiswa.nama
+    (l) => l.murid_id === dataSiswa.nama
   );
 
   const countByLevel = (level: TingkatPemahaman) =>
-    siswaLogs.filter((l) => l.tingkat_penguasaan === level).length;
+    siswaLogs.filter((l) => l.tingkat_pemahaman as TingkatPemahaman === level).length;
 
   const filtered =
     activeTab === "Semua"
       ? siswaLogs
-      : siswaLogs.filter((l) => l.tingkat_penguasaan === activeTab);
+      : siswaLogs.filter((l) => l.tingkat_pemahaman === activeTab);
 
   const initials = dataSiswa.nama.split(" ").map((w) => w[0]).slice(0, 2).join("");
 
@@ -166,20 +159,20 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
               </thead>
               <tbody>
                 {filtered.map((log, idx) => {
-                  const badge = PENGUASAAN_BADGE[log.tingkat_penguasaan];
+                  const badge = PENGUASAAN_BADGE[log.tingkat_pemahaman as TingkatPemahaman];
                   return (
                     <tr key={log.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "12px 14px", color: "#6b7280" }}>{idx + 1}</td>
                       <td style={{ padding: "12px 14px", color: "#6b7280", whiteSpace: "nowrap" }}>{log.tanggal ?? "—"}</td>
-                      <td style={{ padding: "12px 14px", fontWeight: 500, color: "#111827" }}>{log.materi}</td>
-                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.durasi ? `${log.durasi} mnt` : "—"}</td>
-                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.metode ?? "—"}</td>
+                      <td style={{ padding: "12px 14px", fontWeight: 500, color: "#111827" }}>{log.topik ?? "—"}</td>
+                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.durasi_menit ? `${log.durasi_menit} mnt` : "—"}</td>
+                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.metode_belajar ?? "—"}</td>
                       <td style={{ padding: "12px 14px" }}>
                         <span style={{ background: badge.bg, color: badge.color, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>
-                          {log.tingkat_penguasaan}
+                          {log.tingkat_pemahaman}
                         </span>
                       </td>
-                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.keterlibatan ?? "—"}</td>
+                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.tingkat_keterlibatan ?? "—"}</td>
                       <td style={{ padding: "12px 14px", color: "#6b7280", maxWidth: 200 }}>
                         <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                           {log.catatan || "—"}
