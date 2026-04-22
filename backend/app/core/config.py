@@ -22,8 +22,11 @@ class Settings(BaseSettings):
  
     # ── Ollama (LLM lokal) ────────────────────────────────────────────────────
     OLLAMA_BASE_URL:      str = "http://localhost:11434"
-    OLLAMA_MODEL_NAME:    str = "llama3"
-    PLANNER_MODEL_NAME:   str = "llama3"
+    OLLAMA_MODEL_NAME:    str = "orca-mini"
+    OLLAMA_MODEL:         str = "orca-mini"  # Alias untuk compatibility
+    OLLAMA_TIMEOUT:       int = 120       # Timeout dalam detik
+    PLANNER_MODEL_NAME:   str = "orca-mini"
+    LLM_PROVIDER:         str = "ollama"  # atau "external"
  
     # ── LLM Generation Control (Tabel 10 laporan, Section 4.3.2) ─────────────
     # [INTEGRASI] Nilai default sesuai konfigurasi yang dipakai di 04_llm_evaluation.py

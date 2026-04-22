@@ -3,10 +3,10 @@ dashboard_service.py
 Menyediakan data ringkasan untuk halaman Dashboard.
 """
 from datetime import date
+from sqlalchemy import cast, Float
 from sqlalchemy.orm import Session
 from app.models.models import Kelas, KelasMurid, LogPertemuan, Laporan, RencanaStudi
 from app.schemas.schemas import DashboardSummary
-
 
 def get_dashboard_data(db: Session, pengajar_id: str) -> DashboardSummary:
     """Ambil semua data ringkasan untuk dashboard pengajar."""
@@ -59,7 +59,7 @@ def get_dashboard_data(db: Session, pengajar_id: str) -> DashboardSummary:
             "topik":   a.topik,
             "kelas_id": a.kelas_id,
             "murid_id": a.murid_id,
-            "nilai":    float(a.nilai) if a.nilai else None,
+            "nilai":    cast(a.nilai, Float) if a.nilai is not None else None,
             "tingkat_pemahaman": a.tingkat_pemahaman,
         }
         for a in aktivitas

@@ -122,15 +122,15 @@ const DailyLogPage: React.FC<DailyLogPageProps> = ({ onNavigate }) => {
       kelas_id: entry.kelas_id,
       murid_id: entry.murid_id,
       tanggal: entry.tanggal,
-      topik: entry.topik ?? "—",
-      nilai: entry.nilai,
+      topik: entry.topik ?? "",
+      nilai: entry.nilai instanceof ArrayBuffer ? "" : (typeof entry.nilai === "number" ? entry.nilai : ""),
       tingkat_pemahaman: entry.tingkat_pemahaman,
       tingkat_keterlibatan: entry.tingkat_keterlibatan,
       kompetensi_dicapai: entry.kompetensi_dicapai,
       target_materi_berikutnya: entry.target_materi_berikutnya,
-      kendala: entry.kendala ?? "—",
-      catatan: entry.catatan ?? "—",
-      durasi_menit: entry.durasi_menit,
+      kendala: entry.kendala ?? "",
+      catatan: entry.catatan ?? "",
+      durasi_menit: entry.durasi_menit.toString(),
       metode_belajar: entry.metode_belajar,
     };
   };
@@ -150,31 +150,36 @@ const DailyLogPage: React.FC<DailyLogPageProps> = ({ onNavigate }) => {
           d.id === editLogId
             ? {
                 ...d,
-                materi:             form.topik ?? "—",
-                catatan:            form.catatan ?? "—",
-                tingkat_penguasaan: form.tingkat_pemahaman,
-                tanggal:            form.tanggal,
-                durasi:             form.durasi_menit,
-                metode:             form.metode_belajar,
-                keterlibatan:       form.tingkat_keterlibatan,
+                topik:                   form.topik ?? "",
+                catatan:                 form.catatan ?? "",
+                tingkat_pemahaman:       form.tingkat_pemahaman,
+                tanggal:                 form.tanggal,
+                durasi_menit:            parseInt(form.durasi_menit.toString(), 10) || 0,
+                metode_belajar:          form.metode_belajar,
+                tingkat_keterlibatan:    form.tingkat_keterlibatan,
+                kompetensi_dicapai:      form.kompetensi_dicapai,
+                target_materi_berikutnya: form.target_materi_berikutnya,
+                kendala:                 form.kendala,
+                nilai:                   typeof form.nilai === "string" ? new Float32Array([parseFloat(form.nilai) || 0]) : (form.nilai ? new Float32Array([form.nilai]) : new Float32Array()),
               }
             : d
         )
       );
     } else {
+      const nilaValue = typeof form.nilai === "string" ? parseFloat(form.nilai) || 0 : (form.nilai || 0);
       const payload: DailyLogPayload = {
-        kelas_id: selectedSiswaId,
-        murid_id: selectedSiswaId,
+        kelas_id: selectedSiswaId!,
+        murid_id: selectedSiswaId!,
         tanggal: form.tanggal,
-        topik: form.topik ?? "—",
-        nilai: form.nilai,
+        topik: form.topik ?? "",
+        nilai: new Float32Array([nilaValue]),
         tingkat_pemahaman: form.tingkat_pemahaman,
         tingkat_keterlibatan: form.tingkat_keterlibatan,
         kompetensi_dicapai: form.kompetensi_dicapai,
         target_materi_berikutnya: form.target_materi_berikutnya,
-        kendala: form.kendala ?? "—",
-        catatan: form.catatan ?? "—",
-        durasi_menit: form.durasi_menit,
+        kendala: form.kendala ?? "",
+        catatan: form.catatan ?? "",
+        durasi_menit: parseInt(form.durasi_menit.toString(), 10) || 0,
         metode_belajar: form.metode_belajar,
       };
 
