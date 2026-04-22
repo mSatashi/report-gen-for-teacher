@@ -32,7 +32,7 @@ export interface FormState {
   murid_id: string;
   tanggal: string;
   topik?: string;
-  nilai: Float32Array;
+  nilai: number;
   tingkat_pemahaman: string;
   tingkat_keterlibatan: string;
   kompetensi_dicapai: string;

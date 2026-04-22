@@ -59,7 +59,7 @@ export interface DailyLogPayload {
   murid_id: string;
   tanggal: string;
   topik?: string;
-  nilai: Float32Array;
+  nilai: number;
   tingkat_pemahaman: string;
   tingkat_keterlibatan: string;
   kompetensi_dicapai: string;
@@ -87,7 +87,7 @@ export interface DailyLogResponse {
   murid_id: string;
   tanggal: string;
   topik?: string;
-  nilai: Float32Array;
+  nilai: number;
   tingkat_pemahaman: string;
   tingkat_keterlibatan: string;
   kompetensi_dicapai: string;

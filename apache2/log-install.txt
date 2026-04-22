@@ -1,0 +1,2 @@
+cara install apache di wsl (VSCode)
+# sudo apt install apache2 -y

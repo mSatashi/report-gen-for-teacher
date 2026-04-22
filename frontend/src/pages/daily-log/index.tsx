@@ -9,12 +9,12 @@ import type { FormState, MakulEntry, MakulFormState } from "./components/types";
 import {
   INITIAL_MAKUL_DATA,
 } from "./components/constants";
-import DailyLogDetailSiswa from "./detail-log-siswa";
 import { useKelasApi } from "../master-kelas/useKelasApi";
 import type { Kelas, Siswa } from "../../types";
 import type { DailyLogPayload, DailyLogResponse, KelasResponse, ReportGeneratorPayload, Toast } from "../../service/payload";
 import { useDailyLog } from "./useDailyLog";
 import { createReportGenerator } from "../../service/reportAPI";
+import DailyLogDetailSiswa from "./detail-log-siswa";
 
 type ActiveView =
   | "index"         // Daftar semua log
