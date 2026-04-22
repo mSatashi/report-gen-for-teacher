@@ -18,10 +18,8 @@ def create_murid(db: Session, data: MuridCreate) -> MuridResponse:
         id=new_id,
         email_address=data.email_address,
         nama=data.nama,
-        usia=data.usia,
-        level=data.level,
-        credit_total=data.credit_total or 0,
-        credit_used=0,
+        education_level=data.education_level,
+        jenis_kelamin=data.jenis_kelamin,
         is_active=data.is_active,
     )
     db.add(murid)
@@ -31,10 +29,8 @@ def create_murid(db: Session, data: MuridCreate) -> MuridResponse:
         id=murid.id,
         email_address=murid.email_address,
         nama=murid.nama,
-        usia=murid.usia,
-        level=murid.level,
-        credit_total=murid.credit_total or 0,
-        credit_used=murid.credit_used or 0,
+        education_level=murid.education_level,
+        jenis_kelamin=murid.jenis_kelamin,
         is_active=murid.is_active,
     )
 
@@ -58,10 +54,8 @@ def get_all_murid(
                 id=murid.id,
                 email_address=murid.email_address,
                 nama=murid.nama,
-                usia=murid.usia,
-                level=murid.level,
-                credit_total=murid.credit_total or 0,
-                credit_used=murid.credit_used or 0,
+                education_level=murid.education_level,
+                jenis_kelamin=murid.jenis_kelamin,
                 is_active=murid.is_active,
             )
         )
@@ -79,10 +73,8 @@ def get_murid_by_id(db: Session, murid_id: str) -> MuridResponse:
         id=murid.id,
         email_address=murid.email_address,
         nama=murid.nama,
-        usia=murid.usia,
-        level=murid.level,
-        credit_total=murid.credit_total or 0,
-        credit_used=murid.credit_used or 0,
+        education_level=murid.education_level,
+        jenis_kelamin=murid.jenis_kelamin,
         is_active=murid.is_active,
     )
  

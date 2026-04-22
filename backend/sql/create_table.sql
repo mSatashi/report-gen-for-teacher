@@ -29,11 +29,9 @@ CREATE TABLE IF NOT EXISTS murid (
     id               VARCHAR(50) PRIMARY KEY,
     email_address   VARCHAR(100) NOT NULL UNIQUE,
     nama             VARCHAR(150),
-    usia             INTEGER,
-    level            VARCHAR(50),
+    education_level  VARCHAR(50),
+    jenis_kelamin    VARCHAR(20),
     diagnostic_level VARCHAR(50),
-    credit_total     INTEGER NOT NULL DEFAULT 0,
-    credit_used      INTEGER NOT NULL DEFAULT 0,
     is_active       BOOLEAN      NOT NULL DEFAULT TRUE
 );
  
@@ -66,7 +64,7 @@ CREATE TABLE IF NOT EXISTS kelas_murid (
 CREATE TABLE IF NOT EXISTS log_pertemuan (
     id                       VARCHAR(50)   PRIMARY KEY,
     kelas_id                 VARCHAR(50)   NOT NULL REFERENCES kelas(id)  ON DELETE CASCADE,
-    murid_id                 VARCHAR(50)            REFERENCES murid(id)  ON DELETE CASCADE,
+    murid_id                 VARCHAR(50)   NOT NULL REFERENCES murid(id)  ON DELETE CASCADE,
     tanggal                  DATE          NOT NULL,
     topik                    VARCHAR(255)  NOT NULL,
     nilai                    NUMERIC(5,2),
@@ -81,10 +79,6 @@ CREATE TABLE IF NOT EXISTS log_pertemuan (
     created_at               TIMESTAMP     NOT NULL DEFAULT NOW()
 );
  
-COMMENT ON TABLE  log_pertemuan IS 'Log pertemuan harian — F001 (single) & F002 (bulk)';
-COMMENT ON COLUMN log_pertemuan.murid_id IS 'NULL = log untuk seluruh kelas; diisi = log per murid';
- 
- 
 -- =============================================================================
 -- 7. DRAFT_ANALISIS  (output analisis NarrativeEngine LLM)
 -- =============================================================================
@@ -95,10 +89,7 @@ CREATE TABLE IF NOT EXISTS draft_analisis (
     konten   TEXT        NOT NULL,
     tanggal  TIMESTAMP   NOT NULL DEFAULT NOW()
 );
- 
-COMMENT ON TABLE draft_analisis IS 'Hasil analisis log pertemuan oleh NarrativeEngine LLM — input untuk PlannerEngine';
- 
- 
+
 -- =============================================================================
 -- 8. RENCANA_STUDI  (learning plan — F004)
 -- =============================================================================
@@ -115,11 +106,6 @@ CREATE TABLE IF NOT EXISTS rencana_studi (
     version                   INTEGER     NOT NULL DEFAULT 1
 );
  
-COMMENT ON TABLE  rencana_studi IS 'Rencana studi adaptif — F004 (BKT + LLM)';
-COMMENT ON COLUMN rencana_studi.daftar_rekomendasi_materi IS 'JSON array of strings: ["Topik A","Topik B"]';
-COMMENT ON COLUMN rencana_studi.jadwal_mingguan           IS 'JSON object: {"Minggu 1": ["Topik A"], ...}';
-COMMENT ON COLUMN rencana_studi.version IS 'Bertambah setiap kali generate ulang untuk kelas+murid yang sama';
- 
  
 -- =============================================================================
 -- 9. LAPORAN  (progress report — F003, F005, F006, F007)
@@ -127,7 +113,7 @@ COMMENT ON COLUMN rencana_studi.version IS 'Bertambah setiap kali generate ulang
 CREATE TABLE IF NOT EXISTS laporan (
     id              VARCHAR(50)  PRIMARY KEY,
     murid_id        VARCHAR(50)  NOT NULL REFERENCES murid(id) ON DELETE CASCADE,
-    kelas_id        VARCHAR(50)           REFERENCES kelas(id) ON DELETE CASCADE,
+    kelas_id        VARCHAR(50)  NOT NULL REFERENCES kelas(id) ON DELETE CASCADE,
     konten          TEXT         NOT NULL,
     tipe_laporan    VARCHAR(50)  NOT NULL DEFAULT 'perkembangan',
     status          VARCHAR(20)  NOT NULL DEFAULT 'draft'
@@ -139,10 +125,6 @@ CREATE TABLE IF NOT EXISTS laporan (
     periode_mulai   DATE,
     periode_selesai DATE
 );
- 
-COMMENT ON TABLE  laporan IS 'Laporan perkembangan siswa — F003 generate, F005 edit, F006 kirim, F007 lihat';
-COMMENT ON COLUMN laporan.status IS 'draft → final → terkirim';
- 
  
 -- =============================================================================
 -- 10. KNOWLEDGE_STATE  (output BKT per topik per murid)
@@ -158,13 +140,6 @@ CREATE TABLE IF NOT EXISTS knowledge_state (
     updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
     UNIQUE (murid_id, topik)
 );
- 
-COMMENT ON TABLE  knowledge_state IS 'Probabilitas penguasaan materi murid per topik — output BKT';
-COMMENT ON COLUMN knowledge_state.p_knowledge IS 'P(Ln): 0.0 = belum menguasai, 1.0 = sudah menguasai';
-COMMENT ON COLUMN knowledge_state.p_learn     IS 'P(T): probabilitas belajar per sesi';
-COMMENT ON COLUMN knowledge_state.p_guess     IS 'P(G): probabilitas tebak benar meski tidak tahu';
-COMMENT ON COLUMN knowledge_state.p_slip      IS 'P(S): probabilitas jawab salah meski sudah tahu';
- 
  
 -- =============================================================================
 -- 11. DIAGNOSTIC_RESULT  (tes diagnostik awal — F008)

@@ -22,10 +22,8 @@ def _murid_to_response(murid: Murid) -> MuridResponse:
         id=murid.id,
         email_address=murid.email_address,
         nama=murid.nama,
-        usia=murid.usia,
-        level=murid.level,
-        credit_total=murid.credit_total or 0,
-        credit_used=murid.credit_used or 0,
+        education_level=murid.education_level,
+        jenis_kelamin=murid.jenis_kelamin,
         is_active=murid.is_active,
     )
 
@@ -79,6 +77,10 @@ def update_kelas(
     ).first()
     if not k:
         raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
+
+    if "mata pelajaran" in update_data and not update_data["mata pelajaran"].strip():
+        raise HTTPException(status_code=422, detail="Mata pelajaran tidak boleh kosong")
+
     for field, val in data.model_dump(exclude_none=True).items():
         setattr(k, field, val)
     db.commit()
@@ -172,10 +174,8 @@ def tambah_murid_baru(
         id=uid,
         email_address=data.email_address,
         nama=data.nama,
-        usia=data.usia,
-        level=data.level,
-        credit_total=data.credit_total or 0,
-        credit_used=0,
+        education_level=data.education_level,
+        jenis_kelamin=data.jenis_kelamin,
         is_active=data.is_active,
     )
     db.add(murid)
@@ -186,10 +186,8 @@ def tambah_murid_baru(
         id=uid,
         email_address=murid.email_address,
         nama=murid.nama,
-        usia=murid.usia,
-        level=murid.level,
-        credit_total=murid.credit_total or 0,
-        credit_used=murid.credit_used or 0,
+        education_level=murid.education_level,
+        jenis_kelamin=murid.jenis_kelamin,
         is_active=murid.is_active,
     )
 

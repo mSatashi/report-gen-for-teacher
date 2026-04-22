@@ -54,6 +54,8 @@ def login_user(db: Session, data: LoginRequest) -> TokenResponse:
         access_token=token,
         tipe_pengguna=user.tipe_pengguna,
         user_id=user.id,
+        username=user.username,           
+        email_address=user.email_address,
     )
 
 def logout_user(token: str) -> dict:

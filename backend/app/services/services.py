@@ -86,9 +86,8 @@ class MuridService:
             id=new_id,
             nama=data.nama,
             tanggal_lahir=data.tanggal_lahir,
-            usia=data.usia,
-            level=data.level,
-            credit_total=data.credit_total or 0,
+            education_level=data.education_level,
+            jenis_kelamin=data.jenis_kelamin,
         )
         db.add(murid)
         await db.flush()

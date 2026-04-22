@@ -6,6 +6,8 @@ from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+EducationLevel = Literal["SD-1", "SD-2", "SD-3", "SD-4", "SD-5", "SD-6", "SMP-1", "SMP-2", "SMP-3", "SMK-1", "SMK-2", "SMK-3", "SMK-4", "SMA-1", "SMA-2", "SMA-3"]
+JenisKelamin   = Literal["Laki-laki", "Perempuan"]
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # AUTH
@@ -28,6 +30,8 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     tipe_pengguna: str
     user_id: str
+    username: str
+    email_address: str
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -37,11 +41,12 @@ class TokenResponse(BaseModel):
 class MuridCreate(BaseModel):
     email_address: EmailStr
     nama: str
-    usia: Optional[int] = None
-    level: Optional[str] = None
-    credit_total: int = 0
+    education_level: EducationLevel
+    jenis_kelamin: JenisKelamin
     is_active: bool = True
 
+class MuridUpdate(BaseModel):
+    education_level: Optional[EducationLevel] = None
 
 class MuridResponse(BaseModel):
     """
@@ -52,10 +57,8 @@ class MuridResponse(BaseModel):
     id: str
     email_address: Optional[str] = None
     nama: Optional[str] = None
-    usia: Optional[int] = None
-    level: Optional[str] = None
-    credit_total: int = 0
-    credit_used: int = 0
+    education_level: [Optional]EducationLevel= None
+    jenis_kelamin: [Optional]JenisKelamin = None
     is_active: bool = True
 
 
@@ -65,7 +68,7 @@ class MuridResponse(BaseModel):
 
 class KelasCreate(BaseModel):
     nama: str
-    mata_pelajaran: Optional[str] = None
+    mata_pelajaran: str
     kredit: int = 0
     jadwal: Optional[str] = None
 
@@ -82,7 +85,7 @@ class KelasResponse(BaseModel):
 
     id: str
     nama: str
-    mata_pelajaran: Optional[str] = None
+    mata_pelajaran: str
     pengajar_id: Optional[str] = None
     kredit: int = 0
     jadwal: Optional[str] = None
@@ -99,7 +102,7 @@ class TambahMuridKeKelas(BaseModel):
 
 class LogPertemuanCreate(BaseModel):
     kelas_id: str
-    murid_id: Optional[str] = None
+    murid_id: str
     tanggal: date
     topik: str
     nilai: Optional[float] = None
@@ -131,7 +134,7 @@ class LogPertemuanResponse(BaseModel):
 
     id: str
     kelas_id: str
-    murid_id: Optional[str] = None
+    murid_id: str
     tanggal: date
     topik: str
     nilai: Optional[float] = None
@@ -239,6 +242,8 @@ class DiagnosticResponse(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class DashboardSummary(BaseModel):
+    username: str       
+    email_address: str   
     total_siswa: int
     log_hari_ini: int
     plan_aktif: int

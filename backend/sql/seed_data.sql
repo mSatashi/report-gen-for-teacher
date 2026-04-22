@@ -8,11 +8,11 @@ ON CONFLICT DO NOTHING;
 INSERT INTO pengajar (id) VALUES ('pengajar-001'), ('pengajar-002')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO murid (id, email_address, nama, usia, level, credit_total, credit_used, is_active)
+INSERT INTO murid (id, email_address, nama, education_level, jenis_kelamin, is_active)
 VALUES
-  ('murid-001',  'aisya@email.com', 'Aisya Putri',   14, 'SMP Kelas 2', 24, 8, true),
-  ('murid-002',  'budis@email.com', 'Budi Santoso',  15, 'SMA Kelas 1', 20, 5, true),
-  ('murid-003', 'nadia@email.com', 'Nadia Fajar',   13, 'SMP Kelas 1', 24, 3, false)
+  ('murid-001',  'aisya@email.com', 'Aisya Putri',   'SMP-2', 'Perempuan', true),
+  ('murid-002',  'budis@email.com', 'Budi Santoso',  'SMA-1', 'Laki-laki', true),
+  ('murid-003', 'nadia@email.com', 'Nadia Fajar',   'SD-5', 'Perempuan', false)
 ON CONFLICT DO NOTHING;
  
 -- Kelas contoh
