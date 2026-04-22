@@ -15,4 +15,4 @@ async def dashboard(
     db: Annotated[Session, Depends(get_db)],
 ) -> DashboardSummary:
     """Ambil data ringkasan untuk dashboard pengajar."""
-    return get_dashboard_data(db, current_user.id)
+    return get_dashboard_data(db, current_user)

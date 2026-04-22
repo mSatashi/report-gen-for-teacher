@@ -162,7 +162,9 @@ def _parse_row(row: Dict, kelas_id: str) -> Tuple[Optional[LogPertemuan], Option
 
         # Field opsional
         nilai = float(row["nilai"]) if pd.notna(row.get("nilai")) else None
-        murid_id = str(row["murid_id"]).strip() if pd.notna(row.get("murid_id")) else None
+        murid_id = str(row["murid_id"]).strip()
+        if not murid_id:
+            return None, "Kolom 'murid_id' tidak boleh kosong"
 
         log = LogPertemuan(
             id=str(uuid.uuid4()),

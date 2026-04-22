@@ -453,10 +453,8 @@ class TestListMuridKelas:
         db = mock_db()
  
         fake_kelas_id = fake_id()
-        murid1 = fake_murid(nama="Fake Andi Kelas")
-        murid2 = fake_murid(nama="Fake Budi Kelas")
-        pengguna1 = fake_pengguna(tipe="murid", username="fake-andi", email="fake-andi@email.com")
-        pengguna2 = fake_pengguna(tipe="murid", username="fake-budi", email="fake-budi@email.com")
+        murid1 = fake_murid(nama="Fake Andi Kelas",  email="fake-andi@email.com")
+        murid2 = fake_murid(nama="Fake Budi Kelas", email="fake-budi@email.com")
  
         km1 = fake_kelas_murid(kelas_id=fake_kelas_id, murid_id=murid1.id)
         km2 = fake_kelas_murid(kelas_id=fake_kelas_id, murid_id=murid2.id)
@@ -745,9 +743,7 @@ class TestTambahMuridBaru:
     def _make_data(self, **overrides):
         from app.schemas.schemas import MuridCreate
         defaults = dict(
-            username="fake-murid-baru",
             email_address="fake-murid-baru@email.com",
-            password="Fake-Pass-Murid-123!",
             nama="Fake Murid Baru",
             usia=14,
             level="SMP",
@@ -760,23 +756,20 @@ class TestTambahMuridBaru:
         """✅ tambah_murid_baru harus add Pengguna DAN Murid ke DB."""
         from app.routers.kelas import tambah_murid_baru
  
-        current_user = fake_pengguna()
         db = mock_db()
         db.first.return_value = None  # email & username belum ada
  
-        mock_pgn   = fake_pengguna(tipe="murid", username="fake-murid-baru", email="fake-murid-baru@email.com")
-        mock_murid = fake_murid(nama="Fake Murid Baru")
+        mock_murid = fake_murid(nama="Fake Murid Baru" email="fake-murid-baru@email.com")
         mock_murid.id = mock_pgn.id
  
         data = self._make_data()
  
         with patch("app.routers.kelas.hash_password", return_value="$2b$fake-hash"), \
-             patch("app.routers.kelas.Pengguna", return_value=mock_pgn), \
-             patch("app.routers.kelas.Murid",    return_value=mock_murid):
+            patch("app.routers.kelas.Murid",    return_value=mock_murid):
             db.refresh.side_effect = lambda obj: None
-            result = tambah_murid_baru(data=data, current_user=current_user, db=db)
+            result = tambah_murid_baru(data=data, db=db)
  
-        assert db.add.call_count == 2
+        assert db.add.call_count == 1
         db.commit.assert_called_once()
  
     def test_tambah_murid_baru_email_duplikat_raise_400(self):
