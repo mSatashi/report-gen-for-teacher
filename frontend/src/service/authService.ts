@@ -1,3 +1,5 @@
+import { apiFetch } from "./apiFetch";
+
 export interface LoginPayload {
   email: string;
   password: string;
@@ -24,7 +26,20 @@ export async function loginAPI(payload: LoginPayload): Promise<AuthUser> {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? "Login gagal. Periksa username/password.");
+    throw new Error(err.message ?? "Login gagal. Periksa email/password.");
+  }
+
+  return res.json();
+}
+
+export async function logout() {
+  const res = await apiFetch(`${API_BASE}/auth/logout`, {
+    method: "POST",
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? "Logout gagal.");
   }
 
   return res.json();
