@@ -1,25 +1,3 @@
-"""
-app/services/plan_service.py  — UPDATED
-═══════════════════════════════════════════════════════════════════════════════
-PERUBAHAN dari versi sebelumnya:
- 
-[INTEGRASI bkt_engine.py]
-  BKTModule (parameter global) → BKTEngine (parameter per-skill dari bkt_engine.py)
-  Logika Bayes identik dengan update_bkt() di 02_bkt_tuning.py.
- 
-[SUMBER DATA]
-  Semua data siswa, log pertemuan, dan knowledge_state diambil dari PostgreSQL
-  via SQLAlchemy — BUKAN dari CSV experiment.
-  CSV experiment hanya dipakai untuk tuning parameter di fase riset.
- 
-[ALUR generate_rencana_studi()]
-  1. Query LogPertemuan dari DB (PostgreSQL)
-  2. NarrativeEngine.analyze_class_data() → draft_analisis (LLM)
-  3. BKTEngine.batch_update() → update knowledge_state per topik
-  4. PlannerEngine.generate_rencana_studi() → rencana (LLM + PSO heuristik)
-  5. Simpan RencanaStudi ke DB
-═══════════════════════════════════════════════════════════════════════════════
-"""
 import logging
 import uuid
 from datetime import datetime, timedelta

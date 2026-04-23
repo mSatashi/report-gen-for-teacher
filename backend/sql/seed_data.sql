@@ -31,3 +31,17 @@ VALUES
   ('kelas-002', 'murid-003'),
   ('kelas-003', 'murid-001')
 ON CONFLICT DO NOTHING;
+
+INSERT INTO mata_pelajaran (id, nama_mata_pelajaran, kredit, hari, jam)
+VALUES
+    ('mapel-001', 'Matematika Dasar',        3, 'Senin',   '08:00'),
+    ('mapel-002', 'Bahasa Indonesia',        2, 'Selasa',  '10:00'),
+    ('mapel-003', 'Ilmu Pengetahuan Alam',   3, 'Rabu',    '08:00'),
+    ('mapel-004', 'Bahasa Inggris',          2, 'Rabu',    '13:00'),
+    ('mapel-005', 'Ilmu Pengetahuan Sosial', 2, 'Kamis',   '10:00'),
+    ('mapel-006', 'Fisika',                  3, 'Jumat',   '08:00'),
+    ('mapel-007', 'Kimia',                   3, 'Jumat',   '13:00'),
+    ('mapel-008', 'Biologi',                 3, 'Selasa',  '13:00'),
+    ('mapel-009', 'Sejarah',                 2, 'Kamis',   '13:00'),
+    ('mapel-010', 'Seni Budaya',             1, 'Sabtu',   '09:00')
+ON CONFLICT (id) DO NOTHING;

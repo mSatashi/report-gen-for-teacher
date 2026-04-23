@@ -104,6 +104,28 @@ class KelasMurid(Base):
     kelas = relationship("Kelas", back_populates="murid_list")
     murid = relationship("Murid", back_populates="kelas")
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Mata Pelajaran
+# ═══════════════════════════════════════════════════════════════════════════════
+class MataPelajaran(Base):
+    """
+    Atribut jadwal disimpan sebagai dua kolom terpisah (hari + jam)
+    agar memudahkan filter dan validasi:
+      hari : 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat' | 'Sabtu' | 'Minggu'
+      jam  : string format 'HH:MM', contoh '10:00'
+    """
+    __tablename__ = "mata_pelajaran"
+ 
+    id                  = Column(String(50),  primary_key=True, default=_uuid)
+    nama_mata_pelajaran = Column(String(150), nullable=False)
+    # kredit wajib diisi (nullable=False, tidak ada default)
+    kredit              = Column(Integer,     nullable=False)
+    hari                = Column(String(10),  nullable=False)  # Senin–Minggu
+    jam                 = Column(String(5),   nullable=False)  # HH:MM
+    created_at          = Column(DateTime,    default=datetime.utcnow,  nullable=False)
+    updated_at          = Column(DateTime,    default=datetime.utcnow,
+                                              onupdate=datetime.utcnow, nullable=False)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LOG PERTEMUAN (Daily Log)
