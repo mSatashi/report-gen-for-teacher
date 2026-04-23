@@ -23,8 +23,8 @@ from app.routers import (
     murid, 
     bkt, 
     mata_pelajaran,
-    ks,
-    ai,
+    # ks,
+    # ai,
 )
  
 logging.basicConfig(
@@ -86,8 +86,8 @@ app.include_router(diagnostic.router,  prefix=PREFIX)
 app.include_router(murid.router,       prefix=PREFIX)
 app.include_router(bkt.router,         prefix=PREFIX)
 app.include_router(mata_pelajaran.router, prefix=PREFIX)
-app.include_router(ks.router,          prefix=PREFIX)
-app.include_router(ai.router,          prefix=PREFIX)
+# app.include_router(ks.router,          prefix=PREFIX)
+# app.include_router(ai.router,          prefix=PREFIX)
  
  
 @app.get("/", tags=["Root"])

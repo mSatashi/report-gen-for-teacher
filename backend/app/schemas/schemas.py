@@ -4,7 +4,7 @@ Pydantic v2 schemas untuk request & response FastAPI.
 """
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Literal
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 EducationLevel = Literal["SD-1", "SD-2", "SD-3", "SD-4", "SD-5", "SD-6", "SMP-1", "SMP-2", "SMP-3", "SMK-1", "SMK-2", "SMK-3", "SMK-4", "SMA-1", "SMA-2", "SMA-3"]
 JenisKelamin   = Literal["Laki-laki", "Perempuan"]
@@ -125,7 +125,7 @@ class MataPelajaranUpdate(BaseModel):
     """
     nama_mata_pelajaran: Optional[str]   = None
     kredit:              Optional[int]   = Field(None, gt=0)
-    hari:                Optional[HARI_VALID] = None
+    hari:                Optional[Hari] = None
     jam:                 Optional[str]   = None
  
     @field_validator("jam")
