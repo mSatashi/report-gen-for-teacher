@@ -25,16 +25,15 @@ from app.schemas.schemas import (
     LogPertemuanCreate, LogPertemuanUpdate, LogPertemuanResponse, LogBatchResponse,
     GenerateRencanaRequest, RencanaStudiResponse,
     GenerateLaporanRequest, LaporanResponse, LaporanUpdate, SendLaporanRequest,
-    KnowledgeStateResponse, DashboardSummaryResponse, MataPelajaranCreate, MataPelajaranResponse
+    KnowledgeStateResponse, DashboardSummaryResponse,
 )
 from app.services.services import (
     AuthService, MuridService, KelasService,
     LogPertemuanService, FileUploadService,
     LaporanService, RencanaStudiService,
-    KnowledgeStateService, DashboardService, MataPelajaranService
+    KnowledgeStateService, DashboardService,
 )
-from app.ai.llm_service import NarrativeEngine, PlannerEngine, get_llm_clientsesuaikan nama schema
-
+from app.ai.llm_service import NarrativeEngine, PlannerEngine
 
 logger = logging.getLogger(__name__)
 
@@ -541,55 +540,6 @@ async def get_dashboard(pengajar_id: str, db: AsyncSession = Depends(get_db)):
     """Ambil data ringkasan untuk halaman dashboard pengajar."""
     return await DashboardService.get_summary(db, pengajar_id)
 
-# ═══════════════════════════════════════════════════════════════
-#  MATA PELAJARAN ROUTER
-# ═══════════════════════════════════════════════════════════════
-mata_pelajaran_router = APIRouter(prefix="/mata-pelajaran", tags=["Mata Pelajaran"])
-
-
-@mata_pelajaran_router.post("/", response_model=MataPelajaranResponse, status_code=201)
-async def create_mata_pelajaran(
-    payload: MataPelajaranCreate,
-    db: AsyncSession = Depends(get_db),
-):
-    """Tambah mata pelajaran baru."""
-    return await MataPelajaranService.create(db, payload)
-
-
-@mata_pelajaran_router.get("/", response_model=List[MataPelajaranResponse])
-async def get_all_mata_pelajaran(db: AsyncSession = Depends(get_db)):
-    """Ambil semua mata pelajaran."""
-    return await MataPelajaranService.get_all(db)
-
-
-@mata_pelajaran_router.get("/{id}", response_model=MataPelajaranResponse)
-async def get_mata_pelajaran(id: str, db: AsyncSession = Depends(get_db)):
-    """Ambil detail satu mata pelajaran."""
-    item = await MataPelajaranService.get_by_id(db, id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Mata pelajaran tidak ditemukan")
-    return item
-
-
-@mata_pelajaran_router.put("/{id}", response_model=MataPelajaranResponse)
-async def update_mata_pelajaran(
-    id: str,
-    payload: MataPelajaranCreate,
-    db: AsyncSession = Depends(get_db),
-):
-    """Update mata pelajaran."""
-    item = await MataPelajaranService.update(db, id, payload)
-    if not item:
-        raise HTTPException(status_code=404, detail="Mata pelajaran tidak ditemukan")
-    return item
-
-
-@mata_pelajaran_router.delete("/{id}", status_code=204)
-async def delete_mata_pelajaran(id: str, db: AsyncSession = Depends(get_db)):
-    """Hapus mata pelajaran."""
-    ok = await MataPelajaranService.delete(db, id)
-    if not ok:
-        raise HTTPException(status_code=404, detail="Mata pelajaran tidak ditemukan")
 
 # ═══════════════════════════════════════════════════════════════
 #  AI / LLM ROUTER  (Health check & utils)

@@ -79,14 +79,16 @@ class Kelas(Base):
     __tablename__ = "kelas"
 
     id           = Column(String(50), primary_key=True, default=_uuid)
-    nama         = Column(String(100), nullable=False)
-    mata_pelajaran = Column(String(100), nullable=False)
+    nama         = Column(String(100), nullable=False, unique=True)
+    mata_pelajaran_id = Column(String(50), ForeignKey("mata_pelajaran.id", ondelete="SET NULL"), nullable=True) 
     pengajar_id  = Column(String(50), ForeignKey("pengajar.id", ondelete="SET NULL"), nullable=True)
     kredit       = Column(Integer, default=0)
-    jadwal       = Column(String(100))
+    hari                = Column(String(10),  nullable=False)  # Senin–Minggu
+    jam                 = Column(String(5),   nullable=False)  # HH:MM
     created_at   = Column(DateTime, default=datetime.utcnow)
 
     pengajar     = relationship("Pengajar", back_populates="kelas_diampu")
+    mata_pelajaran_obj = relationship("MataPelajaran", back_populates="kelas_list")
     murid_list   = relationship("KelasMurid", back_populates="kelas")
     log_pertemuan = relationship("LogPertemuan", back_populates="kelas")
     rencana_studi = relationship("RencanaStudi", back_populates="kelas")
@@ -108,23 +110,17 @@ class KelasMurid(Base):
 # Mata Pelajaran
 # ═══════════════════════════════════════════════════════════════════════════════
 class MataPelajaran(Base):
-    """
-    Atribut jadwal disimpan sebagai dua kolom terpisah (hari + jam)
-    agar memudahkan filter dan validasi:
-      hari : 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat' | 'Sabtu' | 'Minggu'
-      jam  : string format 'HH:MM', contoh '10:00'
-    """
     __tablename__ = "mata_pelajaran"
  
     id                  = Column(String(50),  primary_key=True, default=_uuid)
     nama_mata_pelajaran = Column(String(150), nullable=False)
-    # kredit wajib diisi (nullable=False, tidak ada default)
-    kredit              = Column(Integer,     nullable=False)
-    hari                = Column(String(10),  nullable=False)  # Senin–Minggu
-    jam                 = Column(String(5),   nullable=False)  # HH:MM
+    topik               = Column(JSON,        nullable=False, default=list)  # list of string
     created_at          = Column(DateTime,    default=datetime.utcnow,  nullable=False)
     updated_at          = Column(DateTime,    default=datetime.utcnow,
                                               onupdate=datetime.utcnow, nullable=False)
+
+    # Relasi balik — satu mata pelajaran bisa ada di banyak kelas
+    kelas_list = relationship("Kelas", back_populates="mata_pelajaran_obj")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

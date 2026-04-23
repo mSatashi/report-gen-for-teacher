@@ -50,11 +50,7 @@ def buat_mata_pelajaran(
 def list_mata_pelajaran(
     skip:   int           = Query(0, ge=0),
     limit:  int           = Query(100, ge=1, le=500),
-    search: Optional[str] = Query(None, description="Filter nama mata pelajaran"),
-    hari:   Optional[str] = Query(
-        None,
-        description="Filter hari jadwal: Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu",
-    ),
+    search: Optional[str] = Query(None, description="Filter nama mata pelajaran"),    
     db: Session = Depends(get_db),
     current_user: Pengguna = Depends(require_pengajar),
 ):
@@ -85,8 +81,6 @@ def ubah_mata_pelajaran(
 ):
     """
     Update mata pelajaran (partial — hanya field yang dikirim diubah).
-    Jika jam diubah, tetap harus format HH:MM.
-    Tidak boleh konflik dengan jadwal yang sudah ada.
     """
     return update_mata_pelajaran(db, mapel_id, data)
  
