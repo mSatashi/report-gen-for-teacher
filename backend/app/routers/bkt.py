@@ -19,25 +19,30 @@ from app.core.database import get_db
 from app.models.models import Pengguna, KnowledgeState
 from app.services.auth_service import require_pengajar
 from app.ai.bkt_engine import bkt_engine, SKILL_ORDER, CORRECT_THRESHOLD
+from app.models.models import Pengguna, KnowledgeState, Topik 
+from app.ai.bkt_engine import bkt_engine, CORRECT_THRESHOLD
  
 router = APIRouter(prefix="/bkt", tags=["BKT"])
  
  
 @router.get("/params", summary="Parameter BKT per skill")
-def get_bkt_params(current_user: Pengguna = Depends(require_pengajar)):
+def get_bkt_params(
+    db: Session = Depends(get_db), # Tambahkan injeksi database
+    current_user: Pengguna = Depends(require_pengajar)
+):
     """
-    Lihat parameter BKT (learn/slip/guess/difficulty) untuk setiap skill.
-    Berguna untuk memvalidasi apakah params dari bkt_global_params.csv sudah ter-load.
+    Lihat parameter BKT berdasarkan data Topik di database.
     """
+    total_skills = db.query(Topik).count()
     return {
         "correct_threshold": CORRECT_THRESHOLD,
-        "total_skills":      len(SKILL_ORDER),
-        "params":            bkt_engine.get_all_params(),
+        "total_skills":      total_skills,
+        "params":            bkt_engine.get_all_params(db), # Pass db ke sini
         "keterangan": {
             "learn":      "P(T) — probabilitas belajar dalam satu sesi (0.1–0.3)",
             "slip":       "P(S) — salah meski tahu (0.05–0.1)",
             "guess":      "P(G) — benar meski tidak tahu (0.1–0.2)",
-            "difficulty": "0.2=mudah, 1.0=sangat sulit (berdasarkan urutan kurikulum)",
+            "difficulty": "0.2=mudah, 1.0=sangat sulit (berdasarkan index di DB)",
         },
     }
  
@@ -87,16 +92,21 @@ def get_knowledge_state_detail(
  
  
 @router.get("/skill-order", summary="Urutan skill kurikulum")
-def get_skill_order(current_user: Pengguna = Depends(require_pengajar)):
-    """Urutan skill kurikulum yang dipakai BKT untuk menghitung difficulty."""
+def get_skill_order(
+    db: Session = Depends(get_db), # Tambahkan injeksi database
+    current_user: Pengguna = Depends(require_pengajar)
+):
+    """Daftar skill kurikulum yang ada di dalam database."""
+    topik_list = db.query(Topik).all()
+    
     return {
-        "total": len(SKILL_ORDER),
+        "total": len(topik_list),
         "skills": [
             {
                 "urutan":     i + 1,
-                "skill":      skill,
-                "difficulty": round(0.2 + 0.8 * (i / max(len(SKILL_ORDER) - 1, 1)), 3),
+                "skill":      t.nama,
+                "difficulty": round(t.difficulty_index, 3),
             }
-            for i, skill in enumerate(SKILL_ORDER)
+            for i, t in enumerate(topik_list)
         ],
     }

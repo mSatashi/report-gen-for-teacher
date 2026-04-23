@@ -63,6 +63,13 @@ class SkillParams:
 # ── BKT ENGINE ───────────────────────────────────────────────────────────────
 
 class BKTEngine:
+    """
+    Engine BKT dengan parameter per-skill.
+ 
+    Perbedaan dengan BKTModule lama di plan_service.py:
+      - BKTModule: satu set parameter global untuk semua skill
+      - BKTEngine: parameter berbeda per skill, disesuaikan difficulty kurikulum
+    """
     def __init__(self, custom_params: Optional[Dict[str, Dict]] = None):
         self._params: Dict[str, SkillParams] = {}
         self._custom = custom_params or {}
@@ -87,7 +94,18 @@ class BKTEngine:
         p_knowledge: float,
         score: float,
     ) -> Tuple[float, float]:
-        """Update P(knowledge) dengan melempar session database."""
+        """
+        Update P(knowledge) untuk satu observasi.
+        Formula identik dengan update_bkt() di 02_bkt_tuning.py.
+ 
+        Args:
+            skill_name  : Nama topik
+            p_knowledge : P(L_{n-1}) — penguasaan sebelum sesi ini
+            score       : Nilai 0–100
+ 
+        Returns:
+            (p_knowledge_baru, p_correct_pred)
+        """
         sp      = self._get_params(db, skill_name)
         correct = 1 if score >= CORRECT_THRESHOLD else 0
  
