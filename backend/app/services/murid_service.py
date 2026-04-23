@@ -88,12 +88,13 @@ def delete_murid(db: Session, murid_id: str) -> dict:
         db.commit()
     """
     murid = db.query(Murid).filter(Murid.id == murid_id).first()
-    if not murid or not murid.is_active:
+    if not murid:
         raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
  
     # Hapus dari kelas dulu (opsional, CASCADE sudah handle ini jika diset di DB)
-    db.query(KelasMurid).filter(KelasMurid.murid_id == murid_id).delete()
- 
+    db.query(KelasMurid).filter(KelasMurid.murid_id == murid_id).delete(synchronize_session="fetch")
+    db.flush()
+
     # Hapus murid — Murid terhapus otomatis via CASCADE
     db.delete(murid)
     db.commit()
