@@ -147,6 +147,25 @@ class MataPelajaranResponse(BaseModel):
     updated_at:          datetime
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# TOPIK & PRASYARAT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TopikCreate(BaseModel):
+    mata_pelajaran_id: str
+    nama: str
+    difficulty_index: float = Field(0.5, ge=0.1, le=1.0)
+    prasyarat_ids: Optional[List[str]] = None
+
+class TopikResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    mata_pelajaran_id: str
+    nama: str
+    difficulty_index: float
+    prasyarat: Optional[List["TopikResponse"]] = None
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # LOG PERTEMUAN
 # ═══════════════════════════════════════════════════════════════════════════════
 
