@@ -25,6 +25,8 @@ dist-ssr
 
 # Environment variables
 .env
+DEPLOYMENT.md
+docker-compose.prod.yml
 
 # Generated reports data
 reports.json
