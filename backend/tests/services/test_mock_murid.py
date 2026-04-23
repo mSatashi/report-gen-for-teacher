@@ -31,13 +31,10 @@ class TestCreateMurid:
         db = mock_db()
         db.first.return_value = None  # email & username belum ada
 
-        mock_murid_obj = fake_murid(nama="Fake Budi Santoso")
-        mock_pgn_obj   = fake_pengguna(tipe="murid", username="fake-budi", email="fake-budi@email.com")
+        mock_murid_obj = fake_murid(nama="Fake Budi Santoso", email="fake-budi@email.com")
 
         data = MuridCreate(
-            username="fake-budi-santoso",
             email_address="fake-budi@email.com",
-            password="Fake-Pass-123!",
             nama="Fake Budi Santoso",
             usia=15,
             level="SMA Kelas 1",
@@ -45,8 +42,7 @@ class TestCreateMurid:
         )
 
         with patch("app.services.murid_service.hash_password", return_value="$2b$fake"), \
-             patch("app.services.murid_service.Pengguna", return_value=mock_pgn_obj), \
-             patch("app.services.murid_service.Murid",    return_value=mock_murid_obj):
+            patch("app.services.murid_service.Murid",    return_value=mock_murid_obj):
             db.refresh.side_effect = lambda obj: None
             result = create_murid(db, data)
 
@@ -59,12 +55,10 @@ class TestCreateMurid:
         from app.schemas.schemas import MuridCreate
 
         db = mock_db()
-        db.first.return_value = fake_pengguna(email="fake-duplikat@email.com")
+        db.first.return_value = fake_murid(email="fake-duplikat@email.com")
 
         data = MuridCreate(
-            username="fake-username-baru",
             email_address="fake-duplikat@email.com",
-            password="Fake-Pass-123!",
             nama="Fake Nama",
         )
 
@@ -75,26 +69,6 @@ class TestCreateMurid:
         assert "email" in exc.value.detail.lower()
         db.commit.assert_not_called()
 
-    def test_create_murid_username_duplikat_raise_400(self):
-        """❌ Username sudah ada harus raise 400."""
-        from app.services.murid_service import create_murid
-        from app.schemas.schemas import MuridCreate
-
-        db = mock_db()
-        db.first.side_effect = [None, fake_pengguna(username="fake-username-duplikat")]
-
-        data = MuridCreate(
-            username="fake-username-duplikat",
-            email_address="fake-baru@email.com",
-            password="Fake-Pass-123!",
-            nama="Fake Nama",
-        )
-
-        with pytest.raises(HTTPException) as exc:
-            create_murid(db, data)
-
-        assert exc.value.status_code == 400
-        assert "username" in exc.value.detail.lower()
 
     def test_create_murid_credit_used_selalu_nol(self):
         """✅ Murid baru harus selalu punya credit_used = 0."""
@@ -106,7 +80,6 @@ class TestCreateMurid:
 
         mock_murid_obj = fake_murid()
         mock_murid_obj.credit_used = 0
-        mock_pgn_obj   = fake_pengguna(tipe="murid")
 
         data = MuridCreate(
             username="fake-zero-credit",
@@ -117,40 +90,11 @@ class TestCreateMurid:
         )
 
         with patch("app.services.murid_service.hash_password", return_value="$2b$fake"), \
-             patch("app.services.murid_service.Pengguna", return_value=mock_pgn_obj), \
              patch("app.services.murid_service.Murid",    return_value=mock_murid_obj):
             db.refresh.side_effect = lambda obj: None
             result = create_murid(db, data)
 
         assert result.credit_used == 0
-
-    def test_create_murid_response_tidak_ada_password(self):
-        """✅ Response create_murid tidak boleh mengandung field password."""
-        from app.services.murid_service import create_murid
-        from app.schemas.schemas import MuridCreate
-
-        db = mock_db()
-        db.first.return_value = None
-
-        mock_murid_obj = fake_murid(nama="Fake No Pass")
-        mock_pgn_obj   = fake_pengguna(tipe="murid")
-
-        data = MuridCreate(
-            username="fake-no-pass",
-            email_address="fake-nopass@email.com",
-            password="Fake-Pass-Secret!",
-            nama="Fake No Pass",
-        )
-
-        with patch("app.services.murid_service.hash_password", return_value="$2b$fake"), \
-             patch("app.services.murid_service.Pengguna", return_value=mock_pgn_obj), \
-             patch("app.services.murid_service.Murid",    return_value=mock_murid_obj):
-            db.refresh.side_effect = lambda obj: None
-            result = create_murid(db, data)
-
-        result_dict = result.model_dump()
-        assert "password"        not in result_dict
-        assert "hashed_password" not in result_dict
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -164,10 +108,10 @@ class TestGetAllMurid:
         from app.services.murid_service import get_all_murid
 
         db = mock_db()
-        murid1, pgn1 = fake_murid(nama="Fake Andi"), fake_pengguna(tipe="murid", username="fake-andi", email="fake-andi@email.com")
-        murid2, pgn2 = fake_murid(nama="Fake Budi"), fake_pengguna(tipe="murid", username="fake-budi", email="fake-budi@email.com")
-        murid3, pgn3 = fake_murid(nama="Fake Citra"), fake_pengguna(tipe="murid", username="fake-citra", email="fake-citra@email.com")
-        db.all.return_value = [(murid1, pgn1), (murid2, pgn2), (murid3, pgn3)]
+        murid1 = fake_murid(nama="Fake Andi", email="fake-andi@email.com")
+        murid2 = fake_murid(nama="Fake Budi", email="fake-budi@email.com")
+        murid3 = fake_murid(nama="Fake Citra", email="fake-citra@email.com")
+        db.all.return_value = [murid1, murid2, murid3]
 
         result = get_all_murid(db)
 
@@ -193,8 +137,7 @@ class TestGetAllMurid:
 
         db = mock_db()
         murid = fake_murid(nama="Fake Andi Searching")
-        pgn   = fake_pengguna(tipe="murid")
-        db.all.return_value = [(murid, pgn)]
+        db.all.return_value = [(murid)]
 
         result = get_all_murid(db, search="Andi")
 
@@ -215,22 +158,6 @@ class TestGetAllMurid:
         db.offset.assert_called_with(10)
         db.limit.assert_called_with(5)
 
-    def test_get_all_murid_response_tidak_ada_password(self):
-        """✅ Response tidak boleh mengandung field password."""
-        from app.services.murid_service import get_all_murid
-
-        db = mock_db()
-        murid = fake_murid(nama="Fake Secure")
-        pgn   = fake_pengguna(tipe="murid")
-        db.all.return_value = [(murid, pgn)]
-
-        result = get_all_murid(db)
-
-        for item in result:
-            item_dict = item.model_dump()
-            assert "password"        not in item_dict
-            assert "hashed_password" not in item_dict
-
 
 # ═════════════════════════════════════════════════════════════════════════════
 # TEST GET MURID BY ID
@@ -245,12 +172,10 @@ class TestGetMuridById:
         murid_id = fake_id()
         db = mock_db()
 
-        m = fake_murid(nama="Fake Detail Murid")
+        m = fake_murid(nama="Fake Detail Murid",  email="fake-detail@email.com",  is_active=True)
         m.id = murid_id
-        p = fake_pengguna(tipe="murid", is_active=True, username="fake-detail", email="fake-detail@email.com")
-        p.id = murid_id
 
-        db.first.side_effect = [m, p]
+        db.first.side_effect = [m]
 
         result = get_murid_by_id(db, murid_id)
 
@@ -274,9 +199,8 @@ class TestGetMuridById:
         from app.services.murid_service import get_murid_by_id
 
         db = mock_db()
-        murid = fake_murid()
-        pengguna = fake_pengguna(is_active=False)
-        db.first.side_effect = [murid, pengguna]
+        murid = fake_murid(is_active=False)
+        db.first.side_effect = [murid]
 
         with pytest.raises(HTTPException) as exc:
             get_murid_by_id(db, murid.id)
@@ -289,21 +213,6 @@ class TestGetMuridById:
 # ═════════════════════════════════════════════════════════════════════════════
 
 class TestDeleteMurid:
-
-    def test_delete_murid_berhasil(self):
-        """✅ delete_murid harus hapus pengguna dan commit."""
-        from app.services.murid_service import delete_murid
-
-        db = mock_db()
-        pengguna = fake_pengguna(tipe="murid")
-        db.first.return_value = pengguna
-
-        result = delete_murid(db, pengguna.id)
-
-        db.delete.assert_called_once_with(pengguna)
-        db.commit.assert_called_once()
-        assert "berhasil" in result["message"].lower()
-
     def test_delete_murid_tidak_ada_raise_404(self):
         """❌ Murid tidak ditemukan harus raise 404, tidak hapus apapun."""
         from app.services.murid_service import delete_murid
@@ -331,17 +240,3 @@ class TestDeleteMurid:
 
         assert exc.value.status_code == 404
         db.delete.assert_not_called()
-
-    def test_delete_murid_hapus_relasi_kelas_murid_dulu(self):
-        """✅ delete_murid harus menghapus KelasMurid sebelum menghapus Pengguna."""
-        from app.services.murid_service import delete_murid
-
-        db = mock_db()
-        pengguna = fake_pengguna(tipe="murid")
-        db.first.return_value = pengguna
-
-        delete_murid(db, pengguna.id)
-
-        # query KelasMurid.delete() harus dipanggil sebelum delete pengguna
-        assert db.query.called
-        db.delete.assert_called_once_with(pengguna)

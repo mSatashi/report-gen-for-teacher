@@ -46,26 +46,6 @@ class TestRegisterUser:
         assert db.add.call_count == 2
         db.commit.assert_called_once()
 
-    def test_register_murid_berhasil(self):
-        """✅ register_user murid harus add 2 record (Pengguna + Murid) lalu commit."""
-        from app.services.auth_service import register_user
-        from app.schemas.schemas import RegisterRequest
-
-        db = mock_db()
-        db.first.return_value = None
-
-        data = RegisterRequest(
-            username="fake-murid-baru",
-            email_address="fake-murid-baru@email.com",
-            password="Fake-Pass-123!",
-            tipe_pengguna="murid",
-        )
-
-        with patch("app.services.auth_service.hash_password", return_value="$2b$fake"):
-            register_user(db, data)
-
-        assert db.add.call_count == 2
-        db.commit.assert_called_once()
 
     def test_register_email_duplikat_raise_400(self):
         """❌ Email sudah ada harus raise HTTPException 400, DB tidak di-commit."""

@@ -4,24 +4,6 @@ export const STUDENTS = ["Aisya Putri", "Rafi Santoso", "Nadia Fajar"];
 
 export const INITIAL_SECTIONS: ReportSection[] = [
   {
-    id: "pengembangan",
-    emoji: "💡",
-    label: "Area Pengembangan",
-    accentColor: "#f43f5e",
-    content:
-      "Beberapa area yang masih perlu dikembangkan antara lain: (1) Operasi bilangan negatif dalam aljabar, (2) Kecepatan membaca teks berbahasa Inggris, dan (3) Konsistensi dalam mengerjakan latihan mandiri di rumah.",
-  },
-];
-
-export const SUBJECT_STATS: SubjectStat[] = [
-  { name: "Matematika",   sessions: 10, progress: 78, color: "#3b82f6", bgColor: "#eff6ff" },
-  { name: "IPA",          sessions: 6,  progress: 91, color: "#22c55e", bgColor: "#f0fdf4" },
-  { name: "B. Inggris",   sessions: 5,  progress: 52, color: "#f43f5e", bgColor: "#fff1f2" },
-  { name: "B. Indonesia", sessions: 3,  progress: 70, color: "#f59e0b", bgColor: "#fffbeb" },
-];
-
-export const INITIAL_SECTIONS_BACKUP: ReportSection[] = [
-  {
     id: "ringkasan",
     emoji: "📋",
     label: "Ringkasan Periode",
@@ -61,4 +43,11 @@ export const INITIAL_SECTIONS_BACKUP: ReportSection[] = [
     content:
       "Aisya menunjukkan sikap yang sangat positif dalam proses pembelajaran. Ia terbiasa mengajukan pertanyaan, aktif berpartisipasi, dan menunjukkan rasa ingin tahu yang tinggi terhadap materi baru. Kedisiplinan dalam mengikuti jadwal belajar juga meningkat signifikan.",
   },
+];
+
+export const SUBJECT_STATS: SubjectStat[] = [
+  { name: "Matematika",   sessions: 10, progress: 78, color: "#3b82f6", bgColor: "#eff6ff" },
+  { name: "IPA",          sessions: 6,  progress: 91, color: "#22c55e", bgColor: "#f0fdf4" },
+  { name: "B. Inggris",   sessions: 5,  progress: 52, color: "#f43f5e", bgColor: "#fff1f2" },
+  { name: "B. Indonesia", sessions: 3,  progress: 70, color: "#f59e0b", bgColor: "#fffbeb" },
 ];

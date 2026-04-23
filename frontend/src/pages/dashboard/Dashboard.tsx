@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Notification from "../../ui/Notifications";
 import StatCardItem from "../../ui/StatCardItem";
 import StudentRow from "../../ui/StudentRow";
 import ActivityItem from "../../ui/ActivityItem";
-import { STAT_CARDS, STUDENTS, ACTIVITIES } from "../../data";
+import { STUDENTS, ACTIVITIES } from "../../data";
+import type { DashboardResponse } from "../../service/payload";
+import { useDashboard } from "./useDashboard";
+import { buildStatCards } from "./statCards";
 
 interface DashboardPageProps {
   /** Optional flash messages forwarded from the layout */
@@ -15,6 +18,26 @@ interface DashboardPageProps {
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ flash }) => {
+  const [dataDashboard, setDataDashboard] = useState<DashboardResponse | null>(null);
+
+  const { loadDashboard } = useDashboard();
+
+  useEffect(() => {
+    loadDashboard().then((data) => {
+      if (!data) return;
+        setDataDashboard({
+          total_siswa: data.total_siswa,
+          log_hari_ini: data.log_hari_ini,
+          plan_aktif: data.plan_aktif,
+          report_pending: data.report_pending,
+          aktivitas_terbaru: data.aktivitas_terbaru,
+          progress_siswa: data.progress_siswa,
+        });
+    });
+  }, []);
+
+  const statCards = buildStatCards(dataDashboard)
+
   const today = new Date().toLocaleDateString("id-ID", {
     weekday: "long",
     day: "numeric",
@@ -39,13 +62,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash }) => {
           Selamat pagi, Bu Rara 👋
         </h2>
         <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
-          {today} · 3 siswa aktif
+          {today}
         </p>
       </div>
 
       {/* Stat cards */}
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 28 }}>
-        {STAT_CARDS.map((c) => (
+        {statCards.map((c) => (
           <StatCardItem key={c.label} card={c} />
         ))}
       </div>

@@ -1,12 +1,16 @@
 import React, { useState } from "react";
-import { STUDENTS, INITIAL_SECTIONS } from "./constants";
-import type { ReportSection } from "./types";
+import { STUDENTS, INITIAL_SECTIONS, SUBJECT_STATS } from "./constants";
+import type { ReportSection, SubjectStat } from "./types";
+
+// ─── Shared styles ────────────────────────────────────────────────────────────
 
 const card: React.CSSProperties = {
   background: "#fff",
   borderRadius: 14,
   boxShadow: "0 1px 4px rgba(0,0,0,.06)",
 };
+
+// ─── Editable section card ────────────────────────────────────────────────────
 
 interface SectionCardProps {
   section: ReportSection;
@@ -70,15 +74,41 @@ const SectionCard: React.FC<SectionCardProps> = ({ section: s, onChange }) => {
       </div>
 
       {/* Edit hint */}
-      {/* {focused && (
+      {focused && (
         <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
           ✏️ Klik di luar untuk menyimpan perubahan
         </div>
-      )} */}
+      )}
     </div>
   );
 };
 
+// ─── Subject stat row ─────────────────────────────────────────────────────────
+
+const SubjectRow: React.FC<{ stat: SubjectStat }> = ({ stat: s }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 16 }}>
+    <div style={{ flex: "0 0 38%", fontSize: 13, color: "#374151", fontWeight: 500 }}>{s.name}</div>
+    <div style={{ flex: "0 0 15%", textAlign: "center", fontSize: 13, color: "#6b7280" }}>{s.sessions}</div>
+    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ flex: 1, background: s.bgColor, borderRadius: 99, height: 6 }}>
+        <div
+          style={{
+            width: `${s.progress}%`,
+            background: s.color,
+            borderRadius: 99,
+            height: "100%",
+            transition: "width .4s",
+          }}
+        />
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 700, color: s.color, minWidth: 32, textAlign: "right" }}>
+        {s.progress}%
+      </span>
+    </div>
+  </div>
+);
+
+// ─── Finalize modal ───────────────────────────────────────────────────────────
 
 const FinalizeModal: React.FC<{ onConfirm: () => void; onCancel: () => void }> = ({ onConfirm, onCancel }) => (
   <div
@@ -117,6 +147,8 @@ const FinalizeModal: React.FC<{ onConfirm: () => void; onCancel: () => void }> =
   </div>
 );
 
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 const ReportEditor: React.FC = () => {
   const [student,    setStudent]    = useState(STUDENTS[0]);
   const [sections,   setSections]   = useState<ReportSection[]>(INITIAL_SECTIONS);
@@ -137,7 +169,8 @@ const ReportEditor: React.FC = () => {
     }, 1500);
   };
 
-  const editableSections = sections;
+  // Split into left (5 editable) and right (stats)
+  const editableSections = sections; // all 5
 
   return (
     <>
@@ -260,7 +293,40 @@ const ReportEditor: React.FC = () => {
                 <SectionCard key={s.id} section={s} onChange={handleChange} />
               ))}
             </div>
+
+            {/* Right: Ringkasan Statistik */}
+            <div style={{ ...card, flex: "1 1 280px", minWidth: 0, padding: "22px 24px" }}>
+              <h5 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: "0 0 18px" }}>
+                Ringkasan Statistik
+              </h5>
+
+              {/* Table header */}
+              <div style={{ display: "flex", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid #f3f4f6" }}>
+                <span style={{ flex: "0 0 38%", fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: 1, textTransform: "uppercase" }}>Mapel</span>
+                <span style={{ flex: "0 0 15%", fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: 1, textTransform: "uppercase", textAlign: "center" }}>Sesi</span>
+                <span style={{ flex: 1, fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: 1, textTransform: "uppercase", textAlign: "center" }}>Progres</span>
+              </div>
+
+              {/* Rows */}
+              {SUBJECT_STATS.map((s) => <SubjectRow key={s.name} stat={s} />)}
+
+              {/* Divider */}
+              <div style={{ borderTop: "1px dashed #e5e7eb", margin: "16px 0" }} />
+
+              {/* Total */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>Total: 24 sesi</div>
+                  <div style={{ fontSize: 12, color: "#9ca3af" }}>48 jam pembelajaran</div>
+                </div>
+                <span style={{ background: "#dcfce7", color: "#15803d", borderRadius: 8, padding: "5px 14px", fontSize: 12, fontWeight: 700 }}>
+                  On Track
+                </span>
+              </div>
+            </div>
+
           </div>
+
         </div>
       </div>
 

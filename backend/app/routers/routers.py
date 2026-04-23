@@ -408,7 +408,7 @@ async def generate_laporan(
     # Generate narasi via LLM
     engine = NarrativeEngine()
     konten = await engine.generate_laporan(
-        data_siswa={"nama": murid.nama, "level": murid.level or ""},
+        data_siswa={"nama": murid.nama, "education_level": murid.education_level or ""},
         log_pertemuan=log_dicts,
         knowledge_states=ks_dicts,
         period_start=str(payload.period_start) if payload.period_start else None,

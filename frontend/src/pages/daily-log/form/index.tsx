@@ -19,19 +19,17 @@ interface DailyLogFormLogProps {
 const DEFAULT_FORM: FormState = {
   murid_id: "Aisya Putri",
   tanggal: new Date().toISOString().split("T")[0],
-  kelas_id: 1,
-  mapel: "Matematika",
+  kelas_id: "1",
   topik: "",
-  durasi: "90",
-  metode: "Penjelasan langsung",
-  pemahaman: "Sangat Paham",
-  keterlibatan: "Aktif",
-  catatanGuru: "",
-  rekTindakLanjut: "",
-  targetMateri: "",
-  skor: "",
-  kompetensi: "",
+  nilai: "",
+  tingkat_pemahaman: "Sangat Paham",
+  tingkat_keterlibatan: "Aktif",
+  catatan: "",
+  target_materi_berikutnya: "",
+  kompetensi_dicapai: "",
   kendala: "",
+  durasi_menit: "90",
+  metode_belajar: "Penjelasan langsung",
 };
 
 const SaveButton: React.FC<{ size?: "sm" | "md"; onClick: () => void; }> = ({ size = "md", onClick }) => (

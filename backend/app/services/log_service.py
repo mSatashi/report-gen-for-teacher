@@ -155,14 +155,16 @@ def _parse_row(row: Dict, kelas_id: str) -> Tuple[Optional[LogPertemuan], Option
         # Parse tanggal
         if isinstance(tanggal_raw, str):
             tanggal = pd.to_datetime(tanggal_raw).date()
-        elif hasattr(tanggal_raw, "date"):
+        elif tanggal_raw and hasattr(tanggal_raw, "date"):
             tanggal = tanggal_raw.date()
         else:
             tanggal = date.today()
 
         # Field opsional
         nilai = float(row["nilai"]) if pd.notna(row.get("nilai")) else None
-        murid_id = str(row["murid_id"]).strip() if pd.notna(row.get("murid_id")) else None
+        murid_id = str(row["murid_id"]).strip()
+        if not murid_id:
+            return None, "Kolom 'murid_id' tidak boleh kosong"
 
         log = LogPertemuan(
             id=str(uuid.uuid4()),
@@ -218,7 +220,7 @@ async def bulk_upload_log(
         log_obj, err = _parse_row(row.to_dict(), kelas_id)
         if err:
             gagal += 1
-            errors.append({"baris": int(idx) + 2, "error": err})
+            errors.append({"baris": int(idx) + 2, "error": err}) # pyright: ignore[reportArgumentType]
             continue
         try:
             db.add(log_obj)
@@ -227,7 +229,7 @@ async def bulk_upload_log(
         except Exception as e:
             db.rollback()
             gagal += 1
-            errors.append({"baris": int(idx) + 2, "error": str(e)})
+            errors.append({"baris": int(idx) + 2, "error": str(e)}) # pyright: ignore[reportArgumentType]
 
     if berhasil > 0:
         db.commit()

@@ -1,15 +1,3 @@
-# =============================================================================
-# FIX 3 ► GANTI SELURUH ISI: backend/app/routers/kelas.py
-#
-# Root cause yang diperbaiki:
-#   - list_murid_kelas() mengembalikan list Murid ORM langsung sebagai
-#     response_model=List[MuridResponse], tapi Murid tidak punya
-#     username/email_address → FastAPI gagal validasi response.
-#   - Semua endpoint yang return Murid ORM sekarang diubah untuk
-#     mengambil data Pengguna secara eksplisit dan membangun MuridResponse
-#     secara manual (sama seperti pola di murid_service.py yang baru).
-# =============================================================================
-
 """
 kelas.py — Router untuk manajemen Kelas dan Murid
 """
@@ -25,23 +13,18 @@ from app.schemas.schemas import (
     MuridCreate, MuridUpdate, MuridResponse, TambahMuridKeKelas,
 )
 from app.services.auth_service import require_pengajar
-from app.core.security import hash_password
 
 router = APIRouter(prefix="/kelas", tags=["Kelas & Murid"])
 
 
-def _murid_to_response(murid: Murid, db: Session) -> MuridResponse:
-    """Helper: bangun MuridResponse dari ORM Murid + join ke Pengguna."""
-    pengguna = db.query(Pengguna).filter(Pengguna.id == murid.id).first()
+def _murid_to_response(murid: Murid) -> MuridResponse:
     return MuridResponse(
         id=murid.id,
-        username=pengguna.username if pengguna else None,
-        email_address=pengguna.email_address if pengguna else None,
+        email_address=murid.email_address,
         nama=murid.nama,
-        usia=murid.usia,
-        level=murid.level,
-        credit_total=murid.credit_total or 0,
-        credit_used=murid.credit_used or 0,
+        education_level=murid.education_level,
+        jenis_kelamin=murid.jenis_kelamin,
+        is_active=murid.is_active,
     )
 
 
@@ -94,6 +77,10 @@ def update_kelas(
     ).first()
     if not k:
         raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
+
+    if "mata pelajaran" in update_data and not update_data["mata pelajaran"].strip():
+        raise HTTPException(status_code=422, detail="Mata pelajaran tidak boleh kosong")
+
     for field, val in data.model_dump(exclude_none=True).items():
         setattr(k, field, val)
     db.commit()
@@ -179,42 +166,29 @@ def tambah_murid_baru(
     db: Session = Depends(get_db),
 ):
     """Buat akun murid baru sekaligus profilnya."""
-    if db.query(Pengguna).filter(Pengguna.email_address == data.email_address).first():
+    if db.query(Murid).filter(Murid.email_address == data.email_address).first():
         raise HTTPException(status_code=400, detail="Email sudah terdaftar")
-    if db.query(Pengguna).filter(Pengguna.username == data.username).first():
-        raise HTTPException(status_code=400, detail="Username sudah digunakan")
 
     uid = str(uuid.uuid4())
-    pengguna = Pengguna(
-        id=uid,
-        username=data.username,
-        email_address=data.email_address,
-        hashed_password=hash_password(data.password),
-        tipe_pengguna="murid",
-        is_active=True,
-    )
     murid = Murid(
         id=uid,
+        email_address=data.email_address,
         nama=data.nama,
-        usia=data.usia,
-        level=data.level,
-        credit_total=data.credit_total or 0,
-        credit_used=0,
+        education_level=data.education_level,
+        jenis_kelamin=data.jenis_kelamin,
+        is_active=data.is_active,
     )
-    db.add(pengguna)
     db.add(murid)
     db.commit()
     db.refresh(murid)
 
     return MuridResponse(
         id=uid,
-        username=pengguna.username,
-        email_address=pengguna.email_address,
+        email_address=murid.email_address,
         nama=murid.nama,
-        usia=murid.usia,
-        level=murid.level,
-        credit_total=murid.credit_total or 0,
-        credit_used=murid.credit_used or 0,
+        education_level=murid.education_level,
+        jenis_kelamin=murid.jenis_kelamin,
+        is_active=murid.is_active,
     )
 
 
