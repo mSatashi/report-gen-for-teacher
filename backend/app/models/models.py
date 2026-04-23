@@ -72,6 +72,23 @@ class Murid(Base):
     diagnostic_results = relationship("DiagnosticResult", back_populates="murid")
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Mata Pelajaran
+# ═══════════════════════════════════════════════════════════════════════════════
+class MataPelajaran(Base):
+    __tablename__ = "mata_pelajaran"
+ 
+    id                  = Column(String(50),  primary_key=True, default=_uuid)
+    nama_mata_pelajaran = Column(String(150), nullable=False)
+    topik               = Column(JSON,        nullable=False, default=list)  # list of string
+    created_at          = Column(DateTime,    default=datetime.utcnow,  nullable=False)
+    updated_at          = Column(DateTime,    default=datetime.utcnow,
+                                              onupdate=datetime.utcnow, nullable=False)
+
+    # Relasi balik — satu mata pelajaran bisa ada di banyak kelas
+    kelas_list = relationship("Kelas", back_populates="mata_pelajaran_obj")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # KELAS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -105,22 +122,6 @@ class KelasMurid(Base):
 
     kelas = relationship("Kelas", back_populates="murid_list")
     murid = relationship("Murid", back_populates="kelas")
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# Mata Pelajaran
-# ═══════════════════════════════════════════════════════════════════════════════
-class MataPelajaran(Base):
-    __tablename__ = "mata_pelajaran"
- 
-    id                  = Column(String(50),  primary_key=True, default=_uuid)
-    nama_mata_pelajaran = Column(String(150), nullable=False)
-    topik               = Column(JSON,        nullable=False, default=list)  # list of string
-    created_at          = Column(DateTime,    default=datetime.utcnow,  nullable=False)
-    updated_at          = Column(DateTime,    default=datetime.utcnow,
-                                              onupdate=datetime.utcnow, nullable=False)
-
-    # Relasi balik — satu mata pelajaran bisa ada di banyak kelas
-    kelas_list = relationship("Kelas", back_populates="mata_pelajaran_obj")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

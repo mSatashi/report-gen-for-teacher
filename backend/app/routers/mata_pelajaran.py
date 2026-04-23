@@ -40,8 +40,6 @@ def buat_mata_pelajaran(
 ):
     """
     Buat mata pelajaran baru.
-    kredit wajib > 0. jam harus format HH:MM.
-    Kombinasi nama + hari + jam harus unik.
     """
     return create_mata_pelajaran(db, data)
  
@@ -56,10 +54,8 @@ def list_mata_pelajaran(
 ):
     """
     List semua mata pelajaran.
-    Mendukung filter nama (search) dan hari, serta paginasi (skip/limit).
-    Diurutkan berdasarkan hari → jam.
     """
-    return get_all_mata_pelajaran(db, skip=skip, limit=limit, search=search, hari=hari)
+    return get_all_mata_pelajaran(db, skip=skip, limit=limit, search=search)
  
  
 @router.get("/{mapel_id}", response_model=MataPelajaranResponse)

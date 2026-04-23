@@ -17,7 +17,6 @@ def create_mata_pelajaran(
 ) -> MataPelajaranResponse:
     """
     Buat mata pelajaran baru.
-    Tolak jika kombinasi nama + hari + jam sudah ada (duplikat jadwal).
     """
     existing = (
         db.query(MataPelajaran)
@@ -50,12 +49,10 @@ def get_all_mata_pelajaran(
     skip: int = 0,
     limit: int = 100,
     search: Optional[str] = None,
-    hari: Optional[str] = None,
 ) -> List[MataPelajaranResponse]:
     """
     List semua mata pelajaran.
     - search : filter nama (case-insensitive, opsional)
-    - hari   : filter hari jadwal, contoh 'Senin' (opsional)
     - skip / limit : paginasi
     """
     query = db.query(MataPelajaran)
@@ -64,12 +61,9 @@ def get_all_mata_pelajaran(
         query = query.filter(
             MataPelajaran.nama_mata_pelajaran.ilike(f"%{search}%")
         )
-    if hari:
-        query = query.filter(MataPelajaran.hari == hari)
  
     rows = (
         query
-        .order_by(MataPelajaran.hari, MataPelajaran.jam)
         .offset(skip)
         .limit(limit)
         .all()
@@ -92,7 +86,6 @@ def update_mata_pelajaran(
 ) -> MataPelajaranResponse:
     """
     Update mata pelajaran (partial update — hanya field yang dikirim).
-    Jika nama/hari/jam diubah, cek tidak bentrok dengan jadwal yang sudah ada.
     """
     mapel = db.query(MataPelajaran).filter(MataPelajaran.id == mapel_id).first()
     if not mapel:
