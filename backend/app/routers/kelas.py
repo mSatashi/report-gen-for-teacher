@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.core.database import get_db
-from app.models.models import Pengguna, Kelas, KelasMurid, Murid
+from app.models.models import Pengguna, Kelas, KelasMurid, Murid, MataPelajaran
 from app.schemas.schemas import (
     KelasCreate, KelasUpdate, KelasResponse,
     MuridCreate, MuridUpdate, MuridResponse, TambahMuridKeKelas,
