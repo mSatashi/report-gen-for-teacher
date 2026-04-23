@@ -32,7 +32,8 @@ class TokenResponse(BaseModel):
     tipe_pengguna: str
     user_id: str
     username: str
-    email_address: str
+    email_address: EmailStr
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

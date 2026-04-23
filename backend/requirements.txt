@@ -4,9 +4,6 @@ psycopg2-binary==2.9.11
 python-multipart==0.0.22
 jinja2==3.1.2
 python-dotenv==1.0.0
-tiktoken==0.12.0
-sentencepiece==0.2.1
-protobuf==7.34.1
 
 
 # Database
@@ -25,12 +22,9 @@ pydantic[email]
 # File Processing
 pandas==3.0.1
 openpyxl==3.1.5
-python-magic==0.4.27
 
 # AI & LLM
 httpx==0.27.2
-langchain==1.2.13
-langchain-community==0.4.1
 
 # PDF Generation
 reportlab==4.2.4
