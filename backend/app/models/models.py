@@ -125,6 +125,45 @@ class MataPelajaran(Base):
     created_at          = Column(DateTime,    default=datetime.utcnow,  nullable=False)
     updated_at          = Column(DateTime,    default=datetime.utcnow,
                                               onupdate=datetime.utcnow, nullable=False)
+    topik_list          = relationship("Topik", back_populates="mata_pelajaran", cascade="all, delete-orphan")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TOPIK & PRASYARAT (Database-Driven Skill Graph)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TopikPrasyarat(Base):
+    """
+    Tabel pivot (Self-Referential) untuk menyimpan relasi prasyarat antar topik.
+    Menggantikan fungsi dictionary skill_graph pada PSO.
+    """
+    __tablename__ = "topik_prasyarat"
+
+    topik_id     = Column(String(50), ForeignKey("topik.id", ondelete="CASCADE"), primary_key=True)
+    prasyarat_id = Column(String(50), ForeignKey("topik.id", ondelete="CASCADE"), primary_key=True)
+
+
+class Topik(Base):
+    """
+    Menyimpan data master topik/materi belajar.
+    Menggantikan hardcode SKILL_ORDER pada BKT Engine.
+    """
+    __tablename__ = "topik"
+
+    id                = Column(String(50), primary_key=True, default=_uuid)
+    mata_pelajaran_id = Column(String(50), ForeignKey("mata_pelajaran.id", ondelete="CASCADE"), nullable=False)
+    nama              = Column(String(150), nullable=False)
+    difficulty_index  = Column(Float, default=0.5)
+    created_at        = Column(DateTime, default=datetime.utcnow)
+
+    mata_pelajaran = relationship("MataPelajaran", back_populates="topik_list")
+
+    prasyarat = relationship(
+        "Topik",
+        secondary="topik_prasyarat",
+        primaryjoin="Topik.id == TopikPrasyarat.topik_id",
+        secondaryjoin="Topik.id == TopikPrasyarat.prasyarat_id",
+        backref="lanjutan_dari"
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
