@@ -10,16 +10,14 @@ export async function fetchSiswaList(): Promise<SiswaResponse[]> {
 
 /** POST /murid — buat murid baru */
 export async function createSiswa(payload: SiswaPayload): Promise<SiswaResponse> {
-  const res = await apiFetch(`/kelas/murid/tambah`, {
+  const res = await apiFetch(`/murid`, {
     method: "POST",
     body: JSON.stringify({
-      username: payload.email_address,
       email_address: payload.email_address,
-      password: payload.password,
       nama: payload.nama,
-      usia: payload.usia,
-      level: payload.level,
-      credit_total: payload.credit_total,
+      jenis_kelamin: payload.jenis_kelamin,
+      education_level: payload.education_level,
+      is_active: payload.is_active,
     }),
   });
   if (!res.ok) {
@@ -34,13 +32,11 @@ export async function updateSiswa(id: string, payload: SiswaPayload): Promise<Si
   const res = await apiFetch(`/kelas/murid/${id}`, {
     method: "PUT",
     body: JSON.stringify({
-      username: payload.email_address,
       email_address: payload.email_address,
-      password: payload.password,
       nama: payload.nama,
-      usia: payload.usia,
-      level: payload.level,
-      credit_total: payload.credit_total,
+      jenis_kelamin: payload.jenis_kelamin,
+      education_level: payload.education_level,
+      is_active: payload.is_active,
     }),
   });
   if (!res.ok) {

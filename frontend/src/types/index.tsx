@@ -41,14 +41,11 @@ export interface Kelas {
 
 export interface Siswa {
   id: string;
-  username: string;
   email_address: string;
-  password?: string;
   nama: string;
-  usia: string;
-  level: string;
-  credit_total: number;
-  credit_used?: number;
+  education_level: string;
+  jenis_kelamin: string;
+  is_active: boolean;
 }
 
 export type ModalMode = "add-siswa" | "edit-siswa" | null;

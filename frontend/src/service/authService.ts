@@ -10,6 +10,8 @@ export interface AuthUser {
   access_token: string;
   token_type: string;
   tipe_pengguna: string;
+  username: string;
+  email_address: string;
 }
 
 export const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
