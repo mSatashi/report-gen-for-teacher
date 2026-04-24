@@ -84,10 +84,6 @@ class SkillParams:
 class BKTEngine:
     """
     Engine BKT dengan parameter per-skill.
- 
-    Perbedaan dengan BKTModule lama di plan_service.py:
-      - BKTModule: satu set parameter global untuk semua skill
-      - BKTEngine: parameter berbeda per skill, disesuaikan difficulty kurikulum
     """
  
     def __init__(self, custom_params: Optional[Dict[str, Dict]] = None):
