@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Notification from "../../ui/Notifications";
 import StatCardItem from "../../ui/StatCardItem";
 import StudentRow from "../../ui/StudentRow";
 import ActivityItem from "../../ui/ActivityItem";
-import { STAT_CARDS, STUDENTS, ACTIVITIES } from "../../data";
+import type { DashboardResponse } from "../../service/payload";
+import { useDashboard } from "./useDashboard";
+import { buildStatCards } from "./statCards";
 
 interface DashboardPageProps {
   /** Optional flash messages forwarded from the layout */
@@ -12,9 +14,38 @@ interface DashboardPageProps {
     error?: string | null;
     errors?: string[];
   };
+  namaLengkap: string;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ flash }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ flash, namaLengkap }) => {
+  const [dataDashboard, setDataDashboard] = useState<DashboardResponse | null>(null);
+
+  const { loadDashboard } = useDashboard();
+
+  useEffect(() => {
+    loadDashboard().then((data) => {
+      if (!data) return;
+        setDataDashboard({
+          total_siswa: data.total_siswa,
+          log_hari_ini: data.log_hari_ini,
+          plan_aktif: data.plan_aktif,
+          report_pending: data.report_pending,
+          aktivitas_terbaru: data.aktivitas_terbaru,
+          progress_siswa: data.progress_siswa,
+        });
+    });
+  }, []);
+
+  const statCards = buildStatCards(dataDashboard)
+  // ← tambah ini, fallback ke dummy jika kosong
+  const progressSiswa = dataDashboard?.progress_siswa?.length
+    ? dataDashboard.progress_siswa
+    : [];
+
+  const aktivitasTerbaru = dataDashboard?.aktivitas_terbaru?.length
+    ? dataDashboard.aktivitas_terbaru
+    : [];
+
   const today = new Date().toLocaleDateString("id-ID", {
     weekday: "long",
     day: "numeric",
@@ -36,16 +67,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash }) => {
       {/* Greeting */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 26, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>
-          Selamat pagi, Bu Rara 👋
+          Selamat pagi, {namaLengkap} 👋
         </h2>
         <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
-          {today} · 3 siswa aktif
+          {today}
         </p>
       </div>
 
       {/* Stat cards */}
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 28 }}>
-        {STAT_CARDS.map((c) => (
+        {statCards.map((c) => (
           <StatCardItem key={c.label} card={c} />
         ))}
       </div>
@@ -91,7 +122,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash }) => {
             </button>
           </div>
 
-          {STUDENTS.map((s) => (
+          {/* {dataDashboard?.progress_siswa.map((s) => (
+            <StudentRow key={s.name} student={s} />
+          ))} */}
+          {progressSiswa.map((s) => (
             <StudentRow key={s.name} student={s} />
           ))}
         </div>
@@ -134,7 +168,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash }) => {
             </button>
           </div>
 
-          {ACTIVITIES.map((a) => (
+          {aktivitasTerbaru.map((a) => (
             <ActivityItem key={a.title} activity={a} />
           ))}
         </div>

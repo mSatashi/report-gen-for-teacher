@@ -1,3 +1,5 @@
+import type { Activity, Student } from "../types";
+
 export interface KelasPayload {
   nama: string;
   mata_pelajaran: string;
@@ -130,3 +132,13 @@ export interface ReportGeneratorPayload {
   tipe_laporan?: string;
 }
 
+export interface DashboardResponse {  
+  total_siswa: number;
+  log_hari_ini: number;
+  plan_aktif: number;
+  report_pending: number;
+  // aktivitas_terbaru: Record<string, string[]>;
+  // progress_siswa: Record<string, string[]>;
+  aktivitas_terbaru: Activity[]; // ← pakai type Activity
+  progress_siswa: Student[];
+}
