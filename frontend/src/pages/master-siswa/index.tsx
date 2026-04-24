@@ -8,13 +8,11 @@ import type { SiswaResponse } from "../../service/payload";
 // const uid = () => Math.random().toString(36).slice(2, 9);
 
 const emptySiswa = (): Omit<Siswa, "id"> => ({
-  username: "",
   email_address: "",
-  password: undefined,
   nama: "",
-  usia: "",
-  level: "",
-  credit_total: 0,
+  jenis_kelamin: "",
+  education_level: "",
+  is_active: true,
 });
 
 let toastId = 0;
@@ -33,8 +31,8 @@ export default function MasterSiswa({ initialData = [] }: Props) {
   const [keyword, setKeyword] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   // const [password, setPassword] = useState("");
-  const [showPassword, ] = useState(false);
-  const [, setFocused] = useState<string | null>(null);
+  // const [showPassword, ] = useState(false);
+  // const [, setFocused] = useState<string | null>(null);
 
   const { errorMsg, loadSiswa, submitCreateSiswa, submitUpdateSiswa, submitDeleteSiswa} = useSiswaApi();
   
@@ -55,11 +53,10 @@ export default function MasterSiswa({ initialData = [] }: Props) {
       if (!q) return true;
 
       return (
-        s.username.toLowerCase().includes(q) ||
         s.email_address.toLowerCase().includes(q) ||
         s.nama.toLowerCase().includes(q) ||
-        s.usia.toLowerCase().includes(q) ||
-        s.level.toLowerCase().includes(q)
+        s.jenis_kelamin.toLowerCase().includes(q) ||
+        s.education_level.toLowerCase().includes(q)
       );
     });
   }, [siswaList, keyword]);
@@ -76,10 +73,9 @@ export default function MasterSiswa({ initialData = [] }: Props) {
     setSiswaForm({
       nama: siswa.nama,
       email_address: siswa.email_address,
-      username: siswa.username,
-      usia: siswa.usia,
-      level: siswa.level,
-      credit_total: siswa.credit_total,
+      jenis_kelamin: siswa.jenis_kelamin,
+      education_level: siswa.education_level,
+      is_active: siswa.is_active,
     });
     setEditingSiswaId(siswa.id);
     setModal("edit-siswa");
@@ -150,10 +146,9 @@ export default function MasterSiswa({ initialData = [] }: Props) {
     id: data.id,
     nama: data.nama,
     email_address: data.email_address,
-    username: data.username,
-    usia: data.usia,
-    level: data.level,
-    credit_total: data.credit_total,
+    jenis_kelamin: data.jenis_kelamin,
+    education_level: data.education_level,
+    is_active: data.is_active,
   });
 
   useEffect(() => {
@@ -241,7 +236,7 @@ export default function MasterSiswa({ initialData = [] }: Props) {
                   <th style={styles.th}>#</th>
                   <th style={styles.th}>Nama Siswa</th>
                   <th style={styles.th}>Email Address</th>
-                  <th style={styles.th}>Usia</th>
+                  <th style={styles.th}>Jenis Kelamin</th>
                   <th style={styles.th}>Level</th>
                 </tr>
               </thead>
@@ -251,8 +246,8 @@ export default function MasterSiswa({ initialData = [] }: Props) {
                     <td style={styles.td}>{i + 1}</td>
                     <td style={styles.td}>{s.nama}</td>
                     <td style={styles.td}>{s.email_address}</td>
-                    <td style={styles.td}>{s.usia || "–"}</td>
-                    <td style={styles.td}>{s.level || "–"}</td>
+                    <td style={styles.td}>{s.jenis_kelamin || "–"}</td>
+                    <td style={styles.td}>{s.education_level || "–"}</td>
                     <td style={styles.td}>
                       <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                         <button
@@ -311,73 +306,50 @@ export default function MasterSiswa({ initialData = [] }: Props) {
               />
             </div>
 
-            <div style={styles.row2}>
-              {/* <div style={styles.formGroup}>
-                <label style={styles.label}>Email Address *</label>
-                <input
-                  type="text"
-                  value={siswaForm.email_address}
-                  placeholder="Masukkan alamat email"
-                  required
-                  onChange={(e) =>
-                    setSiswaForm((f) => ({ ...f, email_address: e.target.value }))
-                  }
-                  style={styles.input}
-                />
-              </div> */}
-              {/* <div style={styles.formGroup}>
-                <label style={styles.label}>Password *</label>
-                <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Masukkan password"
-                    value={siswaForm.password}
-                    onChange={(e) => setSiswaForm((f) => ({ ...f, password: e.target.value }))}
-                    onFocus={() => setFocused("password")}
-                    onBlur={() => setFocused(null)}
-                    required
-                    autoComplete="current-password"
-                    style={styles.input}
-                  />
-              </div> */}
-            </div>
-
-            <div style={styles.row2}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Usia</label>
-                <input
-                  type="text"
-                  value={siswaForm.usia}
-                  placeholder="Masukkan usia"
-                  onChange={(e) =>
-                    setSiswaForm((f) => ({ ...f, usia: e.target.value }))
-                  }
-                  style={styles.input}
-                />
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Jenis Kelamin</label>
-                <select style={styles.select} value={siswaForm.level}
-                  onChange={(e) => setSiswaForm((f) => ({ ...f, level: e.target.value}))}>
-                  <option value="">-- Pilih --</option>
-                  <option value="SD">SD</option>
-                  <option value="SMP">SMP</option>
-                  <option value="SMA">SMA</option>
-                </select>
-              </div>
-            </div>
-
             <div style={styles.formGroup}>
-              <label style={styles.label}>Credit Total</label>
+              <label style={styles.label}>Email Address *</label>
               <input
                 type="text"
-                value={siswaForm.credit_total}
-                placeholder="Masukkan credit total"
+                value={siswaForm.email_address}
+                placeholder="Masukkan alamat email"
+                required
                 onChange={(e) =>
-                  setSiswaForm((f) => ({ ...f, credit_total: Number(e.target.value) }))
+                  setSiswaForm((f) => ({ ...f, email_address: e.target.value }))
                 }
                 style={styles.input}
               />
+            </div>
+
+            <div style={styles.row2}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Jenis Kelamin</label>
+                <select style={styles.select} value={siswaForm.jenis_kelamin}
+                  onChange={(e) => setSiswaForm((f) => ({ ...f, jenis_kelamin: e.target.value}))}>
+                  <option value="">-- Pilih --</option>
+                  <option value="Laki-laki">Laki-laki</option>
+                  <option value="Perempuan">Perempuan</option>
+                </select>
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Tingkat Pendidikan</label>
+                <select style={styles.select} value={siswaForm.education_level}
+                  onChange={(e) => setSiswaForm((f) => ({ ...f, education_level: e.target.value}))}>
+                  <option value="">-- Pilih --</option>
+                  <option value="SD-1">SD-1</option>
+                  <option value="SD-2">SD-2</option>
+                  <option value="SD-3">SD-3</option>
+                  <option value="SD-4">SD-4</option>
+                  <option value="SD-5">SD-5</option>
+                  <option value="SD-6">SD-6</option>
+                  <option value="SMP-1">SMP-1</option>
+                  <option value="SMP-2">SMP-2</option>
+                  <option value="SMP-3">SMP-3</option>
+                  <option value="SMA-1">SMA-1</option>
+                  <option value="SMA-2">SMA-2</option>
+                  <option value="SMA-3">SMA-3</option>
+                </select>
+              </div>
             </div>
 
             <div style={styles.modalFooter}>
