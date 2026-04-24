@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.core.database import get_db
-from app.models.models import Pengguna, Kelas, KelasMurid, Murid
+from app.models.models import Pengguna, Kelas, KelasMurid, Murid, MataPelajaran
 from app.schemas.schemas import (
     KelasCreate, KelasUpdate, KelasResponse,
     MuridCreate, MuridUpdate, MuridResponse, TambahMuridKeKelas,
@@ -27,6 +27,15 @@ def _murid_to_response(murid: Murid) -> MuridResponse:
         is_active=murid.is_active,
     )
 
+def _cek_mata_pelajaran(db: Session, mata_pelajaran_id: str) -> MataPelajaran:
+    """Pastikan mata_pelajaran_id valid, raise 404 jika tidak ada."""
+    mapel = db.query(MataPelajaran).filter(MataPelajaran.id == mata_pelajaran_id).first()
+    if not mapel:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Mata pelajaran dengan id '{mata_pelajaran_id}' tidak ditemukan",
+        )
+    return mapel
 
 # ── Kelas CRUD ────────────────────────────────────────────────────────────────
 
@@ -57,8 +66,24 @@ def buat_kelas(
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
 ):
-    """Buat kelas baru untuk pengajar yang login."""
-    kelas = Kelas(id=str(uuid.uuid4()), pengajar_id=current_user.id, **data.model_dump())
+    # Validasi mata_pelajaran_id
+    _cek_mata_pelajaran(db, data.mata_pelajaran_id)
+
+    # Cek nama kelas unik
+    if db.query(Kelas).filter(Kelas.nama == data.nama).first():
+        raise HTTPException(
+            status_code=400,
+            detail=f"Kelas dengan nama '{data.nama}' sudah ada",
+        )
+
+    kelas = Kelas(
+        id=str(uuid.uuid4()),
+        nama=data.nama,
+        mata_pelajaran_id=data.mata_pelajaran_id,
+        pengajar_id=current_user.id,
+        hari=data.hari,
+        jam=data.jam,
+    )
     db.add(kelas)
     db.commit()
     db.refresh(kelas)
@@ -78,11 +103,23 @@ def update_kelas(
     if not k:
         raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
 
-    if "mata pelajaran" in update_data and not update_data["mata pelajaran"].strip():
-        raise HTTPException(status_code=422, detail="Mata pelajaran tidak boleh kosong")
+    update_data = data.model_dump(exclude_none=True)
 
-    for field, val in data.model_dump(exclude_none=True).items():
+    # Validasi mata_pelajaran_id jika diubah
+    if "mata_pelajaran_id" in update_data:
+        _cek_mata_pelajaran(db, update_data["mata_pelajaran_id"])
+
+    # Cek nama unik jika nama diubah
+    if "nama" in update_data and update_data["nama"] != k.nama:
+        if db.query(Kelas).filter(Kelas.nama == update_data["nama"]).first():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Kelas dengan nama '{update_data['nama']}' sudah ada",
+            )
+
+    for field, val in update_data.items():
         setattr(k, field, val)
+
     db.commit()
     db.refresh(k)
     return k
@@ -117,7 +154,7 @@ def list_murid_kelas(
     for km in km_rows:
         murid = db.query(Murid).filter(Murid.id == km.murid_id).first()
         if murid:
-            result.append(_murid_to_response(murid, db))
+            result.append(_murid_to_response(murid))
     return result
 
 
@@ -129,12 +166,20 @@ def tambah_murid_ke_kelas(
     db: Session = Depends(get_db),
 ):
     """Tambahkan murid yang sudah ada ke dalam kelas."""
+    # Pastikan kelas ada
+    if not db.query(Kelas).filter(Kelas.id == kelas_id).first():
+        raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
+    # Pastikan murid ada
+    if not db.query(Murid).filter(Murid.id == data.murid_id).first():
+        raise HTTPException(status_code=404, detail="Murid tidak ditemukan")
+
     existing = db.query(KelasMurid).filter(
         KelasMurid.kelas_id == kelas_id,
         KelasMurid.murid_id == data.murid_id,
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Murid sudah ada di kelas ini")
+
     db.add(KelasMurid(kelas_id=kelas_id, murid_id=data.murid_id))
     db.commit()
     return {"message": "Murid berhasil ditambahkan ke kelas"}

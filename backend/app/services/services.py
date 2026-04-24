@@ -167,13 +167,10 @@ class KelasService:
         kelas = Kelas(
             id=str(uuid.uuid4()),
             nama=data.nama,
-            mata_pelajaran=data.mata_pelajaran,
-            subject=data.subject,
-            meeting_day=data.meeting_day,
-            schedule=data.schedule,
-            credit=data.credit,
-            class_type=data.class_type,
-            pengajar_id=data.pengajar_id,
+            mata_pelajaran_id=data.mata_pelajaran_id,
+            pengajar_id=data.pengajar_id if hasattr(data, "pengajar_id") else None,
+            hari=data.hari,
+            jam=data.jam,
         )
         db.add(kelas)
         await db.flush()
