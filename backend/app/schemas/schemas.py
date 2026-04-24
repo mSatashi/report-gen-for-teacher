@@ -49,7 +49,11 @@ class MuridCreate(BaseModel):
     is_active: bool = True
 
 class MuridUpdate(BaseModel):
+    nama: Optional[str] = None
+    email_address: Optional[EmailStr] = None
+    jenis_kelamin: Optional[JenisKelamin] = None
     education_level: Optional[EducationLevel] = None
+    is_active: Optional[bool] = None
 
 class MuridResponse(BaseModel):
     """

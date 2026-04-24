@@ -27,6 +27,8 @@ def _murid_to_response(murid: Murid) -> MuridResponse:
         is_active=murid.is_active,
     )
 
+
+
 def _cek_mata_pelajaran(db: Session, mata_pelajaran_id: str) -> MataPelajaran:
     """Pastikan mata_pelajaran_id valid, raise 404 jika tidak ada."""
     mapel = db.query(MataPelajaran).filter(MataPelajaran.id == mata_pelajaran_id).first()
@@ -252,4 +254,4 @@ def update_murid(
         setattr(murid, field, val)
     db.commit()
     db.refresh(murid)
-    return _murid_to_response(murid, db)
+    return _murid_to_response(murid)
