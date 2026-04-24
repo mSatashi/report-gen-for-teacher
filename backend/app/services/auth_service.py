@@ -49,12 +49,22 @@ def login_user(db: Session, data: LoginRequest) -> TokenResponse:
     if not cast(bool, user.is_active):
         raise HTTPException(status_code=403, detail="Akun tidak aktif")
 
-    token = create_access_token({"sub": user.id, "tipe": user.tipe_pengguna})
+    db.refresh(user)
+
+    # Pengecekan eksplisit untuk field penting
+    if not user.username or not user.email_address:
+        raise HTTPException(status_code=500, detail="Data user tidak lengkap di database")
+
+    token = create_access_token({"sub": str(user.id), "tipe": user.tipe_pengguna})
+
     return TokenResponse(
         access_token=token,
         tipe_pengguna=str(user.tipe_pengguna),
         user_id=str(user.id),
+        username=str(user.username),
+        email_address=str(user.email_address),
     )
+
 
 def logout_user(token: str) -> dict:
     """

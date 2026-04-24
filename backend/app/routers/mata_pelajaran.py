@@ -40,8 +40,6 @@ def buat_mata_pelajaran(
 ):
     """
     Buat mata pelajaran baru.
-    kredit wajib > 0. jam harus format HH:MM.
-    Kombinasi nama + hari + jam harus unik.
     """
     return create_mata_pelajaran(db, data)
  
@@ -50,20 +48,14 @@ def buat_mata_pelajaran(
 def list_mata_pelajaran(
     skip:   int           = Query(0, ge=0),
     limit:  int           = Query(100, ge=1, le=500),
-    search: Optional[str] = Query(None, description="Filter nama mata pelajaran"),
-    hari:   Optional[str] = Query(
-        None,
-        description="Filter hari jadwal: Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu",
-    ),
+    search: Optional[str] = Query(None, description="Filter nama mata pelajaran"),    
     db: Session = Depends(get_db),
     current_user: Pengguna = Depends(require_pengajar),
 ):
     """
     List semua mata pelajaran.
-    Mendukung filter nama (search) dan hari, serta paginasi (skip/limit).
-    Diurutkan berdasarkan hari → jam.
     """
-    return get_all_mata_pelajaran(db, skip=skip, limit=limit, search=search, hari=hari)
+    return get_all_mata_pelajaran(db, skip=skip, limit=limit, search=search)
  
  
 @router.get("/{mapel_id}", response_model=MataPelajaranResponse)
@@ -85,8 +77,6 @@ def ubah_mata_pelajaran(
 ):
     """
     Update mata pelajaran (partial — hanya field yang dikirim diubah).
-    Jika jam diubah, tetap harus format HH:MM.
-    Tidak boleh konflik dengan jadwal yang sudah ada.
     """
     return update_mata_pelajaran(db, mapel_id, data)
  

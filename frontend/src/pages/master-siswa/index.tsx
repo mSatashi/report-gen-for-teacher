@@ -312,7 +312,7 @@ export default function MasterSiswa({ initialData = [] }: Props) {
             </div>
 
             <div style={styles.row2}>
-              <div style={styles.formGroup}>
+              {/* <div style={styles.formGroup}>
                 <label style={styles.label}>Email Address *</label>
                 <input
                   type="text"
@@ -324,8 +324,8 @@ export default function MasterSiswa({ initialData = [] }: Props) {
                   }
                   style={styles.input}
                 />
-              </div>
-              <div style={styles.formGroup}>
+              </div> */}
+              {/* <div style={styles.formGroup}>
                 <label style={styles.label}>Password *</label>
                 <input
                     type={showPassword ? "text" : "password"}
@@ -338,7 +338,7 @@ export default function MasterSiswa({ initialData = [] }: Props) {
                     autoComplete="current-password"
                     style={styles.input}
                   />
-              </div>
+              </div> */}
             </div>
 
             <div style={styles.row2}>

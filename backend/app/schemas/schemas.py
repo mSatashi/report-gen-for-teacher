@@ -5,6 +5,7 @@ Pydantic v2 schemas untuk request & response FastAPI.
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+import re as _re
 
 EducationLevel = Literal["SD-1", "SD-2", "SD-3", "SD-4", "SD-5", "SD-6", "SMP-1", "SMP-2", "SMP-3", "SMK-1", "SMK-2", "SMK-3", "SMK-4", "SMA-1", "SMA-2", "SMA-3"]
 JenisKelamin   = Literal["Laki-laki", "Perempuan"]
@@ -32,7 +33,8 @@ class TokenResponse(BaseModel):
     tipe_pengguna: str
     user_id: str
     username: str
-    email_address: str
+    email_address: EmailStr
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -47,7 +49,11 @@ class MuridCreate(BaseModel):
     is_active: bool = True
 
 class MuridUpdate(BaseModel):
+    nama: Optional[str] = None
+    email_address: Optional[EmailStr] = None
+    jenis_kelamin: Optional[JenisKelamin] = None
     education_level: Optional[EducationLevel] = None
+    is_active: Optional[bool] = None
 
 class MuridResponse(BaseModel):
     """
@@ -62,23 +68,56 @@ class MuridResponse(BaseModel):
     jenis_kelamin: Optional[JenisKelamin] = None
     is_active: bool = True
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Mata Pelajaran
+# ═══════════════════════════════════════════════════════════════════════════════
+class MataPelajaranCreate(BaseModel):
+    nama_mata_pelajaran: str = Field(..., min_length=1)
+    topik: List[str] = Field(default_factory=list, description="Daftar topik mata pelajaran")
+
+class MataPelajaranUpdate(BaseModel):
+    nama_mata_pelajaran: Optional[str]   = None
+    topik: Optional[List[str]] = None
+ 
+class MataPelajaranResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+ 
+    id:                  str
+    nama_mata_pelajaran: str
+    topik:               List[str] = []
+    created_at:          datetime
+    updated_at:          datetime
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # KELAS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class KelasCreate(BaseModel):
-    nama: str
-    mata_pelajaran: str
-    kredit: int = 0
-    jadwal: Optional[str] = None
+    nama: str 
+    mata_pelajaran_id: str
+    hari: Hari
+    jam: str = Field(..., description="Format HH:MM")
+
+    @field_validator("jam")
+    @classmethod
+    def validasi_format_jam(cls, v: str) -> str:
+        if not _re.match(r"^([01]\d|2[0-3]):[0-5]\d$", v):
+            raise ValueError("jam harus format HH:MM (contoh: '08:00', '13:30')")
+        return v
 
 
 class KelasUpdate(BaseModel):
     nama: Optional[str] = None
-    mata_pelajaran: Optional[str] = None
-    kredit: Optional[int] = None
-    jadwal: Optional[str] = None
+    mata_pelajaran_id: Optional[str] = None
+    hari: Optional[Hari] = None
+    jam: Optional[str] = None
+
+    @field_validator("jam")
+    @classmethod
+    def validasi_format_jam(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not _re.match(r"^([01]\d|2[0-3]):[0-5]\d$", v):
+            raise ValueError("jam harus format HH:MM (contoh: '08:00', '13:30')")
+        return v
 
 
 class KelasResponse(BaseModel):
@@ -86,10 +125,11 @@ class KelasResponse(BaseModel):
 
     id: str
     nama: str
-    mata_pelajaran: str
+    mata_pelajaran_id: Optional[str] = None
+    mata_pelajaran: Optional[MataPelajaranResponse] = Field(None, alias="mata_pelajaran_obj")
     pengajar_id: Optional[str] = None
-    kredit: int = 0
-    jadwal: Optional[str] = None
+    hari: str
+    jam: str
     created_at: datetime
 
 
