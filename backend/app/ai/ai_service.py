@@ -3,7 +3,8 @@ import re
 from typing import Any, Dict, List, Optional
  
 from app.ai.ollama_client import narrative_client, planner_client
- 
+from app.ai.bkt_engine import SKILL_ORDER, PRIOR_KNOWLEDGE
+
 logger = logging.getLogger(__name__)
  
 # ── Prompt Sanitizer (NF001) ──────────────────────────────────────────────────
@@ -273,11 +274,13 @@ class PlannerEngine:
         sisa_sesi: int,
         target_kurikulum: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        """
-        Generate rencana studi adaptif.
-        Fungsi evaluasi PSO: prioritaskan topik p_knowledge rendah (belum dikuasai).
-        Parameter PSO sesuai Tabel 9 laporan: N=30-50, w=0.4-0.9, c1=c2=1.5-2.5.
-        """
+        if not knowledge_state:
+            knowledge_state = {skill: PRIOR_KNOWLEDGE for skill in SKILL_ORDER}
+            logger.info(
+                f"knowledge_state kosong untuk {nama_murid}, "
+                f"menggunakan PRIOR_KNOWLEDGE ({PRIOR_KNOWLEDGE}) dari SKILL_ORDER bkt_engine"
+            )
+
         bkt_summary = "\n".join(
             [f"- {t}: {round(p*100,1)}%" for t, p in sorted(knowledge_state.items(), key=lambda x: x[1])]
         ) or "Data BKT belum tersedia."
@@ -327,33 +330,60 @@ Buat rencana dalam format JSON berikut:
  
     def _parse_json_response(self, raw: str) -> Dict[str, Any]:
         import json
-        match = re.search(r"\{[\s\S]+\}", raw)
-        if match:
+
+        if not raw:
+            logger.warning("PlannerEngine: response kosong dari LLM")
+            return {}
+
+        # Langkah 1: hapus fences ```json ... ``` atau ``` ... ```
+        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).replace("```", "").strip()
+
+        # Langkah 2: coba parse langsung
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            pass
+
+        # Langkah 3: cari blok JSON pertama yang valid (greedy dari { sampai } terakhir)
+        # Ini lebih andal dari regex \{[\s\S]+\} untuk JSON dengan nested objects
+        brace_start = cleaned.find("{")
+        brace_end   = cleaned.rfind("}")
+        if brace_start != -1 and brace_end != -1 and brace_end > brace_start:
+            candidate = cleaned[brace_start : brace_end + 1]
             try:
-                return json.loads(match.group())
+                return json.loads(candidate)
             except json.JSONDecodeError:
                 pass
-        logger.warning("Gagal parse JSON dari PlannerEngine")
+
+        logger.warning(f"Gagal parse JSON dari PlannerEngine. Raw response (100 char): {raw[:100]}")
         return {}
  
     def _fallback_plan(
         self, mata_pelajaran: str, sisa_sesi: int, knowledge_state: Dict[str, float]
     ) -> Dict[str, Any]:
-        """
-        Fallback statis: prioritaskan topik dengan p_knowledge rendah (PSO heuristik).
-        Sesuai logika fungsi evaluasi PSO di Section 4.3.2 laporan.
-        """
-        topik_lemah = sorted(
-            [(t, p) for t, p in knowledge_state.items() if p < 0.7],
-            key=lambda x: x[1]
-        )
-        rekomendasi = [t for t, _ in topik_lemah[:sisa_sesi]]
-        topik_kuat  = [t for t, p in knowledge_state.items() if p >= 0.7]
+        if knowledge_state:
+            # Prioritaskan topik belum dikuasai, urut dari p_knowledge terendah
+            topik_lemah = sorted(
+                [(t, p) for t, p in knowledge_state.items() if p < 0.7],
+                key=lambda x: x[1]
+            )
+            rekomendasi = [t for t, _ in topik_lemah[:max(sisa_sesi, 5)]]
+            topik_kuat  = [t for t, p in knowledge_state.items() if p >= 0.7]
+        else:
+            rekomendasi = SKILL_ORDER[:max(sisa_sesi, 5)]
+            topik_kuat  = []
+
+        # Buat jadwal mingguan sederhana — bagi rekomendasi per minggu (2 topik/minggu)
+        jadwal: Dict[str, List[str]] = {}
+        for i in range(0, len(rekomendasi), 2):
+            minggu = f"Minggu {i // 2 + 1}"
+            jadwal[minggu] = rekomendasi[i : i + 2]
+
         return {
             "rekomendasi_materi":      rekomendasi,
-            "jadwal_mingguan":         {},
+            "jadwal_mingguan":         jadwal,
             "catatan_analisa":         (
-                f"Rencana statis (PSO tidak tersedia). "
+                f"Rencana statis (LLM tidak tersedia). "
                 f"Prioritaskan: {', '.join(rekomendasi[:3]) or '-'}. "
                 f"Sudah dikuasai: {', '.join(topik_kuat[:3]) or '-'}."
             ),

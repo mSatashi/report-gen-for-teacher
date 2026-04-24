@@ -12,7 +12,7 @@ from app.models.models import (
 )
 from app.ai.ai_service import narrative_engine, planner_engine
 # [INTEGRASI] Pakai BKTEngine dengan parameter per-skill (dari bkt_engine.py)
-from app.ai.bkt_engine import bkt_engine, PRIOR_KNOWLEDGE, CORRECT_THRESHOLD
+from app.ai.bkt_engine import SKILL_ORDER, bkt_engine, PRIOR_KNOWLEDGE, CORRECT_THRESHOLD
  
 logger = logging.getLogger(__name__)
  
@@ -178,6 +178,13 @@ async def generate_rencana_studi(
     if murid_id:
         update_knowledge_states(db, murid_id, kelas_id)
         knowledge_state = get_knowledge_state(db, murid_id)
+
+        if not knowledge_state:
+            knowledge_state = {skill: PRIOR_KNOWLEDGE for skill in SKILL_ORDER}
+            logger.info(
+                f"Murid {murid_id} belum punya data BKT, "
+                f"menggunakan PRIOR_KNOWLEDGE ({PRIOR_KNOWLEDGE}) untuk semua topik SKILL_ORDER"
+            )
     else:
         knowledge_state = {}
  

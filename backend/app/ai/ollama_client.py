@@ -40,7 +40,11 @@ class OllamaClient:
                 if resp.status_code != 200:
                     return False
                 models = [m["name"] for m in resp.json().get("models", [])]
-                return any(self.model in m for m in models)
+                model_base = self.model.split(":")[0]
+                return any(
+                    m == self.model or m.startswith(model_base + ":") or m == model_base
+                    for m in models
+                )
         except Exception as e:
             logger.warning(f"Ollama tidak tersedia: {e}")
             return False
@@ -72,6 +76,8 @@ class OllamaClient:
         if system_prompt:
             payload["system"] = system_prompt
 
+        logger.debug(f"Mengirim request ke Ollama: {self.base_url}/api/generate (model={self.model})")
+
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 resp = await client.post(
@@ -80,6 +86,8 @@ class OllamaClient:
                 )
                 resp.raise_for_status()
                 data = resp.json()
+                result = data.get("response", "").strip()
+                logger.debug(f"Ollama berhasil, panjang response: {len(result)} karakter")
                 return data.get("response", "").strip()
         except httpx.TimeoutException:
             logger.error("Ollama timeout saat generate")
