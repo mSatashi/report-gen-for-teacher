@@ -17,14 +17,11 @@ def create_mata_pelajaran(
 ) -> MataPelajaranResponse:
     """
     Buat mata pelajaran baru.
-    Tolak jika kombinasi nama + hari + jam sudah ada (duplikat jadwal).
     """
     existing = (
         db.query(MataPelajaran)
         .filter(
-            MataPelajaran.nama_mata_pelajaran == data.nama_mata_pelajaran,
-            MataPelajaran.hari               == data.hari,
-            MataPelajaran.jam                == data.jam,
+            MataPelajaran.nama_mata_pelajaran == data.nama_mata_pelajaran
         )
         .first()
     )
@@ -32,17 +29,14 @@ def create_mata_pelajaran(
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Mata pelajaran '{data.nama_mata_pelajaran}' dengan jadwal "
-                f"{data.hari} {data.jam} sudah ada"
+                f"Mata pelajaran '{data.nama_mata_pelajaran}' sudah ada"
             ),
         )
  
     mapel = MataPelajaran(
         id=str(uuid.uuid4()),
         nama_mata_pelajaran=data.nama_mata_pelajaran,
-        kredit=data.kredit,
-        hari=data.hari,
-        jam=data.jam,
+        topik=data.topik,
     )
     db.add(mapel)
     db.commit()
@@ -55,12 +49,10 @@ def get_all_mata_pelajaran(
     skip: int = 0,
     limit: int = 100,
     search: Optional[str] = None,
-    hari: Optional[str] = None,
 ) -> List[MataPelajaranResponse]:
     """
     List semua mata pelajaran.
     - search : filter nama (case-insensitive, opsional)
-    - hari   : filter hari jadwal, contoh 'Senin' (opsional)
     - skip / limit : paginasi
     """
     query = db.query(MataPelajaran)
@@ -69,12 +61,9 @@ def get_all_mata_pelajaran(
         query = query.filter(
             MataPelajaran.nama_mata_pelajaran.ilike(f"%{search}%")
         )
-    if hari:
-        query = query.filter(MataPelajaran.hari == hari)
  
     rows = (
         query
-        .order_by(MataPelajaran.hari, MataPelajaran.jam)
         .offset(skip)
         .limit(limit)
         .all()
@@ -97,7 +86,6 @@ def update_mata_pelajaran(
 ) -> MataPelajaranResponse:
     """
     Update mata pelajaran (partial update — hanya field yang dikirim).
-    Jika nama/hari/jam diubah, cek tidak bentrok dengan jadwal yang sudah ada.
     """
     mapel = db.query(MataPelajaran).filter(MataPelajaran.id == mapel_id).first()
     if not mapel:
@@ -105,31 +93,23 @@ def update_mata_pelajaran(
  
     update_data = data.model_dump(exclude_none=True)
  
-    # Cek konflik jadwal jika salah satu dari nama/hari/jam diubah
-    if any(k in update_data for k in ("nama_mata_pelajaran", "hari", "jam")):
-        nama_cek = update_data.get("nama_mata_pelajaran", mapel.nama_mata_pelajaran)
-        hari_cek = update_data.get("hari", mapel.hari)
-        jam_cek  = update_data.get("jam",  mapel.jam)
- 
+    # Cek konflik nama jika nama diubah
+    if "nama_mata_pelajaran" in update_data:
+        nama_baru = update_data["nama_mata_pelajaran"]
         konflik = (
             db.query(MataPelajaran)
             .filter(
-                MataPelajaran.nama_mata_pelajaran == nama_cek,
-                MataPelajaran.hari               == hari_cek,
-                MataPelajaran.jam                == jam_cek,
-                MataPelajaran.id                 != mapel_id,
+                MataPelajaran.nama_mata_pelajaran == nama_baru,
+                MataPelajaran.id != mapel_id,
             )
             .first()
         )
         if konflik:
             raise HTTPException(
                 status_code=400,
-                detail=(
-                    f"Mata pelajaran '{nama_cek}' dengan jadwal "
-                    f"{hari_cek} {jam_cek} sudah ada"
-                ),
+                detail=f"Mata pelajaran '{nama_baru}' sudah ada",
             )
- 
+
     for field, val in update_data.items():
         setattr(mapel, field, val)
  

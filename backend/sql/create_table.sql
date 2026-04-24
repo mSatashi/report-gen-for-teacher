@@ -34,6 +34,14 @@ CREATE TABLE IF NOT EXISTS murid (
     diagnostic_level VARCHAR(50),
     is_active       BOOLEAN      NOT NULL DEFAULT TRUE
 );
+
+CREATE TABLE IF NOT EXISTS mata_pelajaran (
+    id                 VARCHAR(50)  PRIMARY KEY,
+    nama_mata_pelajaran VARCHAR(150) NOT NULL,
+    topik               JSONB        NOT NULL DEFAULT '[]',  -- list of string
+    created_at          TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMP    NOT NULL DEFAULT NOW()
+);
  
 -- =============================================================================
 -- 4. KELAS
@@ -41,11 +49,12 @@ CREATE TABLE IF NOT EXISTS murid (
 CREATE TABLE IF NOT EXISTS kelas (
     id             VARCHAR(50)  PRIMARY KEY,
     nama           VARCHAR(100) NOT NULL,
-    mata_pelajaran VARCHAR(100),
-    pengajar_id    VARCHAR(50)  REFERENCES pengajar(id) ON DELETE SET NULL,
-    kredit         INTEGER      NOT NULL DEFAULT 0,
-    jadwal         VARCHAR(100),
-    created_at     TIMESTAMP    NOT NULL DEFAULT NOW()
+    mata_pelajaran_id VARCHAR(50)  REFERENCES mata_pelajaran(id) ON DELETE SET NULL,
+    pengajar_id       VARCHAR(50)  REFERENCES pengajar(id) ON DELETE SET NULL,
+    hari              VARCHAR(10)  NOT NULL
+                          CHECK (hari IN ('Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu')),
+    jam               VARCHAR(5)   NOT NULL,           -- HH:MM
+    created_at        TIMESTAMP    NOT NULL DEFAULT NOW()
 );
  
 -- =============================================================================
@@ -155,21 +164,6 @@ CREATE TABLE IF NOT EXISTS diagnostic_result (
     model_ai         VARCHAR(100),
     created_at       TIMESTAMP    NOT NULL DEFAULT NOW()
 );
-
-CREATE TABLE IF NOT EXISTS mata_pelajaran (
-    id                 VARCHAR(50)  PRIMARY KEY,
-    nama_mata_pelajaran VARCHAR(150) NOT NULL,
-    kredit             INTEGER      NOT NULL CHECK (kredit > 0),
- 
-    -- Jadwal: hari dan jam terpisah agar bisa difilter dan divalidasi
-    -- hari  : 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat' | 'Sabtu' | 'Minggu'
-    -- jam   : format HH:MM, contoh '10:00', '13:30'
-    hari               VARCHAR(10)  NOT NULL
-                           CHECK (hari IN ('Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu')),
-    jam                VARCHAR(5)   NOT NULL,  -- HH:MM
-    created_at         TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at         TIMESTAMP    NOT NULL DEFAULT NONE
-);
  
 -- =============================================================================
 -- INDEX  (untuk mempercepat query yang sering dilakukan)
@@ -184,5 +178,5 @@ CREATE INDEX IF NOT EXISTS idx_rencana_murid ON rencana_studi (murid_id);
 CREATE INDEX IF NOT EXISTS idx_ks_murid      ON knowledge_state (murid_id);
 CREATE INDEX IF NOT EXISTS idx_diag_murid    ON diagnostic_result (murid_id);
 CREATE INDEX IF NOT EXISTS idx_kelas_pengajar ON kelas           (pengajar_id);
+CREATE INDEX IF NOT EXISTS idx_kelas_mapel ON kelas (mata_pelajaran_id);
 CREATE INDEX IF NOT EXISTS idx_mapel_nama ON mata_pelajaran (nama_mata_pelajaran);
-CREATE INDEX IF NOT EXISTS idx_mapel_hari ON mata_pelajaran (hari);
