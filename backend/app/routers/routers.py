@@ -33,7 +33,7 @@ from app.services.services import (
     LaporanService, RencanaStudiService,
     KnowledgeStateService, DashboardService, MataPelajaranService
 )
-from app.ai.llm_service import NarrativeEngine, PlannerEngine, get_llm_clientsesuaikan nama schema
+from app.ai.llm_service import NarrativeEngine, PlannerEngine, get_llm_client #sesuaikan nama schema
 
 
 logger = logging.getLogger(__name__)

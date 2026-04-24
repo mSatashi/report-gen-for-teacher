@@ -48,10 +48,14 @@ async def generate_plan(
     db: Session = Depends(get_db),
 ):
     """F004 — Generate rencana studi adaptif menggunakan BKT + AI."""
+    if not murid_id:
+        raise HTTPException(status_code=400, detail="murid_id wajib diisi untuk optimasi PSO.")
+        
     try:
-        return await generate_rencana_studi(db, kelas_id, murid_id)
+        rencana = await generate_rencana_studi(db=db, kelas_id=kelas_id, murid_id=murid_id)
+        return rencana
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal generate rencana: {str(e)}")
 

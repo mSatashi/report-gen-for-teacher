@@ -259,71 +259,42 @@ Output dalam format JSON yang valid. Jangan tambahkan teks di luar JSON.
  
  
 class PlannerEngine:
-    """
-    Generate rencana studi adaptif berdasarkan BKT + PSO via LLM.
-    Data masukan dari PostgreSQL (via plan_service.py), bukan dari CSV.
-    """
- 
-    async def generate_rencana_studi(
+    async def narrate_pso_plan(
         self,
         nama_murid: str,
-        mata_pelajaran: str,
-        draft_analisis: str,
-        knowledge_state: Dict[str, float],
-        sisa_sesi: int,
-        target_kurikulum: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        rencana_pso: Dict[str, Any],
+        draft_analisis: str
+    ) -> str:
         """
-        Generate rencana studi adaptif.
-        Fungsi evaluasi PSO: prioritaskan topik p_knowledge rendah (belum dikuasai).
-        Parameter PSO sesuai Tabel 9 laporan: N=30-50, w=0.4-0.9, c1=c2=1.5-2.5.
+        Mengubah output JSON dari PSO menjadi narasi yang humanis.
         """
-        bkt_summary = "\n".join(
-            [f"- {t}: {round(p*100,1)}%" for t, p in sorted(knowledge_state.items(), key=lambda x: x[1])]
-        ) or "Data BKT belum tersedia."
- 
-        target_str = ", ".join(target_kurikulum) if target_kurikulum else "Sesuai silabus standar"
- 
+        materi_list = ", ".join(rencana_pso.get("rekomendasi_materi", []))
+        
         prompt = f"""
-Buat rencana studi adaptif untuk:
-- Siswa     : {sanitize_prompt(nama_murid)}
-- Pelajaran : {sanitize_prompt(mata_pelajaran)}
-- Sisa Sesi : {sisa_sesi} pertemuan
- 
-Analisis kondisi belajar (dari log dan BKT):
-{sanitize_prompt(draft_analisis)}
- 
-Status penguasaan materi saat ini (BKT — urutan dari terendah):
-{bkt_summary}
- 
-Target kurikulum:
-{sanitize_prompt(target_str)}
- 
-Buat rencana dalam format JSON berikut:
-{{
-  "rekomendasi_materi": ["topik1", "topik2", ...],
-  "jadwal_mingguan": {{
-    "Minggu 1": ["topik untuk minggu 1"],
-    "Minggu 2": ["topik untuk minggu 2"]
-  }},
-  "catatan_analisa": "penjelasan singkat mengapa urutan ini dipilih",
-  "estimasi_selesai_minggu": 4,
-  "prioritas_perhatian": ["topik yang paling perlu diperkuat"]
-}}
+Tugasmu adalah menjelaskan rencana belajar yang telah disusun oleh sistem optimasi PSO.
+Jangan mengubah urutan materi yang diberikan.
+
+Data Murid: {nama_murid}
+Analisis Kondisi (BKT): {draft_analisis}
+Rencana Rute PSO: {materi_list}
+
+Berikan penjelasan singkat (100-150 kata) dalam Bahasa Indonesia yang hangat mengenai:
+1. Mengapa materi tersebut diprioritaskan (hubungkan dengan draft analisis).
+2. Bagaimana urutan ini akan membantu siswa mencapai target lebih cepat.
+3. Semangat untuk pengajar/orang tua.
 """.strip()
- 
+
         try:
+            # Menggunakan planner_client untuk generate narasi
             raw = await planner_client.generate(
                 prompt=prompt,
-                system_prompt=PLANNER_SYSTEM_PROMPT,
-                temperature=0.4,   # lebih rendah agar JSON konsisten
-                top_p=0.9,
-                max_tokens=1024,
+                system_prompt="Kamu adalah konsultan kurikulum yang ramah.",
+                temperature=0.7
             )
-            return self._parse_json_response(raw)
+            return raw if raw else rencana_pso.get("catatan_analisa", "Rencana disusun berdasarkan optimasi sistem.")
         except Exception as e:
-            logger.error(f"PlannerEngine gagal: {e}")
-            return self._fallback_plan(mata_pelajaran, sisa_sesi, knowledge_state)
+            logger.error(f"Gagal narasi PSO: {e}")
+            return rencana_pso.get("catatan_analisa", "Rencana disusun berdasarkan optimasi sistem.")
  
     def _parse_json_response(self, raw: str) -> Dict[str, Any]:
         import json

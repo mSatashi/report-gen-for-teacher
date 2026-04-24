@@ -226,17 +226,18 @@ class RencanaStudi(Base):
     F004 — Rencana studi adaptif yang dihasilkan PlannerEngine (BKT + PSO).
     """
     __tablename__ = "rencana_studi"
-
-    id                        = Column(String(50), primary_key=True, default=_uuid)
-    kelas_id                  = Column(String(50), ForeignKey("kelas.id", ondelete="CASCADE"))
-    murid_id                  = Column(String(50), ForeignKey("murid.id", ondelete="CASCADE"))
-    draft_analisis_id         = Column(String(50), ForeignKey("draft_analisis.id", ondelete="SET NULL"), nullable=True)
-    waktu                     = Column(DateTime, default=datetime.utcnow)
-    daftar_rekomendasi_materi = Column(JSON)       # list of strings
-    estimasi_waktu_selesai    = Column(DateTime,   nullable=True)
-    catatan_analisa           = Column(Text)
-    jadwal_mingguan           = Column(JSON)       # JSON jadwal per hari
-    version                   = Column(Integer, default=1)
+    id = Column(String(50), primary_key=True)
+    kelas_id = Column(String(50), ForeignKey("kelas.id"))
+    murid_id = Column(String(50), ForeignKey("murid.id"))
+    draft_analisis_id = Column(String(50), ForeignKey("draft_analisis.id"))
+    daftar_rekomendasi_materi = Column(JSON, default=list)
+    jadwal_mingguan = Column(JSON, default=dict)
+    catatan_analisa = Column(Text)
+    estimasi_waktu_selesai = Column(DateTime)
+    version = Column(Integer, default=1)
+    waktu = Column(DateTime, default=datetime.utcnow)
+    
+    is_outdated = Column(Boolean, default=False)
 
     kelas         = relationship("Kelas", back_populates="rencana_studi")
     draft_analisis = relationship("DraftAnalisis", back_populates="rencana_studi")
