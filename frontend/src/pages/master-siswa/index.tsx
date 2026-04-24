@@ -180,7 +180,7 @@ export default function MasterSiswa({ initialData = [] }: Props) {
         <div style={{ flex: 1, minWidth: 260 }}>
           <input
             type="text"
-            placeholder="Cari nama, NIS, jenis kelamin, tanggal lahir, alamat..."
+            placeholder="Cari nama, email, jenis kelamin, atau education level..."
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             style={styles.input}
