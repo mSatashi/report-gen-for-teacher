@@ -18,7 +18,7 @@ from email import encoders
 from sqlalchemy.orm import Session
  
 from app.core.config import settings
-from app.models.models import Laporan, Murid, LogPertemuan, KnowledgeState
+from app.models.models import Laporan, Murid, LogPertemuan, KnowledgeState, MataPelajaran
 from app.schemas.schemas import LaporanCreate, LaporanUpdate
 from app.ai.ai_service import narrative_engine
  
@@ -71,31 +71,21 @@ def finalize_laporan(db: Session, laporan_id: str) -> Optional[Laporan]:
 # ── Generate Laporan (F003) ───────────────────────────────────────────────────
  
 async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
-    """
-    F003 — Generate laporan perkembangan otomatis via NarrativeEngine.
- 
-    Alur:
-    1. Ambil Murid dari PostgreSQL
-    2. Ambil LogPertemuan dalam periode dari PostgreSQL
-    3. Ambil KnowledgeState (BKT) dari PostgreSQL
-    4. [BARU] Ambil RencanaStudi terbaru → pso_recommended_route
-    5. Kirim ke NarrativeEngine dengan pso_route + report_style
-    6. Simpan hasil ke tabel laporan (PostgreSQL)
-    """
+
     # 1. Data murid (dari PostgreSQL)
     murid = db.query(Murid).filter(Murid.id == data.murid_id).first()
     if not murid:
         raise ValueError(f"Murid dengan id {data.murid_id} tidak ditemukan")
- 
     nama_murid     = murid.nama or murid.pengguna.username
-    mata_pelajaran = "Umum"
  
     if data.kelas_id:
         from app.models.models import Kelas
         kelas = db.query(Kelas).filter(Kelas.id == data.kelas_id).first()
         if kelas:
-            mata_pelajaran = kelas.mata_pelajaran or kelas.nama
- 
+            mata_pelajaran = db.query(MataPelajaran).filter(MataPelajaran.id == kelas.mata_pelajaran_id).first()    
+            if not mata_pelajaran:
+                raise ValueError(f" Mata pelajaran dengan id {kelas.mata_pelajaran_id} tidak ditemukan")
+            mata_pelajaran = mata_pelajaran.nama_mata_pelajaran
     # 2. Log pertemuan dalam periode (dari PostgreSQL)
     q = db.query(LogPertemuan).filter(LogPertemuan.murid_id == data.murid_id)
     if data.kelas_id:

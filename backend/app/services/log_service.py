@@ -66,7 +66,7 @@ def get_logs_by_kelas(
     """Ambil semua log untuk satu kelas, opsional filter per murid."""
     q = db.query(LogPertemuan).filter(LogPertemuan.kelas_id == kelas_id)
     if murid_id:
-        q = q.filter(LogPertemuan.murid_id == murid_id)
+        q = q.filter(LogPertemuan.murid_id == murid_id, LogPertemuan.mata_pelajaran_id.isnot(None))
     return q.order_by(LogPertemuan.tanggal.desc()).offset(skip).limit(limit).all()
 
 
@@ -78,7 +78,7 @@ def get_logs_by_murid(
 ) -> List[LogPertemuan]:
     return (
         db.query(LogPertemuan)
-        .filter(LogPertemuan.murid_id == murid_id)
+        .filter(LogPertemuan.murid_id == murid_id, LogPertemuan.mata_pelajaran_id.isnot(None) )
         .order_by(LogPertemuan.tanggal.desc())
         .offset(skip)
         .limit(limit)

@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 import re as _re
 
+
+
 EducationLevel = Literal["SD-1", "SD-2", "SD-3", "SD-4", "SD-5", "SD-6", "SMP-1", "SMP-2", "SMP-3", "SMK-1", "SMK-2", "SMK-3", "SMK-4", "SMA-1", "SMA-2", "SMA-3"]
 JenisKelamin   = Literal["Laki-laki", "Perempuan"]
 Hari = Literal["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
@@ -49,7 +51,11 @@ class MuridCreate(BaseModel):
     is_active: bool = True
 
 class MuridUpdate(BaseModel):
+    nama: Optional[str] = None
+    email_address: Optional[EmailStr] = None
+    jenis_kelamin: Optional[JenisKelamin] = None
     education_level: Optional[EducationLevel] = None
+    is_active: Optional[bool] = None
 
 class MuridResponse(BaseModel):
     """
@@ -139,6 +145,7 @@ class TambahMuridKeKelas(BaseModel):
 class LogPertemuanCreate(BaseModel):
     kelas_id: str
     murid_id: str
+    mata_pelajaran_id: str
     tanggal: date
     topik: str
     nilai: Optional[float] = None
@@ -167,10 +174,10 @@ class LogPertemuanUpdate(BaseModel):
 
 class LogPertemuanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: str
-    kelas_id: str
+    kelas_id: str | None = None
     murid_id: str
+    mata_pelajaran_id: str
     tanggal: date
     topik: str
     nilai: Optional[float] = None
@@ -240,10 +247,8 @@ class KirimLaporanRequest(BaseModel):
 
 class RencanaStudiResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: str
     kelas_id: str
-    murid_id: Optional[str] = None
     waktu: datetime
     daftar_rekomendasi_materi: Optional[List[str]] = None
     estimasi_waktu_selesai: Optional[datetime] = None

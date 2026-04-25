@@ -27,6 +27,8 @@ def _murid_to_response(murid: Murid) -> MuridResponse:
         is_active=murid.is_active,
     )
 
+
+
 def _cek_mata_pelajaran(db: Session, mata_pelajaran_id: str) -> MataPelajaran:
     """Pastikan mata_pelajaran_id valid, raise 404 jika tidak ada."""
     mapel = db.query(MataPelajaran).filter(MataPelajaran.id == mata_pelajaran_id).first()
@@ -125,7 +127,7 @@ def update_kelas(
     return k
 
 
-@router.delete("/{kelas_id}", status_code=204)
+@router.delete("/{kelas_id}", status_code=200)
 def hapus_kelas(
     kelas_id: str,
     current_user: Pengguna = Depends(require_pengajar),
@@ -138,6 +140,7 @@ def hapus_kelas(
         raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
     db.delete(k)
     db.commit()
+    return {"message": "Kelas ini sudah dihapus oleh sistem"}
 
 
 # ── Murid di dalam Kelas ──────────────────────────────────────────────────────
@@ -185,7 +188,7 @@ def tambah_murid_ke_kelas(
     return {"message": "Murid berhasil ditambahkan ke kelas"}
 
 
-@router.delete("/{kelas_id}/murid/{murid_id}", status_code=204)
+@router.delete("/{kelas_id}/murid/{murid_id}", status_code=200)
 def hapus_murid_dari_kelas(
     kelas_id: str,
     murid_id: str,
@@ -200,6 +203,7 @@ def hapus_murid_dari_kelas(
         raise HTTPException(status_code=404, detail="Murid tidak ada di kelas ini")
     db.delete(km)
     db.commit()
+    return {"message": "Siswa sudah dihapus dari kelas ini"}
 
 
 # ── CRUD Murid (standalone) ───────────────────────────────────────────────────
@@ -229,11 +233,11 @@ def tambah_murid_baru(
 
     return MuridResponse(
         id=uid,
-        email_address=murid.email_address,
-        nama=murid.nama,
-        education_level=murid.education_level,
+        email_address= str(murid.email_address),
+        nama= str(murid.nama),
+        education_level= murid.education_level,
         jenis_kelamin=murid.jenis_kelamin,
-        is_active=murid.is_active,
+        is_active=bool(murid.is_active),
     )
 
 
@@ -252,4 +256,4 @@ def update_murid(
         setattr(murid, field, val)
     db.commit()
     db.refresh(murid)
-    return _murid_to_response(murid, db)
+    return _murid_to_response(murid)

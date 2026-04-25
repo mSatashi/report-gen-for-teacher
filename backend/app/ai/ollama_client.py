@@ -95,4 +95,3 @@ class OllamaClient:
 # ── Singleton instances ───────────────────────────────────────────────────────
 
 narrative_client = OllamaClient(model=settings.OLLAMA_MODEL_NAME)
-planner_client   = OllamaClient(model=settings.PLANNER_MODEL_NAME)

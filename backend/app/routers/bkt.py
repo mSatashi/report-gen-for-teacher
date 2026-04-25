@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import Pengguna, KnowledgeState
 from app.services.auth_service import require_pengajar
-from app.ai.bkt_engine import bkt_engine, SKILL_ORDER, CORRECT_THRESHOLD
+from app.ai.bkt_engine import bkt_engine, CORRECT_THRESHOLD
  
 router = APIRouter(prefix="/bkt", tags=["BKT"])
  
@@ -31,7 +31,7 @@ def get_bkt_params(current_user: Pengguna = Depends(require_pengajar)):
     """
     return {
         "correct_threshold": CORRECT_THRESHOLD,
-        "total_skills":      len(SKILL_ORDER),
+        "total_skills":      len(bkt_engine.get_all_params()),
         "params":            bkt_engine.get_all_params(),
         "keterangan": {
             "learn":      "P(T) — probabilitas belajar dalam satu sesi (0.1–0.3)",
@@ -90,13 +90,13 @@ def get_knowledge_state_detail(
 def get_skill_order(current_user: Pengguna = Depends(require_pengajar)):
     """Urutan skill kurikulum yang dipakai BKT untuk menghitung difficulty."""
     return {
-        "total": len(SKILL_ORDER),
+        "total": len(bkt_engine.get_all_params()),
         "skills": [
             {
                 "urutan":     i + 1,
                 "skill":      skill,
-                "difficulty": round(0.2 + 0.8 * (i / max(len(SKILL_ORDER) - 1, 1)), 3),
+                "difficulty": round(0.2 + 0.8 * (i / max(len(bkt_engine.get_all_params()) - 1, 1)), 3),
             }
-            for i, skill in enumerate(SKILL_ORDER)
+            for i, skill in enumerate(bkt_engine.get_all_params())
         ],
     }
