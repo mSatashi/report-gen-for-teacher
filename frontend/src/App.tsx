@@ -14,6 +14,7 @@ import { loginAPI, logout, type AuthUser } from "./service/authService";
 import MasterKelas from "./pages/master-kelas";
 import { setUnauthorizedHandler } from "./service/apiFetch";
 import MasterSiswa from "./pages/master-siswa";
+import MasterMapel from "./pages/master-mapel";
 
 // Helper token
 const TOKEN_KEY = "auth_token";
@@ -109,6 +110,8 @@ const App: React.FC = () => {
         return <MasterKelas />;
       case "masterSiswa":
         return <MasterSiswa />;
+      case "masterMapel":
+        return <MasterMapel />;
       default:
         return (
           <div style={styles.pageNotFound}>

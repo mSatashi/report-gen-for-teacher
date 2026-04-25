@@ -10,12 +10,22 @@ export interface KelasPayload {
 export interface KelasResponse {
   id: string;
   nama: string;
-  mata_pelajaran: string;
+  mata_pelajaran_id: string;
+  mata_pelajaran_obj: MataPelajaranObj;
   pengajar_id: string;
-  kredit: number;
-  jadwal: string;
+  hari: string;
+  jam: string;
   created_at: string;
 }
+
+export interface MataPelajaranObj {
+  id: string;
+  nama_mata_pelajaran: string;
+  topik: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 
 export interface Toast { id: number; message: string; type: "success" | "error" }
 
@@ -141,4 +151,17 @@ export interface DashboardResponse {
   // progress_siswa: Record<string, string[]>;
   aktivitas_terbaru: Activity[]; // ← pakai type Activity
   progress_siswa: Student[];
+}
+
+export interface MapelResponse {  
+  id: string;
+  nama_mata_pelajaran: string;
+  topik: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MapelPayload {  
+  nama_mata_pelajaran: string;
+  topik: string[];
 }
