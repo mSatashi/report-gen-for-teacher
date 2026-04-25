@@ -230,7 +230,7 @@ export default function MasterSiswa({ initialData = [] }: Props) {
           </div>
         ) : (
           <div style={styles.tableWrapper}>
-            <table style={styles.siswaTable}>
+            <table style={styles.mapelTable}>
               <thead>
                 <tr>
                   <th style={styles.th}>#</th>

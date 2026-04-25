@@ -18,7 +18,7 @@ from email import encoders
 from sqlalchemy.orm import Session
  
 from app.core.config import settings
-from app.models.models import Laporan, Murid, LogPertemuan, KnowledgeState
+from app.models.models import Laporan, Murid, LogPertemuan, KnowledgeState, MataPelajaran
 from app.schemas.schemas import LaporanCreate, LaporanUpdate
 from app.ai.ai_service import narrative_engine
  
@@ -94,8 +94,10 @@ async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
         from app.models.models import Kelas
         kelas = db.query(Kelas).filter(Kelas.id == data.kelas_id).first()
         if kelas:
-            mata_pelajaran = kelas.mata_pelajaran or kelas.nama
- 
+            mata_pelajaran = db.query(MataPelajaran).filter(MataPelajaran.id == kelas.mata_pelajaran_id).first()    
+            if not mata_pelajaran:
+                raise ValueError(f" Mata pelajaran dengan id {kelas.mata_pelajaran_id} tidak ditemukan")
+            mata_pelajaran = mata_pelajaran.nama_mata_pelajaran
     # 2. Log pertemuan dalam periode (dari PostgreSQL)
     q = db.query(LogPertemuan).filter(LogPertemuan.murid_id == data.murid_id)
     if data.kelas_id:

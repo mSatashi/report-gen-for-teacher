@@ -78,7 +78,7 @@ def get_logs_by_murid(
 ) -> List[LogPertemuan]:
     return (
         db.query(LogPertemuan)
-        .filter(LogPertemuan.murid_id == murid_id)
+        .filter(LogPertemuan.murid_id == murid_id, LogPertemuan.mata_pelajaran_id.isnot(None) )
         .order_by(LogPertemuan.tanggal.desc())
         .offset(skip)
         .limit(limit)

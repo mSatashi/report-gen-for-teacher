@@ -4,17 +4,17 @@ Menyediakan data ringkasan untuk halaman Dashboard.
 """
 from datetime import date
 from fastapi import HTTPException
-from sqlalchemy import cast, Float
+from sqlalchemy import cast, Float, func
 from sqlalchemy.orm import Session
-from app.models.models import Kelas, KelasMurid, LogPertemuan, Laporan, RencanaStudi, Pengguna, Pengajar
+from app.models.models import Kelas, KelasMurid, LogPertemuan, Laporan, RencanaStudi, Pengguna, Pengajar, Murid
 from app.schemas.schemas import DashboardSummary
 
-def get_dashboard_data(db: Session, user_id: str) -> DashboardSummary:
+def get_dashboard_data(db: Session, user: Pengguna) -> DashboardSummary:
     """Ambil semua data ringkasan untuk dashboard pengajar."""
     today = date.today()
 
     # Kelas-kelas milik pengajar ini
-    kelas_list = db.query(Kelas).filter(Kelas.pengajar_id == Pengguna.id).all()
+    kelas_list = db.query(Kelas).filter(Kelas.pengajar_id == user.id).all()
     kelas_ids  = [k.id for k in kelas_list]
 
     user = db.query(Pengguna).filter(Pengajar.id == Pengguna.id).first()
@@ -64,15 +64,16 @@ def get_dashboard_data(db: Session, user_id: str) -> DashboardSummary:
             "topik":   a.topik,
             "kelas_id": a.kelas_id,
             "murid_id": a.murid_id,
-            "nilai":    cast(a.nilai, Float) if a.nilai is not None else None,
+            "nilai": float(a.nilai) if a.nilai is not None else None,
             "tingkat_pemahaman": a.tingkat_pemahaman,
+            "tingkat_keterlibatan": a.tingkat_keterlibatan,
+            "nama_mata_pelajaran": a.nama_mata_pelajaran if a.nama_mata_pelajaran else None,
         }
         for a in aktivitas
     ]
 
     # Progress per murid (simplifikasi: avg nilai dari log)
-    from sqlalchemy import func
-    from app.models.models import Murid
+    
     progress_rows = (
         db.query(
             LogPertemuan.murid_id,

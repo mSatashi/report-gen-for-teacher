@@ -22,8 +22,8 @@ class Settings(BaseSettings):
  
     # ── Ollama (LLM lokal) ────────────────────────────────────────────────────
     OLLAMA_BASE_URL:      str = "http://localhost:11434"
-    OLLAMA_MODEL_NAME:    str = "orca-mini"
-    OLLAMA_MODEL:         str = "orca-mini"  # Alias untuk compatibility
+    OLLAMA_MODEL_NAME:    str = "Sania:2b"
+    OLLAMA_MODEL:         str = "Sania:2b"  # Alias untuk compatibility
     OLLAMA_TIMEOUT:       int = 120       # Timeout dalam detik
     PLANNER_MODEL_NAME:   str = "orca-mini"
     LLM_PROVIDER:         str = "ollama"  # atau "external"

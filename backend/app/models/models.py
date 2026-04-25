@@ -97,7 +97,8 @@ class MataPelajaran(Base):
     updated_at          = Column(DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     kelas_list = relationship("Kelas", back_populates="mata_pelajaran_obj")
-    topik_list = relationship("Topik", back_populates="mata_pelajaran", cascade="all, delete-orphan")
+    log_pertemuan = relationship("LogPertemuan", back_populates="mata_pelajaran")
+
 
 
 class TopikPrasyarat(Base):
@@ -193,6 +194,7 @@ class LogPertemuan(Base):
     id                   = Column(String(50), primary_key=True, default=_uuid)
     kelas_id             = Column(String(50), ForeignKey("kelas.id",  ondelete="CASCADE"))
     murid_id             = Column(String(50), ForeignKey("murid.id",  ondelete="CASCADE"))
+    mata_pelajaran_id    = Column(String(50), ForeignKey("mata_pelajaran.id", ondelete="SET NULL"), nullable=True) 
     tanggal              = Column(Date, nullable=False)
     topik                = Column(String(255), nullable=False)
     nilai                = Column(Numeric(5, 2))
@@ -208,7 +210,11 @@ class LogPertemuan(Base):
 
     kelas = relationship("Kelas", back_populates="log_pertemuan")
     murid = relationship("Murid")
+    mata_pelajaran = relationship("MataPelajaran", back_populates="log_pertemuan")
 
+    @property
+    def nama_mata_pelajaran(self):
+        return self.mata_pelajaran.nama_mata_pelajaran if self.mata_pelajaran else None
 
 class DraftAnalisis(Base):
     """
