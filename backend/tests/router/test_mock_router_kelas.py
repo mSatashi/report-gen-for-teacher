@@ -759,7 +759,7 @@ class TestTambahMuridBaru:
         db = mock_db()
         db.first.return_value = None  # email & username belum ada
  
-        mock_murid = fake_murid(nama="Fake Murid Baru" email="fake-murid-baru@email.com")
+        mock_murid = fake_murid(nama="Fake Murid Baru", email="fake-murid-baru@email.com")
         mock_murid.id = mock_pgn.id
  
         data = self._make_data()

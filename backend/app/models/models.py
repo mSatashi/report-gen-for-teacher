@@ -1,9 +1,8 @@
 """
 models.py
-SQLAlchemy ORM Models — sesuai ERD pada laporan desain sistem.
-Tabel: pengguna, murid, pengajar, kelas, kelas_murid,
-       log_pertemuan, draft_analisis, rencana_studi, laporan,
-       knowledge_state, diagnostic_result, lesson_log, lesson_plan
+SQLAlchemy ORM Models — Sesuai dengan spesifikasi sistem manajemen pembelajaran adaptif.
+Mengatur data pengguna, manajemen kelas, skill graph (Topik), log harian, 
+hingga output engine AI (BKT untuk Knowledge State & PSO untuk Rencana Studi).
 """
 import uuid
 from datetime import datetime
@@ -27,8 +26,8 @@ def _uuid() -> str:
 
 class Pengguna(Base):
     """
-    Tabel induk semua pengguna sistem.
-    tipe_pengguna: 'pengajar' | 'admin'
+    Tabel induk kredensial semua pengguna sistem.
+    tipe_pengguna: 'pengajar' | 'admin' | 'murid' (jika akses murid diberikan).
     """
     __tablename__ = "pengguna"
 
@@ -36,18 +35,20 @@ class Pengguna(Base):
     username        = Column(String(100), unique=True, nullable=False)
     email_address   = Column(String(100), unique=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
-    tipe_pengguna   = Column(String(20), nullable=False)   # 'pengajar' | 'murid'
+    tipe_pengguna   = Column(String(20), nullable=False)
     is_active       = Column(Boolean, default=True)
     created_at      = Column(DateTime, default=datetime.utcnow)
 
-    # Relasi polimorfik
+    # Relasi polimorfik ke profil spesifik
     pengajar = relationship("Pengajar", back_populates="pengguna", uselist=False)
 
 
 class Pengajar(Base):
-    """Profil tambahan untuk pengguna bertipe pengajar."""
+    """
+    Profil tambahan untuk pengguna bertipe pengajar.
+    Menghubungkan akun pengguna dengan kelas-kelas yang diampu.
+    """
     __tablename__ = "pengajar"
-
     id = Column(String(50), ForeignKey("pengguna.id", ondelete="CASCADE"), primary_key=True)
 
     pengguna = relationship("Pengguna", back_populates="pengajar")
@@ -55,44 +56,95 @@ class Pengajar(Base):
 
 
 class Murid(Base):
+    """
+    Data profil siswa, termasuk informasi demografis dan level pendidikan.
+    Menjadi pusat data untuk analisis perkembangan belajar (Knowledge State & Report).
+    """
     __tablename__ = "murid"
     id            = Column(String(50), primary_key=True, default=_uuid)
     email_address = Column(String(100), unique=True, nullable=False)
     created_at    = Column(DateTime, default=datetime.utcnow)
 
     nama          = Column(String(150))
-    education_level = Column(String(10))
+    education_level = Column(String(10))   # Contoh: SD, SMP, SMA
     jenis_kelamin   = Column(String(10))
-    diagnostic_level = Column(String(50))
+    diagnostic_level = Column(String(50))  # Level awal berdasarkan F008
     is_active       = Column(Boolean, default=True)
 
+    # Relasi balik
     kelas              = relationship("KelasMurid", back_populates="murid")
     laporan            = relationship("Laporan", back_populates="murid")
     knowledge_states   = relationship("KnowledgeState", back_populates="murid")
     diagnostic_results = relationship("DiagnosticResult", back_populates="murid")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Mata Pelajaran
+# MATA PELAJARAN & TOPIK
 # ═══════════════════════════════════════════════════════════════════════════════
+
 class MataPelajaran(Base):
+    """
+    Master data mata pelajaran.
+    Menyimpan informasi umum seperti bobot kredit dan jadwal default.
+    """
     __tablename__ = "mata_pelajaran"
  
     id                  = Column(String(50),  primary_key=True, default=_uuid)
     nama_mata_pelajaran = Column(String(150), nullable=False)
-    topik               = Column(JSON,        nullable=False, default=list)  # list of string
+    kredit              = Column(Integer,     nullable=False, default=0)
+    hari                = Column(String(10),  nullable=True)
+    jam                 = Column(String(5),   nullable=True)  
     created_at          = Column(DateTime,    default=datetime.utcnow,  nullable=False)
-    updated_at          = Column(DateTime,    default=datetime.utcnow,
-                                              onupdate=datetime.utcnow, nullable=False)
+    updated_at          = Column(DateTime,    default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-    # Relasi balik — satu mata pelajaran bisa ada di banyak kelas
     kelas_list = relationship("Kelas", back_populates="mata_pelajaran_obj")
+    topik_list = relationship("Topik", back_populates="mata_pelajaran", cascade="all, delete-orphan")
 
+
+class TopikPrasyarat(Base):
+    """
+    Tabel pivot (Self-Referential) untuk menyimpan relasi prasyarat antar topik.
+    Struktur ini membangun 'Skill Graph' yang digunakan oleh PSO Planner 
+    untuk menentukan urutan materi yang logis.
+    """
+    __tablename__ = "topik_prasyarat"
+    topik_id     = Column(String(50), ForeignKey("topik.id", ondelete="CASCADE"), primary_key=True)
+    prasyarat_id = Column(String(50), ForeignKey("topik.id", ondelete="CASCADE"), primary_key=True)
+
+
+class Topik(Base):
+    """
+    Data master topik atau materi belajar.
+    difficulty_index: Digunakan oleh PSO untuk menghitung beban belajar.
+    Relasi prasyarat memungkinkan pembentukan graf ketergantungan materi.
+    """
+    __tablename__ = "topik"
+
+    id                = Column(String(50), primary_key=True, default=_uuid)
+    mata_pelajaran_id = Column(String(50), ForeignKey("mata_pelajaran.id", ondelete="CASCADE"), nullable=False)
+    nama              = Column(String(150), nullable=False)
+    difficulty_index  = Column(Float, default=0.5) # Skala 0.0 - 1.0
+    created_at        = Column(DateTime, default=datetime.utcnow)
+
+    mata_pelajaran = relationship("MataPelajaran", back_populates="topik_list")
+
+    # Relasi ke prasyarat (Many-to-Many Self-Reference)
+    prasyarat = relationship(
+        "Topik",
+        secondary="topik_prasyarat",
+        primaryjoin="Topik.id == TopikPrasyarat.topik_id",
+        secondaryjoin="Topik.id == TopikPrasyarat.prasyarat_id",
+        backref="lanjutan_dari"
+    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# KELAS
+# KELAS & MANAJEMEN SISWA
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class Kelas(Base):
+    """
+    Entitas kelas aktif yang menghubungkan Mata Pelajaran, Pengajar, dan Murid.
+    Menyimpan detail operasional seperti jadwal pertemuan.
+    """
     __tablename__ = "kelas"
 
     id           = Column(String(50), primary_key=True, default=_uuid)
@@ -100,19 +152,22 @@ class Kelas(Base):
     mata_pelajaran_id = Column(String(50), ForeignKey("mata_pelajaran.id", ondelete="SET NULL"), nullable=True) 
     pengajar_id  = Column(String(50), ForeignKey("pengajar.id", ondelete="SET NULL"), nullable=True)
     kredit       = Column(Integer, default=0)
-    hari                = Column(String(10),  nullable=False)  # Senin–Minggu
-    jam                 = Column(String(5),   nullable=False)  # HH:MM
+    hari         = Column(String(10),  nullable=False)
+    jam          = Column(String(5),   nullable=False)
     created_at   = Column(DateTime, default=datetime.utcnow)
 
-    pengajar     = relationship("Pengajar", back_populates="kelas_diampu")
+    pengajar           = relationship("Pengajar", back_populates="kelas_diampu")
     mata_pelajaran_obj = relationship("MataPelajaran", back_populates="kelas_list")
-    murid_list   = relationship("KelasMurid", back_populates="kelas")
-    log_pertemuan = relationship("LogPertemuan", back_populates="kelas")
-    rencana_studi = relationship("RencanaStudi", back_populates="kelas")
+    murid_list         = relationship("KelasMurid", back_populates="kelas")
+    log_pertemuan      = relationship("LogPertemuan", back_populates="kelas")
+    rencana_studi      = relationship("RencanaStudi", back_populates="kelas")
 
 
 class KelasMurid(Base):
-    """Tabel pivot kelas <-> murid (many-to-many)."""
+    """
+    Tabel pivot many-to-many antara Kelas dan Murid.
+    Mencatat kapan seorang murid bergabung ke dalam kelas tertentu.
+    """
     __tablename__ = "kelas_murid"
     __table_args__ = (UniqueConstraint("kelas_id", "murid_id"),)
 
@@ -124,75 +179,14 @@ class KelasMurid(Base):
     murid = relationship("Murid", back_populates="kelas")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Mata Pelajaran
-# ═══════════════════════════════════════════════════════════════════════════════
-class MataPelajaran(Base):
-    """
-    Atribut jadwal disimpan sebagai dua kolom terpisah (hari + jam)
-    agar memudahkan filter dan validasi:
-      hari : 'Senin' | 'Selasa' | 'Rabu' | 'Kamis' | 'Jumat' | 'Sabtu' | 'Minggu'
-      jam  : string format 'HH:MM', contoh '10:00'
-    """
-    __tablename__ = "mata_pelajaran"
- 
-    id                  = Column(String(50),  primary_key=True, default=_uuid)
-    nama_mata_pelajaran = Column(String(150), nullable=False)
-    # kredit wajib diisi (nullable=False, tidak ada default)
-    kredit              = Column(Integer,     nullable=False)
-    hari                = Column(String(10),  nullable=False)  # Senin–Minggu
-    jam                 = Column(String(5),   nullable=False)  # HH:MM
-    created_at          = Column(DateTime,    default=datetime.utcnow,  nullable=False)
-    updated_at          = Column(DateTime,    default=datetime.utcnow,
-                                              onupdate=datetime.utcnow, nullable=False)
-    topik_list          = relationship("Topik", back_populates="mata_pelajaran", cascade="all, delete-orphan")
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# TOPIK & PRASYARAT (Database-Driven Skill Graph)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class TopikPrasyarat(Base):
-    """
-    Tabel pivot (Self-Referential) untuk menyimpan relasi prasyarat antar topik.
-    Menggantikan fungsi dictionary skill_graph pada PSO.
-    """
-    __tablename__ = "topik_prasyarat"
-
-    topik_id     = Column(String(50), ForeignKey("topik.id", ondelete="CASCADE"), primary_key=True)
-    prasyarat_id = Column(String(50), ForeignKey("topik.id", ondelete="CASCADE"), primary_key=True)
-
-
-class Topik(Base):
-    """
-    Menyimpan data master topik/materi belajar.
-    Menggantikan hardcode SKILL_ORDER pada BKT Engine.
-    """
-    __tablename__ = "topik"
-
-    id                = Column(String(50), primary_key=True, default=_uuid)
-    mata_pelajaran_id = Column(String(50), ForeignKey("mata_pelajaran.id", ondelete="CASCADE"), nullable=False)
-    nama              = Column(String(150), nullable=False)
-    difficulty_index  = Column(Float, default=0.5)
-    created_at        = Column(DateTime, default=datetime.utcnow)
-
-    mata_pelajaran = relationship("MataPelajaran", back_populates="topik_list")
-
-    prasyarat = relationship(
-        "Topik",
-        secondary="topik_prasyarat",
-        primaryjoin="Topik.id == TopikPrasyarat.topik_id",
-        secondaryjoin="Topik.id == TopikPrasyarat.prasyarat_id",
-        backref="lanjutan_dari"
-    )
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# LOG PERTEMUAN (Daily Log)
+# LOGGING & ANALISIS AI
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class LogPertemuan(Base):
     """
-    F001 & F002 — Input log harian (single form & bulk CSV/Excel).
-    Menyimpan catatan tiap sesi belajar: topik, nilai, catatan guru.
+    F001 & F002 — Catatan aktivitas harian per siswa di kelas.
+    Data ini adalah input utama untuk BKT Engine (nilai/tingkat pemahaman)
+    dan Narrative Engine (catatan/kendala).
     """
     __tablename__ = "log_pertemuan"
 
@@ -202,8 +196,8 @@ class LogPertemuan(Base):
     tanggal              = Column(Date, nullable=False)
     topik                = Column(String(255), nullable=False)
     nilai                = Column(Numeric(5, 2))
-    tingkat_pemahaman    = Column(String(50))   # 'sangat_paham' | 'paham' | 'cukup' | 'perlu_review'
-    tingkat_keterlibatan = Column(String(50))   # 'sangat_aktif' | 'aktif' | 'kurang_fokus'
+    tingkat_pemahaman    = Column(String(50))   # 'sangat_paham' | 'paham' | dsb
+    tingkat_keterlibatan = Column(String(50))
     kompetensi_dicapai   = Column(Text)
     target_materi_berikutnya = Column(Text)
     kendala              = Column(Text)
@@ -216,69 +210,60 @@ class LogPertemuan(Base):
     murid = relationship("Murid")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# AI — DRAFT ANALISIS
-# ═══════════════════════════════════════════════════════════════════════════════
-
 class DraftAnalisis(Base):
     """
-    Hasil analisis data log pertemuan oleh NarrativeEngine LLM.
-    Digunakan sebagai input untuk PlannerEngine.
+    Output dari NarrativeEngine (LLM).
+    Berisi narasi rangkuman perkembangan siswa berdasarkan akumulasi LogPertemuan.
+    Menjadi dasar tekstual bagi Planner untuk menyusun Rencana Studi.
     """
     __tablename__ = "draft_analisis"
-
     id        = Column(String(50), primary_key=True, default=_uuid)
     kelas_id  = Column(String(50), ForeignKey("kelas.id", ondelete="CASCADE"))
     murid_id  = Column(String(50), ForeignKey("murid.id", ondelete="CASCADE"))
-    konten    = Column(Text, nullable=False)
+    konten    = Column(Text, nullable=False) # Teks narasi AI
     tanggal   = Column(DateTime, default=datetime.utcnow)
 
     rencana_studi = relationship("RencanaStudi", back_populates="draft_analisis")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# RENCANA STUDI (Learning Plan)
-# ═══════════════════════════════════════════════════════════════════════════════
-
 class RencanaStudi(Base):
     """
-    F004 — Rencana studi adaptif yang dihasilkan PlannerEngine (BKT + PSO).
+    F004 — Dokumen rencana belajar adaptif (hasil PlannerEngine).
+    Mengintegrasikan daftar materi (hasil PSO) dan jadwal optimal.
+    is_outdated: Menandai jika rencana perlu di-generate ulang karena ada log baru.
     """
     __tablename__ = "rencana_studi"
-    id = Column(String(50), primary_key=True)
+    id = Column(String(50), primary_key=True, default=_uuid)
     kelas_id = Column(String(50), ForeignKey("kelas.id"))
     murid_id = Column(String(50), ForeignKey("murid.id"))
     draft_analisis_id = Column(String(50), ForeignKey("draft_analisis.id"))
-    daftar_rekomendasi_materi = Column(JSON, default=list)
+    daftar_rekomendasi_materi = Column(JSON, default=list) # List urutan topik hasil PSO
     jadwal_mingguan = Column(JSON, default=dict)
     catatan_analisa = Column(Text)
     estimasi_waktu_selesai = Column(DateTime)
     version = Column(Integer, default=1)
     waktu = Column(DateTime, default=datetime.utcnow)
-    
     is_outdated = Column(Boolean, default=False)
 
     kelas         = relationship("Kelas", back_populates="rencana_studi")
     draft_analisis = relationship("DraftAnalisis", back_populates="rencana_studi")
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
-# LAPORAN (Report)
+# REPORTING & ENGINE STATE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class Laporan(Base):
     """
-    F003, F005, F006, F007 — Laporan perkembangan siswa.
-    Status: 'draft' | 'final' | 'terkirim'
+    F003, F005-F007 — Output laporan akhir untuk wali murid/admin.
+    Berisi narasi final, status pengiriman, dan periode laporan.
     """
     __tablename__ = "laporan"
-
     id              = Column(String(50), primary_key=True, default=_uuid)
     murid_id        = Column(String(50), ForeignKey("murid.id",  ondelete="CASCADE"))
     kelas_id        = Column(String(50), ForeignKey("kelas.id",  ondelete="CASCADE"), nullable=True)
-    konten          = Column(Text, nullable=False)   # narasi deskriptif dari LLM
+    konten          = Column(Text, nullable=False)
     tipe_laporan    = Column(String(50), default="perkembangan")
-    status          = Column(String(20), default="draft")   # draft | final | terkirim
+    status          = Column(String(20), default="draft") # draft | final | terkirim
     pdf_path        = Column(String(255), nullable=True)
     tanggal         = Column(DateTime, default=datetime.utcnow)
     tanggal_dikirim = Column(DateTime, nullable=True)
@@ -289,46 +274,38 @@ class Laporan(Base):
     murid = relationship("Murid", back_populates="laporan")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# BKT — KNOWLEDGE STATE
-# ═══════════════════════════════════════════════════════════════════════════════
-
 class KnowledgeState(Base):
     """
-    Menyimpan probabilitas penguasaan materi siswa per topik (output BKT).
-    p_knowledge: P(Ln) — probabilitas siswa menguasai topik ini sekarang.
+    Parameter Bayesian Knowledge Tracing (BKT) per siswa per topik.
+    p_knowledge (Ln): Probabilitas siswa telah menguasai materi saat ini.
+    Data ini diupdate setiap kali ada LogPertemuan baru.
     """
     __tablename__ = "knowledge_state"
-
     id          = Column(String(50), primary_key=True, default=_uuid)
     murid_id    = Column(String(50), ForeignKey("murid.id", ondelete="CASCADE"))
     topik       = Column(String(255), nullable=False)
-    p_knowledge = Column(Float, default=0.0)   # 0.0 – 1.0
-    p_learn     = Column(Float, default=0.2)
-    p_guess     = Column(Float, default=0.1)
-    p_slip      = Column(Float, default=0.05)
+    p_knowledge = Column(Float, default=0.0) # P(Ln)
+    p_learn     = Column(Float, default=0.2) # P(T)
+    p_guess     = Column(Float, default=0.1) # P(G)
+    p_slip      = Column(Float, default=0.05)# P(S)
     updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     murid = relationship("Murid", back_populates="knowledge_states")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# DIAGNOSTIC RESULT (F008)
-# ═══════════════════════════════════════════════════════════════════════════════
-
 class DiagnosticResult(Base):
     """
-    F008 — Hasil tes diagnostik awal siswa (pertemuan pertama).
-    Digunakan sebagai P(L0) awal untuk BKT.
+    F008 — Hasil observasi atau tes awal siswa.
+    skor/diagnostic_score: Digunakan sebagai prior (L0) dalam kalkulasi BKT
+    agar sistem tidak mulai dari nol (cold start problem).
     """
     __tablename__ = "diagnostic_result"
-
     id               = Column(String(50), primary_key=True, default=_uuid)
     murid_id         = Column(String(50), ForeignKey("murid.id", ondelete="CASCADE"))
     kelas_id         = Column(String(50), ForeignKey("kelas.id", ondelete="CASCADE"), nullable=True)
     topik            = Column(String(255))
     skor             = Column(Float)
-    diagnostic_score = Column(Float)   # nilai 0–100 dari tes diagnostik
+    diagnostic_score = Column(Float) # Skala 0-100
     sequence_number  = Column(Integer, default=1)
     model_ai         = Column(String(100), nullable=True)
     created_at       = Column(DateTime, default=datetime.utcnow)

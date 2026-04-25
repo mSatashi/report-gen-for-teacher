@@ -18,7 +18,6 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import Pengguna, KnowledgeState
 from app.services.auth_service import require_pengajar
-from app.ai.bkt_engine import bkt_engine, SKILL_ORDER, CORRECT_THRESHOLD
 from app.models.models import Pengguna, KnowledgeState, Topik 
 from app.ai.bkt_engine import bkt_engine, CORRECT_THRESHOLD
  
