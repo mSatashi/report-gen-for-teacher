@@ -44,3 +44,5 @@ frontend/node_modules/*
 venv/
 env/
 ENV/
+.postman/resources.yaml
+postman/globals/workspace.globals.yaml
