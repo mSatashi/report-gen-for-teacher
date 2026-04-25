@@ -45,7 +45,7 @@ def get_laporan_by_murid(
  
 def get_laporan_pending(db: Session, pengajar_id: str) -> List[Laporan]:
     from app.models.models import Kelas
-    kelas_ids = [k.id for k in db.query(Kelas).filter(Kelas.pengajar_id == pengajar_id).all()]
+    kelas_ids =[k.id for k in db.query(Kelas).filter(Kelas.pengajar_id == pengajar_id).all()]
     return (
         db.query(Laporan)
         .filter(Laporan.kelas_id.in_(kelas_ids), Laporan.status != "terkirim")
@@ -78,7 +78,7 @@ async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
     1. Ambil Murid dari PostgreSQL
     2. Ambil LogPertemuan dalam periode dari PostgreSQL
     3. Ambil KnowledgeState (BKT) dari PostgreSQL
-    4. [BARU] Ambil RencanaStudi terbaru → pso_recommended_route
+    4. Ambil RencanaStudi terbaru (Rencana Kelas) → pso_recommended_route
     5. Kirim ke NarrativeEngine dengan pso_route + report_style
     6. Simpan hasil ke tabel laporan (PostgreSQL)
     """
@@ -87,17 +87,23 @@ async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
     if not murid:
         raise ValueError(f"Murid dengan id {data.murid_id} tidak ditemukan")
  
-    nama_murid     = murid.nama or murid.pengguna.username
+    # =========================================================================
+    # Menggunakan email_address karena tidak ada relasi ke Pengguna
+    # =========================================================================
+    nama_murid = murid.nama or murid.email_address
+    # =========================================================================
+
     mata_pelajaran = "Umum"
  
     if data.kelas_id:
         from app.models.models import Kelas
         kelas = db.query(Kelas).filter(Kelas.id == data.kelas_id).first()
         if kelas:
-            mata_pelajaran = db.query(MataPelajaran).filter(MataPelajaran.id == kelas.mata_pelajaran_id).first()    
-            if not mata_pelajaran:
-                raise ValueError(f" Mata pelajaran dengan id {kelas.mata_pelajaran_id} tidak ditemukan")
-            mata_pelajaran = mata_pelajaran.nama_mata_pelajaran
+            mata_pelajaran_obj = db.query(MataPelajaran).filter(MataPelajaran.id == kelas.mata_pelajaran_id).first()    
+            if not mata_pelajaran_obj:
+                raise ValueError(f"Mata pelajaran dengan id {kelas.mata_pelajaran_id} tidak ditemukan")
+            mata_pelajaran = mata_pelajaran_obj.nama_mata_pelajaran
+            
     # 2. Log pertemuan dalam periode (dari PostgreSQL)
     q = db.query(LogPertemuan).filter(LogPertemuan.murid_id == data.murid_id)
     if data.kelas_id:
@@ -108,7 +114,7 @@ async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
         q = q.filter(LogPertemuan.tanggal <= data.periode_selesai)
     logs = q.order_by(LogPertemuan.tanggal.asc()).all()
  
-    log_data = [
+    log_data =[
         {
             "tanggal":              str(l.tanggal),
             "topik":                l.topik,
@@ -125,25 +131,29 @@ async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
     ks_rows = db.query(KnowledgeState).filter(KnowledgeState.murid_id == data.murid_id).all()
     knowledge_state = {ks.topik: float(ks.p_knowledge) for ks in ks_rows}
  
-    # 4. [INTEGRASI 04_llm_evaluation.py] Ambil rekomendasi PSO dari RencanaStudi terbaru
+    # 4.[INTEGRASI 04_llm_evaluation.py] Ambil rekomendasi PSO dari RencanaStudi Kelas terbaru
     pso_recommended_route: Optional[str] = None
     if data.kelas_id:
         from app.models.models import RencanaStudi
         rencana = (
             db.query(RencanaStudi)
             .filter(
-                RencanaStudi.murid_id == data.murid_id,
                 RencanaStudi.kelas_id == data.kelas_id,
+                # =====================================================================
+                # [PERBAIKAN] Mengambil rencana global kelas (murid_id is NULL)
+                # =====================================================================
+                RencanaStudi.murid_id.is_(None) 
             )
             .order_by(RencanaStudi.waktu.desc())
             .first()
         )
+        
         if rencana and rencana.daftar_rekomendasi_materi:
             materi = rencana.daftar_rekomendasi_materi
             if isinstance(materi, list) and materi:
-                pso_recommended_route = f"Lanjut ke materi: {', '.join(materi[:3])}"
+                pso_recommended_route = f"Lanjut ke materi (Acuan Kelas): {', '.join(materi[:3])}"
             elif isinstance(materi, str):
-                pso_recommended_route = materi
+                pso_recommended_route = f"(Acuan Kelas) {materi}"
  
     # 5. [INTEGRASI] Gaya laporan dari request (default: Konstruktif dan Memotivasi)
     report_style = getattr(data, "report_style", "Konstruktif dan Memotivasi")
@@ -198,7 +208,7 @@ def generate_pdf(laporan: Laporan) -> str:
                                    fontSize=14, alignment=TA_CENTER, spaceAfter=12)
         b_style   = ParagraphStyle("B", parent=styles["Normal"],
                                    fontSize=11, leading=16, spaceAfter=8)
-        story = [Paragraph("Laporan Perkembangan Belajar Siswa", t_style), Spacer(1, 0.5*cm)]
+        story =[Paragraph("Laporan Perkembangan Belajar Siswa", t_style), Spacer(1, 0.5*cm)]
         for para in laporan.konten.split("\n"):
             if para.strip():
                 story.append(Paragraph(para.strip(), b_style))

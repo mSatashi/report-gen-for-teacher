@@ -1,7 +1,7 @@
 """
 log_service.py
 Service layer untuk Log Pertemuan (Daily Log).
-Menangani: single input (form), bulk input (CSV/Excel), CRUD.
+Menangani: single input (form)
 """
 import io
 import logging
@@ -15,7 +15,8 @@ from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
 from app.models.models import LogPertemuan, Kelas, Murid
-from app.schemas.schemas import LogPertemuanCreate, LogPertemuanUpdate, BulkUploadResponse
+from app.schemas.schemas import LogPertemuanCreate, LogPertemuanUpdate
+from app.services.plan_service import update_knowledge_states
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ COLUMN_MAP = {
 # ── Single Log (Form) ─────────────────────────────────────────────────────────
 
 def create_log(db: Session, data: LogPertemuanCreate) -> LogPertemuan:
-    """F001 — Simpan satu log pertemuan dari form."""
+    """F001 — Simpan satu log pertemuan dari form & Trigger BKT."""
     log = LogPertemuan(
         id=str(uuid.uuid4()),
         **data.model_dump(),
@@ -49,8 +50,16 @@ def create_log(db: Session, data: LogPertemuanCreate) -> LogPertemuan:
     db.add(log)
     db.commit()
     db.refresh(log)
+    
+    # =========================================================================
+    # [PENYESUAIAN] Trigger BKT Engine secara otomatis setelah log berhasil disimpan
+    # =========================================================================
+    try:
+        update_knowledge_states(db, murid_id=data.murid_id, kelas_id=data.kelas_id)
+    except Exception as e:
+        logger.error(f"Gagal update BKT untuk murid {data.murid_id}: {e}")
+        
     return log
-
 
 def get_log_by_id(db: Session, log_id: str) -> Optional[LogPertemuan]:
     return db.query(LogPertemuan).filter(LogPertemuan.id == log_id).first()
@@ -78,7 +87,7 @@ def get_logs_by_murid(
 ) -> List[LogPertemuan]:
     return (
         db.query(LogPertemuan)
-        .filter(LogPertemuan.murid_id == murid_id, LogPertemuan.mata_pelajaran_id.isnot(None) )
+        .filter(LogPertemuan.murid_id == murid_id) # <- HAPUS filter mata_pelajaran_id di sini
         .order_by(LogPertemuan.tanggal.desc())
         .offset(skip)
         .limit(limit)
@@ -117,126 +126,3 @@ def delete_log(db: Session, log_id: str) -> bool:
     return True
 
 
-# ── Bulk Upload (CSV / Excel) ─────────────────────────────────────────────────
-
-def _validate_extension(filename: str) -> str:
-    """Validasi ekstensi file. Return ekstensi jika valid."""
-    ext = os.path.splitext(filename)[1].lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise ValueError(
-            f"Format file '{ext}' tidak didukung. "
-            f"Gunakan: {', '.join(ALLOWED_EXTENSIONS)}"
-        )
-    return ext
-
-
-def _read_file_to_df(file_bytes: bytes, ext: str) -> pd.DataFrame:
-    """Baca bytes file ke DataFrame berdasarkan ekstensi."""
-    buf = io.BytesIO(file_bytes)
-    if ext == ".csv":
-        return pd.read_csv(buf)
-    else:
-        return pd.read_excel(buf, engine="openpyxl")
-
-
-def _parse_row(row: Dict, kelas_id: str) -> Tuple[Optional[LogPertemuan], Optional[str]]:
-    """
-    Parse satu baris DataFrame menjadi objek LogPertemuan.
-    Mengembalikan (LogPertemuan, None) jika berhasil,
-    atau (None, pesan_error) jika gagal.
-    """
-    try:
-        # Field wajib
-        tanggal_raw = row.get("tanggal")
-        topik       = str(row.get("topik", "")).strip()
-        if not topik:
-            return None, "Kolom 'topik' tidak boleh kosong"
-
-        # Parse tanggal
-        if isinstance(tanggal_raw, str):
-            tanggal = pd.to_datetime(tanggal_raw).date()
-        elif tanggal_raw and hasattr(tanggal_raw, "date"):
-            tanggal = tanggal_raw.date()
-        else:
-            tanggal = date.today()
-
-        # Field opsional
-        nilai = float(row["nilai"]) if pd.notna(row.get("nilai")) else None
-        murid_id = str(row["murid_id"]).strip()
-        if not murid_id:
-            return None, "Kolom 'murid_id' tidak boleh kosong"
-
-        log = LogPertemuan(
-            id=str(uuid.uuid4()),
-            kelas_id=kelas_id,
-            murid_id=murid_id,
-            tanggal=tanggal,
-            topik=topik,
-            nilai=nilai,
-            catatan=str(row.get("catatan", "") or ""),
-            tingkat_pemahaman=str(row.get("tingkat_pemahaman", "") or "") or None,
-            tingkat_keterlibatan=str(row.get("tingkat_keterlibatan", "") or "") or None,
-            kompetensi_dicapai=str(row.get("kompetensi_dicapai", "") or "") or None,
-            target_materi_berikutnya=str(row.get("target_materi_berikutnya", "") or "") or None,
-            kendala=str(row.get("kendala", "") or "") or None,
-            durasi_menit=int(row["durasi_menit"]) if pd.notna(row.get("durasi_menit")) else None,
-            metode_belajar=str(row.get("metode_belajar", "") or "") or None,
-        )
-        return log, None
-    except Exception as e:
-        return None, str(e)
-
-
-async def bulk_upload_log(
-    db: Session,
-    kelas_id: str,
-    upload_file: UploadFile,
-) -> BulkUploadResponse:
-    """
-    F002 — Import log pertemuan dari file CSV atau Excel.
-    Memvalidasi setiap baris, menyimpan yang valid, melaporkan yang gagal.
-    """
-    # Validasi ekstensi
-    ext = _validate_extension(upload_file.filename or "")
-
-    # Baca file
-    file_bytes = await upload_file.read()
-    if len(file_bytes) == 0:
-        raise ValueError("File kosong")
-
-    df = _read_file_to_df(file_bytes, ext)
-
-    if df.empty:
-        raise ValueError("File tidak memiliki data")
-
-    # Normalisasi nama kolom (lowercase & strip)
-    df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
-
-    berhasil = 0
-    gagal    = 0
-    errors: List[Dict[str, Any]] = []
-
-    for idx, row in df.iterrows():
-        log_obj, err = _parse_row(row.to_dict(), kelas_id)
-        if err:
-            gagal += 1
-            errors.append({"baris": int(idx) + 2, "error": err}) # pyright: ignore[reportArgumentType]
-            continue
-        try:
-            db.add(log_obj)
-            db.flush()   # cek constraint tanpa commit dulu
-            berhasil += 1
-        except Exception as e:
-            db.rollback()
-            gagal += 1
-            errors.append({"baris": int(idx) + 2, "error": str(e)}) # pyright: ignore[reportArgumentType]
-
-    if berhasil > 0:
-        db.commit()
-
-    return BulkUploadResponse(
-        total_baris=len(df),
-        berhasil=berhasil,
-        gagal=gagal,
-        detail_error=errors,
-    )

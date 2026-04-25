@@ -11,7 +11,7 @@ from app.schemas.schemas import RencanaStudiResponse
 from app.services.auth_service import require_pengajar
 from app.services.plan_service import (
     get_rencana_by_id, get_rencana_by_kelas,
-    generate_rencana_studi, get_knowledge_state,
+    generate_rencana_studi_kelas, get_knowledge_state, # <--- IMPORT FUNGSI BARU
 )
 
 router = APIRouter(prefix="/plan", tags=["Learning Plan"])
@@ -41,18 +41,17 @@ def get_plan(
 
 
 @router.post("/generate/{kelas_id}", response_model=RencanaStudiResponse, status_code=201)
-async def generate_plan(
+async def generate_plan_kelas(
     kelas_id: str,
-    murid_id: Optional[str] = Query(None, description="Kosongkan untuk generate untuk seluruh kelas"),
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
 ):
-    """F004 — Generate rencana studi adaptif menggunakan BKT + AI."""
-    if not murid_id:
-        raise HTTPException(status_code=400, detail="murid_id wajib diisi untuk optimasi PSO.")
-        
+    """
+    F004 — Generate rencana studi kelas (PSO) berdasarkan rata-rata pemahaman BKT kelas.
+    (Tidak menggunakan LLM)
+    """
     try:
-        rencana = await generate_rencana_studi(db=db, kelas_id=kelas_id, murid_id=murid_id)
+        rencana = await generate_rencana_studi_kelas(db=db, kelas_id=kelas_id)
         return rencana
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

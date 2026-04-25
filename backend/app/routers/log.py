@@ -8,13 +8,13 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.models.models import Pengguna
 from app.schemas.schemas import (
-    LogPertemuanCreate, LogPertemuanUpdate, LogPertemuanResponse, BulkUploadResponse
+    LogPertemuanCreate, LogPertemuanUpdate, LogPertemuanResponse
 )
 from app.services.auth_service import require_pengajar
 from app.services.log_service import (
     create_log, get_log_by_id, get_logs_by_kelas,
     get_logs_by_murid, get_logs_hari_ini,
-    update_log, delete_log, bulk_upload_log,
+    update_log, delete_log, 
 )
 from app.services.plan_service import update_knowledge_states
 
@@ -79,26 +79,8 @@ def tambah_log(
     db: Session = Depends(get_db),
 ):
     """F001 — Tambah satu log pertemuan via form."""
-    log = create_log(db, data)
-    # Update BKT knowledge state jika ada nilai dan murid_id
-    if log.nilai is not None and log.murid_id:
-        update_knowledge_states(db, log.murid_id, log.kelas_id)
+    log = create_log(db, data)        
     return log
-
-
-@router.post("/bulk/{kelas_id}", response_model=BulkUploadResponse, status_code=201)
-async def bulk_log(
-    kelas_id: str,
-    file: UploadFile = File(..., description="File CSV atau Excel (.xlsx/.xls/.csv)"),
-    current_user: Pengguna = Depends(require_pengajar),
-    db: Session = Depends(get_db),
-):
-    """F002 — Upload log pertemuan massal via CSV/Excel."""
-    try:
-        result = await bulk_upload_log(db, kelas_id, file)
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ── PUT ───────────────────────────────────────────────────────────────────────
@@ -114,8 +96,6 @@ def edit_log(
     log = update_log(db, log_id, data)
     if not log:
         raise HTTPException(status_code=404, detail="Log tidak ditemukan")
-    if log.nilai is not None and log.murid_id:
-        update_knowledge_states(db, log.murid_id, log.kelas_id)
     return log
 
 
