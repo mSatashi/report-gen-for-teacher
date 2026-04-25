@@ -125,11 +125,12 @@ class BKTEngine:
         skill_name: str,
         initial_knowledge: float,
         scores: List[float],
+        topic_list: List[str],
     ) -> float:
         """Update BKT dari semua skor historis secara berurutan."""
         p = initial_knowledge
         for score in scores:
-            p, _ = self.update(skill_name, p, score)
+            p, _ = self.update(skill_name, p, score, topic_list)
         return p
  
     def get_all_params(self) -> List[Dict]:

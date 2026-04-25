@@ -247,7 +247,6 @@ class KirimLaporanRequest(BaseModel):
 
 class RencanaStudiResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: str
     kelas_id: str
     waktu: datetime

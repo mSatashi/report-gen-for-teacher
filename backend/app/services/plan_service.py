@@ -60,7 +60,7 @@ def update_knowledge_states(
     # 4. Update per topik menggunakan BKTEngine
     for topik, scores in topik_scores.items():
         p0      = diag_map.get(topik, PRIOR_KNOWLEDGE)   # P(L0) dari diagnostik atau 0.2
-        p_final = bkt_engine.batch_update(topik, p0, scores)
+        p_final = bkt_engine.batch_update(topik,p0, scores, list(topik_scores.keys()))
  
         # Upsert ke tabel knowledge_state (PostgreSQL)
         ks = db.query(KnowledgeState).filter(
