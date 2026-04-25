@@ -3,6 +3,7 @@ import type { DailyLogPayload, DailyLogResponse, MapelResponse, SiswaResponse } 
 import { cardStyle, inputStyle, KETERLIBATAN_OPTIONS, METODE_OPTIONS, PEMAHAMAN_OPTIONS, textareaStyle } from "../daily-log/components/constants";
 import { styles } from "./styles";
 import { useDailyLog } from "./useDailyLog";
+import type { Toast } from "../../types";
 
 interface DailyLogFormLogProps {
   onNavigate?: (route: string, params?: Record<string, unknown>) => void;
@@ -34,17 +35,19 @@ const Label: React.FC<{ text: string; optional?: boolean }> = ({ text, optional 
   </div>
 );
 
+let toastId = 0;
 
 export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId, siswa, dataLog }: DailyLogFormLogProps) {
   const [logForm, setLogForm] = useState<DailyLogPayload>({
     kelas_id: dataLog?.kelas_id || kelasId || "",
     murid_id: dataLog?.murid_id || siswa.id || "",
+    mata_pelajaran_id: dataLog?.mata_pelajaran_id || mapel.id || "",
     tanggal: dataLog?.tanggal || "",
     topik: dataLog?.topik || "",
     nilai: dataLog?.nilai || 0,
     tingkat_pemahaman: dataLog?.tingkat_pemahaman || "",
     tingkat_keterlibatan: dataLog?.tingkat_keterlibatan || "",
-    kompetensi_dicapai: String(dataLog?.kompetensi_dicapai)  || "",
+    kompetensi_dicapai: dataLog?.kompetensi_dicapai  || "",
     target_materi_berikutnya: dataLog?.target_materi_berikutnya || "",
     kendala: dataLog?.kendala || "",
     catatan: dataLog?.catatan || "",
@@ -53,20 +56,26 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
   });
   const [, setLogResult] = useState<DailyLogResponse[]>([]);
   const [selectedSiswaId, ] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   const { loadLogSiswa, submitCreateLog, submitUpdateLog } = useDailyLog();
 
-  console.log(mapel);
+  const showToast = (message: string, type: "success" | "error") => {
+    const id = ++toastId;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
+  };
 
   const onSave = async (form: DailyLogPayload) => {
     if (!siswa.id || !kelasId) return;
-  
-      if (dataLog?.id !== null) {
+    
+      if (dataLog?.id) {
         if (!dataLog?.id) return;
         
         const payload: DailyLogPayload = {
           kelas_id: kelasId!,
           murid_id: siswa.id,
+          mata_pelajaran_id: mapel.id,
           tanggal: form.tanggal,
           topik: form.topik ?? "",
           nilai: form.nilai,
@@ -83,35 +92,15 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
         if (result) {
           setLogResult((prev) => [...prev, result]);
           onNavigate?.("logSiswa", { siswaId: siswa.id, kelasId, mapel, siswa })
+          showToast("Daily log berhasil diperbarui", "success");
         } else {
-          return;
-        }
-        // setLogResult((prev) =>
-        //   prev.map((d) =>
-        //     d.id === dataLog?.id
-        //       ? {
-        //           ...d,
-        //           kelas_id: kelasId!,
-        //           murid_id: siswa.id,
-        //           tanggal: form.tanggal,
-        //           topik: form.topik ?? "",
-        //           nilai: Number(form.nilai),
-        //           tingkat_pemahaman: form.tingkat_pemahaman,
-        //           tingkat_keterlibatan: form.tingkat_keterlibatan,
-        //           kompetensi_dicapai: form.kompetensi_dicapai,
-        //           target_materi_berikutnya: form.target_materi_berikutnya,
-        //           kendala: form.kendala ?? "",
-        //           catatan: form.catatan ?? "",
-        //           durasi_menit: Number(form.durasi_menit),
-        //           metode_belajar: form.metode_belajar,
-        //         }
-        //       : d
-        //   )
-        // );       
+          showToast("Gagal memperbarui daily log", "error");
+        }  
       } else {
         const payload: DailyLogPayload = {
           kelas_id: kelasId!,
           murid_id: siswa.id,
+          mata_pelajaran_id: mapel.id,
           tanggal: form.tanggal,
           topik: form.topik ?? "",
           nilai: form.nilai,
@@ -129,12 +118,11 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
         if (result) {
           setLogResult((prev) => [...prev, result]);
           onNavigate?.("logSiswa", { siswaId: siswa.id, kelasId, mapel, siswa })
+          showToast("Daily log berhasil ditambahkan", "success");
         } else {
-          return;
+          showToast("Gagal menambahkan daily log", "error");
         }
       }
-  
-      // setView(selectedSiswaId !== null ? "detailSiswa" : selectedKelasId !== null ? "listSiswa" : "index");
     };
 
   // const set = (key: keyof FormState) =>
@@ -380,6 +368,53 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
             Batal
           </button>
           {/* <SaveButton onClick={() => onSave(form)} size="sm" /> */}
+        </div>
+
+        {/* ── Toast Notifications ── */}
+        <div style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          zIndex: 2000,
+        }}>
+          {toasts.map((t) => (
+            <div key={t.id} style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              background: t.type === "success" ? "#F0FDF4" : "#FFF1F2",
+              border: `1.5px solid ${t.type === "success" ? "#4ADE80" : "#FDA4AF"}`,
+              color: t.type === "success" ? "#15803D" : "#9F1239",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              fontSize: "13px",
+              fontWeight: 600,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+              minWidth: "260px",
+              maxWidth: "360px",
+              animation: "slideIn 0.2s ease",
+            }}>
+              <span style={{ fontSize: "16px" }}>
+                {t.type === "success" ? "✅" : "❌"}
+              </span>
+              <span style={{ flex: 1 }}>{t.message}</span>
+              <button
+                onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "inherit",
+                  opacity: 0.6,
+                  fontSize: "14px",
+                  padding: "0 2px",
+                }}
+              >✕</button>
+            </div>
+          ))}
         </div>
 
       </div>

@@ -153,7 +153,31 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
           [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
         }));
       }
-    }, [submitGeneratePlan]);
+    }, 
+  [submitGeneratePlan]);
+
+  // const handleGenerateReport = useCallback(async (kelas: ReportGeneratorResponse) => {
+  //   setRows((prev) => ({
+  //     ...prev,
+  //     [kelas.id]: { status: "loading", result: null, errorMsg: null },
+  //   }));
+    
+  //   console.log("Generate plan untuk kelas", kelas.id);
+  //   const result = await submitGeneratePlan(kelas.id);
+  
+  //     if (result) {
+  //       setRows((prev) => ({
+  //         ...prev,
+  //         [kelas.id]: { status: "done", result, errorMsg: null },
+  //       }));
+  //     } else {
+  //       setRows((prev) => ({
+  //         ...prev,
+  //         [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
+  //       }));
+  //     }
+  //   }, 
+  // [submitGeneratePlan]);
 
   return (
     <div style={styles.root}>
@@ -263,6 +287,18 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                         flexShrink: 0,
                       }}>
                         <div style={styles.kelasActions}>
+                          <button
+                            type="button"
+                            onClick={() => handleGenerate(kelas)}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                              border: "none", borderRadius: 8,
+                              padding: "8px 14px", fontSize: 12, fontWeight: 700,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            Generate Report
+                          </button>
                           <button
                             style={styles.btnDetail}
                             onClick={() => onNavigate?.("logSiswa", { siswaId: siswa.id, siswa: siswa, mapel: kelas.mata_pelajaran_obj, kelasId: kelas.id })}

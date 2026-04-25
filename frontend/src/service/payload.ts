@@ -1,24 +1,8 @@
-import type { Activity, Student } from "../types";
-
 export interface KelasPayload {
   nama: string;
   mata_pelajaran_id?: string;
   hari: string;
   jam: string;
-
-  // nama: string;
-  // mata_pelajaran_id?: string;
-  // mata_pelajaran_obj: {
-  //   id: string;
-  //   nama_mata_pelajaran: string;
-  //   topik: string[];
-  //   created_at: string;
-  //   updated_at: string;
-  // },  
-  // pengajar_id: string;
-  // hari: string;
-  // jam: string;
-  // created_at: string;
 }
 
 export interface KelasResponse {
@@ -72,6 +56,7 @@ export interface messageResponse {
 export interface DailyLogPayload { 
   kelas_id: string;
   murid_id: string;
+  mata_pelajaran_id: string;
   tanggal: string;
   topik?: string;
   nilai: number;
@@ -90,6 +75,7 @@ export interface DailyLogResponse {
   id: string;
   kelas_id: string;
   murid_id: string;
+  mata_pelajaran_id: string;
   tanggal: string;
   topik?: string;
   nilai: number;
@@ -141,13 +127,32 @@ export interface ReportGeneratorPayload {
 
 export interface DashboardResponse {  
   total_siswa: number;
-  log_hari_ini: number;
-  plan_aktif: number;
-  report_pending: number;
+  log_hari_ini: string;
+  plan_aktif: string;
+  report_pending: string;
   // aktivitas_terbaru: Record<string, string[]>;
   // progress_siswa: Record<string, string[]>;
-  aktivitas_terbaru: Activity[]; // ← pakai type Activity
-  progress_siswa: Student[];
+  aktivitas_terbaru: AktivitasTerbaruResponse[]; // ← pakai type Activity
+  progress_siswa: ProgressDashboardResponse[]; // ← pakai type ProgressDashboardResponse
+}
+
+export interface ProgressDashboardResponse {  
+  avg_nilai: number;
+  murid_id: string;
+  nama: string;
+  status: string;
+  total_sesi: number;
+}
+
+export interface AktivitasTerbaruResponse {  
+  tanggal: string;
+  topik: string;
+  kelas_id: string;
+  murid_id: string;
+  nilai: number;
+  tingkat_pemahaman: string;
+  tingkat_keterlibatan: string;
+  nama_mata_pelajaran: string;
 }
 
 export interface MapelResponse {  

@@ -1,7 +1,5 @@
 import {
   IconDashboard,
-  IconDailyLog,
-  IconCalendar,
   IconReport,
   IconStudents,
   IconLog,
@@ -14,8 +12,8 @@ import type { NavItem, StatCard, Student, Activity } from "../types";
 export const NAV_ITEMS: NavItem[] = [
   { kind: "section", label: "Main Menu" },
   { kind: "link", label: "Dashboards",    route: "home",         icon: <IconDashboard /> },
-  { kind: "link", label: "Daily Log",     route: "dailyLog",     icon: <IconDailyLog /> },
-  { kind: "link", label: "Learning Plan", route: "learningPlan", icon: <IconCalendar /> },
+  // { kind: "link", label: "Daily Log",     route: "dailyLog",     icon: <IconDailyLog /> },
+  // { kind: "link", label: "Learning Plan", route: "learningPlan", icon: <IconCalendar /> },
   { kind: "section", label: "Master Data" },
   { kind: "link", label: "Kelas", route: "masterKelas", icon: <IconKelas /> },
   { kind: "link", label: "Mata Pelajaran", route: "masterMapel", icon: <IconKelas /> },

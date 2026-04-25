@@ -1,5 +1,5 @@
 import React from "react";
-import type { Student } from "../../types";
+import type { ProgressDashboardResponse } from "../../service/payload";
 
 interface ProgressBarProps {
   pct: number;
@@ -10,7 +10,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ pct, color }) => (
   <div style={{ background: "#e5e7eb", borderRadius: 99, height: 6, width: "100%" }}>
     <div
       style={{
-        width: `${pct}%`,
+        width: `${Math.min(pct, 100)}%`,
         background: color,
         borderRadius: 99,
         height: "100%",
@@ -21,20 +21,26 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ pct, color }) => (
 );
 
 interface StudentRowProps {
-  student: Student;
+  student: ProgressDashboardResponse;
 }
+
+const avatarColors = ["#dbeafe", "#dcfce7", "#fef9c3", "#fee2e2", "#ede9fe"];
 
 const StudentRow: React.FC<StudentRowProps> = ({ student: s }) => {
   const isWarning = s.status === "Perlu Perhatian";
-  const barColor   = isWarning ? "#f59e0b" : "#22c55e";
-  const badgeBg    = isWarning ? "#fef3c7" : "#dcfce7";
-  const badgeText  = isWarning ? "#b45309" : "#15803d";
+  const barColor  = isWarning ? "#f59e0b" : "#22c55e";
+  const badgeBg   = isWarning ? "#fef3c7" : "#dcfce7";
+  const badgeText = isWarning ? "#b45309" : "#15803d";
 
-  const initials = s.name
+  const initials = s.nama
     .split(" ")
     .map((w) => w[0])
     .join("")
-    .slice(0, 2);
+    .slice(0, 2)
+    .toUpperCase();
+
+  // Warna avatar berdasarkan karakter pertama nama
+  const avatarBg = avatarColors[s.nama.charCodeAt(0) % avatarColors.length];
 
   return (
     <div
@@ -52,7 +58,7 @@ const StudentRow: React.FC<StudentRowProps> = ({ student: s }) => {
           width: 38,
           height: 38,
           borderRadius: 8,
-          background: s.avatarColor,
+          background: avatarBg,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -67,13 +73,13 @@ const StudentRow: React.FC<StudentRowProps> = ({ student: s }) => {
 
       {/* Info + progress */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{s.name}</div>
+        <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{s.nama}</div>
         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>
-          {s.subject} · {s.subtopic}
+          {s.total_sesi} sesi · rata-rata {s.avg_nilai}
         </div>
-        <ProgressBar pct={s.progress} color={barColor} />
+        <ProgressBar pct={s.avg_nilai} color={barColor} />
         <div style={{ fontSize: 11, color: isWarning ? "#f59e0b" : "#9ca3af", marginTop: 4 }}>
-          {s.note}
+          Nilai: {s.avg_nilai}
         </div>
       </div>
 

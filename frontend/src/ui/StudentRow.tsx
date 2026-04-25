@@ -1,5 +1,6 @@
 import React from "react";
-import type { Student } from "../types";
+// import type { Student } from "../types";
+import type { ProgressDashboardResponse } from "../service/payload";
 
 interface ProgressBarProps {
   pct: number;
@@ -21,7 +22,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ pct, color }) => (
 );
 
 interface StudentRowProps {
-  student: Student;
+  student: ProgressDashboardResponse;
 }
 
 const StudentRow: React.FC<StudentRowProps> = ({ student: s }) => {
@@ -30,7 +31,7 @@ const StudentRow: React.FC<StudentRowProps> = ({ student: s }) => {
   const badgeBg    = isWarning ? "#fef3c7" : "#dcfce7";
   const badgeText  = isWarning ? "#b45309" : "#15803d";
 
-  const initials = s.name
+  const initials = s.nama
     .split(" ")
     .map((w) => w[0])
     .join("")
@@ -52,7 +53,8 @@ const StudentRow: React.FC<StudentRowProps> = ({ student: s }) => {
           width: 38,
           height: 38,
           borderRadius: 8,
-          background: s.avatarColor,
+          // background: s.avatarColor,
+          background: "#f3f4f6",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -67,13 +69,13 @@ const StudentRow: React.FC<StudentRowProps> = ({ student: s }) => {
 
       {/* Info + progress */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{s.name}</div>
+        <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{s.nama}</div>
         <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>
-          {s.subject} · {s.subtopic}
+          {/* {s.subject} · {s.subtopic} */}
         </div>
-        <ProgressBar pct={s.progress} color={barColor} />
+        <ProgressBar pct={s.avg_nilai} color={barColor} />
         <div style={{ fontSize: 11, color: isWarning ? "#f59e0b" : "#9ca3af", marginTop: 4 }}>
-          {s.note}
+          {s.avg_nilai} %
         </div>
       </div>
 
