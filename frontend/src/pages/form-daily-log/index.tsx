@@ -1,54 +1,31 @@
-// import React, { useState } from "react";
-// import type { FormState } from "../components/types";
-// import {
-//   MAPEL_OPTIONS, METODE_OPTIONS,
-//   PEMAHAMAN_OPTIONS, KETERLIBATAN_OPTIONS,
-//   inputStyle, textareaStyle, cardStyle,
-// } from "../components/constants";
-// import { styles } from "./styles";
-
+import { useEffect, useState } from "react";
+import type { DailyLogPayload, DailyLogResponse, MapelResponse, SiswaResponse } from "../../service/payload";
+import { cardStyle, inputStyle, KETERLIBATAN_OPTIONS, METODE_OPTIONS, PEMAHAMAN_OPTIONS, textareaStyle } from "../daily-log/components/constants";
 import { styles } from "./styles";
+import { useDailyLog } from "./useDailyLog";
 
 interface DailyLogFormLogProps {
-  /** Isi untuk mode edit, kosong untuk mode tambah baru */
-  // initialForm?: Partial<FormState>;
-  // lockedSiswa?: string;
-  // lockedMapel?: string;
-  // onBack: () => void;
-  // onSave: (form: FormState) => void;
   onNavigate?: (route: string, params?: Record<string, unknown>) => void;
   namaSiswa?: string | null;
+  mapel: MapelResponse;
+  kelasId?: string;
+  siswa: SiswaResponse;
+  dataLog?: DailyLogResponse | null;
 }
 
-// const DEFAULT_FORM: FormState = {
-//   murid_id: "Aisya Putri",
-//   tanggal: new Date().toISOString().split("T")[0],
-//   kelas_id: "1",
-//   topik: "",
-//   nilai: "",
-//   tingkat_pemahaman: "Sangat Paham",
-//   tingkat_keterlibatan: "Aktif",
-//   catatan: "",
-//   target_materi_berikutnya: "",
-//   kompetensi_dicapai: "",
-//   kendala: "",
-//   durasi_menit: "90",
-//   metode_belajar: "Penjelasan langsung",
-// };
-
-// const SaveButton: React.FC<{ size?: "sm" | "md"; onClick: () => void; }> = ({ size = "md", onClick }) => (
-//     <button
-//       onClick={onClick}
-//       style={{
-//         background: "#22c55e", color: "#fff", border: "none",
-//         borderRadius: 8,
-//         padding: size === "sm" ? "8px 20px" : "9px 24px",
-//         fontSize: 13, fontWeight: 700, cursor: "pointer",
-//       }}
-//     >
-//       Simpan Log
-//     </button>
-//   );
+const SaveButton: React.FC<{ size?: "sm" | "md"; onClick: () => void; }> = ({ size = "md", onClick }) => (
+    <button
+      onClick={onClick}
+      style={{
+        background: "#22c55e", color: "#fff", border: "none",
+        borderRadius: 8,
+        padding: size === "sm" ? "8px 20px" : "9px 24px",
+        fontSize: 13, fontWeight: 700, cursor: "pointer",
+      }}
+    >
+      Simpan Log
+    </button>
+  );
 
 const Label: React.FC<{ text: string; optional?: boolean }> = ({ text, optional }) => (
   <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
@@ -58,16 +35,118 @@ const Label: React.FC<{ text: string; optional?: boolean }> = ({ text, optional 
 );
 
 
-export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormLogProps) {
-// const DailyLogFormLog: React.FC<DailyLogFormLogProps> = ({ initialForm, lockedSiswa, lockedMapel, onBack, onSave }) => {
-  // const [form, setForm] = useState<FormState>({ 
-  //   ...DEFAULT_FORM, 
-  //   ...initialForm, 
-  //   ...(lockedSiswa ? { siswa: lockedSiswa } : {}),...(lockedMapel ? { mapel: lockedMapel } : {}), });
+export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId, siswa, dataLog }: DailyLogFormLogProps) {
+  const [logForm, setLogForm] = useState<DailyLogPayload>({
+    kelas_id: dataLog?.kelas_id || kelasId || "",
+    murid_id: dataLog?.murid_id || siswa.id || "",
+    tanggal: dataLog?.tanggal || "",
+    topik: dataLog?.topik || "",
+    nilai: dataLog?.nilai || 0,
+    tingkat_pemahaman: dataLog?.tingkat_pemahaman || "",
+    tingkat_keterlibatan: dataLog?.tingkat_keterlibatan || "",
+    kompetensi_dicapai: String(dataLog?.kompetensi_dicapai)  || "",
+    target_materi_berikutnya: dataLog?.target_materi_berikutnya || "",
+    kendala: dataLog?.kendala || "",
+    catatan: dataLog?.catatan || "",
+    durasi_menit: dataLog?.durasi_menit || 0,
+    metode_belajar: dataLog?.metode_belajar || "",
+  });
+  const [logResult, setLogResult] = useState<DailyLogResponse[]>([]);
+  const [selectedSiswaId, setSelectedSiswaId] = useState<string | null>(null);
+
+  const { loadLogSiswa, submitCreateLog, submitUpdateLog } = useDailyLog();
+
+  console.log(mapel);
+
+  const onSave = async (form: DailyLogPayload) => {
+    if (!siswa.id || !kelasId) return;
+  
+      if (dataLog?.id !== null) {
+        if (!dataLog?.id) return;
+        
+        const payload: DailyLogPayload = {
+          kelas_id: kelasId!,
+          murid_id: siswa.id,
+          tanggal: form.tanggal,
+          topik: form.topik ?? "",
+          nilai: form.nilai,
+          tingkat_pemahaman: form.tingkat_pemahaman,
+          tingkat_keterlibatan: form.tingkat_keterlibatan,
+          kompetensi_dicapai: form.kompetensi_dicapai,
+          target_materi_berikutnya: form.target_materi_berikutnya,
+          kendala: form.kendala ?? "",
+          catatan: form.catatan ?? "",
+          durasi_menit: form.durasi_menit,
+          metode_belajar: form.metode_belajar,
+        };
+        const result = await submitUpdateLog(dataLog?.id, payload);
+        if (result) {
+          setLogResult((prev) => [...prev, result]);
+          onNavigate?.("logSiswa", { siswaId: siswa.id, kelasId, mapel, siswa })
+        } else {
+          return;
+        }
+        // setLogResult((prev) =>
+        //   prev.map((d) =>
+        //     d.id === dataLog?.id
+        //       ? {
+        //           ...d,
+        //           kelas_id: kelasId!,
+        //           murid_id: siswa.id,
+        //           tanggal: form.tanggal,
+        //           topik: form.topik ?? "",
+        //           nilai: Number(form.nilai),
+        //           tingkat_pemahaman: form.tingkat_pemahaman,
+        //           tingkat_keterlibatan: form.tingkat_keterlibatan,
+        //           kompetensi_dicapai: form.kompetensi_dicapai,
+        //           target_materi_berikutnya: form.target_materi_berikutnya,
+        //           kendala: form.kendala ?? "",
+        //           catatan: form.catatan ?? "",
+        //           durasi_menit: Number(form.durasi_menit),
+        //           metode_belajar: form.metode_belajar,
+        //         }
+        //       : d
+        //   )
+        // );       
+      } else {
+        const payload: DailyLogPayload = {
+          kelas_id: kelasId!,
+          murid_id: siswa.id,
+          tanggal: form.tanggal,
+          topik: form.topik ?? "",
+          nilai: form.nilai,
+          tingkat_pemahaman: form.tingkat_pemahaman,
+          tingkat_keterlibatan: form.tingkat_keterlibatan,
+          kompetensi_dicapai: form.kompetensi_dicapai,
+          target_materi_berikutnya: form.target_materi_berikutnya,
+          kendala: form.kendala ?? "",
+          catatan: form.catatan ?? "",
+          durasi_menit: form.durasi_menit,
+          metode_belajar: form.metode_belajar,
+        };
+  
+        const result = await submitCreateLog(payload);
+        if (result) {
+          setLogResult((prev) => [...prev, result]);
+          onNavigate?.("logSiswa", { siswaId: siswa.id, kelasId, mapel, siswa })
+        } else {
+          return;
+        }
+      }
+  
+      // setView(selectedSiswaId !== null ? "detailSiswa" : selectedKelasId !== null ? "listSiswa" : "index");
+    };
 
   // const set = (key: keyof FormState) =>
   //   (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
   //     setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  useEffect(() => {
+    if (selectedSiswaId === null) return;
+    loadLogSiswa(selectedSiswaId).then((data) => {
+      setLogResult(data);
+    });
+  }, [selectedSiswaId]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
@@ -89,7 +168,7 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormL
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
-            // onClick={onBack}
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("logSiswa", { siswaId: siswa.id, kelasId, mapel, siswa }) }}
             style={{
               background: "none", border: "1px solid #e5e7eb", borderRadius: 8,
               padding: "8px 16px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer",
@@ -97,7 +176,7 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormL
           >
             ← Kembali
           </button>
-          {/* <SaveButton onClick={() => onSave(form)} size="sm" /> */}
+          <SaveButton onClick={() => onSave(logForm)} size="sm" />
         </div>
       </div>
 
@@ -108,7 +187,7 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormL
         <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "flex-start" }}>
 
           {/* Informasi Sesi Belajar */}
-          {/* <div style={{ ...cardStyle, flex: "1 1 340px", minWidth: 0 }}> */}
+          <div style={{ ...cardStyle, flex: "1 1 340px", minWidth: 0 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: "0 0 20px" }}>
               Informasi Sesi Belajar
             </h3>
@@ -128,79 +207,53 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormL
                   </div>
                   <div style={styles.lockedFieldStyle}>{namaSiswa}</div>
                 </div>
-                {/* {lockedSiswa ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div
-                      style={{
-                        width: 28, height: 28, borderRadius: "50%",
-                        background: "#eff6ff", color: "#3b82f6",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 11, fontWeight: 700, flexShrink: 0,
-                      }}
-                    >
-                      {lockedSiswa.split(" ").map((w) => w[0]).slice(0, 2).join("")}
-                    </div>
-                    <div style={styles.lockedFieldStyle}>{lockedSiswa}</div>
-                  </div>
-                ) : (
-                  <input
-                    type="text"
-                    value={form.murid_id}
-                    onChange={set("murid_id")}
-                    placeholder="Nama siswa"
-                    style={inputStyle}
-                  />
-                )} */}
               </div>
 
               <div>
                 <Label text="Tanggal" />
-                {/* <input type="date" value={form.tanggal} onChange={set("tanggal")} style={inputStyle} /> */}
+                <input type="date" 
+                  value={logForm.tanggal} 
+                  onChange={(e) => setLogForm((f) => ({ ...f, tanggal: e.target.value }))} 
+                  style={inputStyle} />
               </div>
 
-              {/* <div>
-                <Label text="Mata Pelajaran" />
-                <select value={form.mapel} onChange={set("mapel")} style={inputStyle}>
-                  {MAPEL_OPTIONS.map((m) => <option key={m}>{m}</option>)}
-                </select>
-              </div> */}
               <div>
                 <Label text="Mata Pelajaran" />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={styles.lockedFieldStyle}>{mapel?.nama_mata_pelajaran}</div>
+                </div>
+              </div>
+              <div>
+                <Label text="Topik / Materi" />
                 {/* {lockedMapel ? (
                   <div style={styles.lockedFieldStyle}>{lockedMapel}</div>
                 ) : (
-                  <select value={form.kelas_id} onChange={set("kelas_id")} style={inputStyle}>
-                    {MAPEL_OPTIONS.map((m) => <option key={m}>{m}</option>)}
-                  </select>
+                  
                 )} */}
-              </div>
-
-              <div>
-                <Label text="Topik / Materi" />
-                {/* <input
-                  type="text" value={form.topik} onChange={set("topik")}
-                  placeholder="cth: Aljabar — persamaan linear"
-                  style={inputStyle}
-                /> */}
+                <select value={logForm.topik} onChange={(e) => setLogForm((f) => ({ ...f, topik: e.target.value }))} style={inputStyle}>
+                  <option value="">-- Pilih --</option>
+                  {mapel.topik.map((m) => <option key={m}>{m}</option>)}
+                </select>
               </div>
 
               <div>
                 <Label text="Durasi (menit)" />
-                {/* <input type="number" value={form.durasi_menit} onChange={set("durasi_menit")} style={inputStyle} min={0} /> */}
+                <input type="number" value={logForm.durasi_menit} onChange={(e) => setLogForm((f) => ({ ...f, durasi_menit: Number(e.target.value) }))} style={inputStyle} min={0} />
               </div>
 
               <div>
                 <Label text="Metode Belajar" />
-                {/* <select value={form.metode_belajar} onChange={set("metode_belajar")} style={inputStyle}>
+                <select value={logForm.metode_belajar} onChange={(e) => setLogForm((f) => ({ ...f, metode_belajar: e.target.value }))} style={inputStyle}>
+                  <option value="">-- Pilih --</option>
                   {METODE_OPTIONS.map((m) => <option key={m}>{m}</option>)}
-                </select> */}
+                </select>
               </div>
 
             </div>
           </div>
 
           {/* Evaluasi & Catatan */}
-          {/* <div style={{ ...cardStyle, flex: "1 1 300px", minWidth: 0 }}>
+          <div style={{ ...cardStyle, flex: "1 1 300px", minWidth: 0 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: "0 0 20px" }}>
               Evaluasi &amp; Catatan
             </h3>
@@ -208,11 +261,11 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormL
             <Label text="Tingkat Pemahaman Siswa" />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
               {PEMAHAMAN_OPTIONS.map((opt) => {
-                const active = form.tingkat_pemahaman === opt.value;
+                const active = logForm.tingkat_pemahaman === opt.value;
                 return (
                   <button
                     key={opt.value}
-                    onClick={() => setForm((f) => ({ ...f, tingkat_pemahaman: opt.value }))}
+                    onClick={() => setLogForm((f) => ({ ...f, tingkat_pemahaman: opt.value }))}
                     style={{
                       border: active ? "none" : "1px solid #e5e7eb",
                       borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600,
@@ -231,11 +284,11 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormL
             <Label text="Tingkat Keterlibatan" />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
               {KETERLIBATAN_OPTIONS.map((opt) => {
-                const active = form.tingkat_keterlibatan === opt.value;
+                const active = logForm.tingkat_keterlibatan === opt.value;
                 return (
                   <button
                     key={opt.value}
-                    onClick={() => setForm((f) => ({ ...f, tingkat_keterlibatan: opt.value }))}
+                    onClick={() => setLogForm((f) => ({ ...f, tingkat_keterlibatan: opt.value }))}
                     style={{
                       border: active ? "none" : "1px solid #e5e7eb",
                       borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600,
@@ -253,22 +306,22 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormL
 
             <Label text="Catatan Guru" />
             <textarea
-              value={form.catatan} onChange={set("catatan")}
+              value={logForm.catatan} onChange={(e) => setLogForm((f) => ({ ...f, catatan: e.target.value }))}
               placeholder="cth: Siswa mampu memahami konsep dengan baik..."
               style={{ ...textareaStyle, marginBottom: 16 }}
             />
 
-            <Label text="Rekomendasi Tindak Lanjut" />
+            {/* <Label text="Rekomendasi Tindak Lanjut" />
             <input
-              type="text" value={form.rekTindakLanjut} onChange={set("rekTindakLanjut")}
+              type="text" value={logForm.rekTindakLanjut} onChange={(e) => setLogForm((f) => ({ ...f, rekTindakLanjut: e.target.value }))}
               placeholder="cth: Review konsep sebelum lanjut ke materi berikutnya"
               style={inputStyle}
-            />
-          </div> */}
+            /> */}
+          </div>
         </div>
 
         {/* Row 2: Capaian & Kompetensi */}
-        {/* <div style={{ ...cardStyle, flexShrink: 0 }}>
+        <div style={{ ...cardStyle, flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0 }}>
               Capaian &amp; Kompetensi
@@ -282,18 +335,22 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormL
 
             <div>
               <Label text="Target Materi Berikutnya" />
-              <input type="text" value={form.target_materi_berikutnya} onChange={set("target_materi_berikutnya")} placeholder="cth: Persamaan kuadrat" style={inputStyle} />
+              {/* <input type="text" value={logForm.target_materi_berikutnya} onChange={(e) => setLogForm((f) => ({ ...f, target_materi_berikutnya: e.target.value }))} placeholder="cth: Persamaan kuadrat" style={inputStyle} /> */}
+              <select value={logForm.target_materi_berikutnya} onChange={(e) => setLogForm((f) => ({ ...f, target_materi_berikutnya: e.target.value }))} style={inputStyle}>
+                <option value="">-- Pilih --</option>
+                {mapel.topik.map((m) => <option key={m}>{m}</option>)}
+              </select>
             </div>
 
             <div>
               <Label text="Skor / Penilaian" optional />
-              <input type="text" value={form.nilai} onChange={set("nilai")} placeholder="cth: 85" style={inputStyle} />
+              <input type="text" value={logForm.nilai} onChange={(e) => setLogForm((f) => ({ ...f, nilai: Number(e.target.value) }))} placeholder="cth: 85" style={inputStyle} />
             </div>
 
             <div>
               <Label text="Kompetensi Dicapai" />
               <textarea
-                value={form.kompetensi_dicapai} onChange={set("kompetensi_dicapai")}
+                value={logForm.kompetensi_dicapai} onChange={(e) => setLogForm((f) => ({ ...f, kompetensi_dicapai: e.target.value }))}
                 placeholder="cth: Siswa mampu menyelesaikan persamaan linear satu variabel"
                 style={textareaStyle}
               />
@@ -302,19 +359,19 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormL
             <div>
               <Label text="Kendala / Hambatan" optional />
               <textarea
-                value={form.kendala} onChange={set("kendala")}
+                value={logForm.kendala} onChange={(e) => setLogForm((f) => ({ ...f, kendala: e.target.value }))}
                 placeholder="cth: Kesulitan pada operasi bilangan negatif"
                 style={textareaStyle}
               />
             </div>
 
           </div>
-        </div> */}
+        </div>
 
         {/* Bottom action bar */}
-        {/* <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "4px 0 8px", flexShrink: 0 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "4px 0 8px", flexShrink: 0 }}>
           <button
-            onClick={onBack}
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("logSiswa", { siswaId: siswa.id, kelasId, mapel, siswa }) }}
             style={{
               background: "none", border: "1px solid #e5e7eb", borderRadius: 8,
               padding: "9px 20px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer",
@@ -322,10 +379,10 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa }: DailyLogFormL
           >
             Batal
           </button>
-          <SaveButton onClick={() => onSave(form)} size="sm" />
-        </div> */}
+          {/* <SaveButton onClick={() => onSave(form)} size="sm" /> */}
+        </div>
 
-      {/* </div> */}
+      </div>
     </div>
   );
 };

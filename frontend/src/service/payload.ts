@@ -69,20 +69,12 @@ export interface messageResponse {
   message: string;
 }
 
-export interface DailyLogPayload {
-  // siswa: string;
-  // mapel: string;
-  // catatanGuru?: string;
-  // pemahaman: string;
-  // durasi: string;
-  // metode: string;
-  // keterlibatan: string;
-  
+export interface DailyLogPayload { 
   kelas_id: string;
   murid_id: string;
   tanggal: string;
   topik?: string;
-  nilai: Float32Array;
+  nilai: number;
   tingkat_pemahaman: string;
   tingkat_keterlibatan: string;
   kompetensi_dicapai: string;
@@ -99,11 +91,11 @@ export interface DailyLogResponse {
   kelas_id: string;
   murid_id: string;
   tanggal: string;
-  topik: string;
+  topik?: string;
   nilai: number;
   tingkat_pemahaman: string;
   tingkat_keterlibatan: string;
-  kompetensi_dicapai: number;
+  kompetensi_dicapai: string;
   target_materi_berikutnya: string;
   kendala?: string;
   catatan?: string;

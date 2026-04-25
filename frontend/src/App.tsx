@@ -18,7 +18,7 @@ import MasterMapel from "./pages/master-mapel";
 import DetailKelas from "./pages/detail-kelas";
 import DetailLogSiswa from "./pages/detail-log-siswa";
 import DailyLogFormLog from "./pages/form-daily-log";
-import type { MapelResponse, SiswaResponse } from "./service/payload";
+import type { DailyLogResponse, MapelResponse, SiswaResponse } from "./service/payload";
 
 // Helper token
 const TOKEN_KEY = "auth_token";
@@ -133,7 +133,13 @@ const App: React.FC = () => {
           mapel={routeParams.mapel as MapelResponse} 
           siswa={routeParams.siswa as SiswaResponse} />;
       case "formDailyLog":
-        return <DailyLogFormLog onNavigate={handleNavigate} namaSiswa={routeParams.namaSiswa as string} />;
+        return <DailyLogFormLog 
+          onNavigate={handleNavigate} 
+          namaSiswa={routeParams.namaSiswa as string}
+          kelasId={routeParams.kelasId as string}
+          siswa={routeParams.siswa as SiswaResponse}
+          dataLog={routeParams.dataLog as DailyLogResponse | null}
+          mapel={routeParams.mapel as MapelResponse} />;
       default:
         return (
           <div style={styles.pageNotFound}>
