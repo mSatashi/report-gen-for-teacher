@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 import re as _re
 
+
+
 EducationLevel = Literal["SD-1", "SD-2", "SD-3", "SD-4", "SD-5", "SD-6", "SMP-1", "SMP-2", "SMP-3", "SMK-1", "SMK-2", "SMK-3", "SMK-4", "SMA-1", "SMA-2", "SMA-3"]
 JenisKelamin   = Literal["Laki-laki", "Perempuan"]
 Hari = Literal["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
@@ -143,6 +145,7 @@ class TambahMuridKeKelas(BaseModel):
 class LogPertemuanCreate(BaseModel):
     kelas_id: str
     murid_id: str
+    mata_pelajaran_id: str
     tanggal: date
     topik: str
     nilai: Optional[float] = None
@@ -162,7 +165,7 @@ class LogPertemuanUpdate(BaseModel):
     tingkat_pemahaman: Optional[str] = None
     tingkat_keterlibatan: Optional[str] = None
     kompetensi_dicapai: Optional[str] = None
-    target_materi_berikutnya: Optional[str] = None
+    target_materi_berikutnya: Optional[MataPelajaranResponse] = None
     kendala: Optional[str] = None
     catatan: Optional[str] = None
     durasi_menit: Optional[int] = None
@@ -171,10 +174,10 @@ class LogPertemuanUpdate(BaseModel):
 
 class LogPertemuanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: str
-    kelas_id: str
+    kelas_id: str | None = None
     murid_id: str
+    mata_pelajaran_id: str
     tanggal: date
     topik: str
     nilai: Optional[float] = None

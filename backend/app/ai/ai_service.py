@@ -31,7 +31,7 @@ dalam Bahasa Indonesia yang formal namun hangat. Laporan harus:
 1. Berdasarkan data yang diberikan, tidak mengarang fakta
 2. Mencakup: ringkasan kemajuan, capaian akademik, area pengembangan, rencana selanjutnya, rekomendasi
 3. Ditulis dari sudut pandang pengajar kepada orang tua
-4. Panjang sekitar 300-500 kata
+4. Panjang sekitar 500 kata
 Jangan tambahkan penjelasan atau komentar di luar isi laporan.
 """.strip()
  
@@ -116,7 +116,7 @@ class NarrativeEngine:
         prompt = f"""
 {FEW_SHOT_LAPORAN}
  
-Sekarang buatkan laporan untuk data berikut:
+Sekarang buatkan laporan untuk data berikut dengan contoh laporan di atas:
  
 Nama Siswa    : {nama_murid}
 Mata Pelajaran: {mata_pelajaran}
@@ -134,10 +134,10 @@ Tuliskan laporan perkembangan lengkap sesuai format contoh di atas.
         try:
             result = await narrative_client.generate(
                 prompt=prompt,
-                system_prompt=NARRATIVE_SYSTEM_PROMPT,
-                temperature=0.6,   # Tabel 10: 0.5–0.7
-                top_p=0.9,         # Tabel 10: 0.9
-                max_tokens=1024,   # Tabel 10: 512–1024
+                # system_prompt=NARRATIVE_SYSTEM_PROMPT,
+                # temperature=0.6,   # Tabel 10: 0.5–0.7
+                # top_p=0.9,         # Tabel 10: 0.9
+                # max_tokens=1024,   # Tabel 10: 512–1024
             )
             return result if result else self._template_fallback(
                 nama_murid, mata_pelajaran, log_data, knowledge_state, pso_recommended_route
@@ -174,7 +174,7 @@ Format: paragraf padat, maksimal 300 kata.
 """.strip()
  
         try:
-            return await narrative_client.generate(prompt=prompt, temperature=0.5, max_tokens=512)
+            return await narrative_client.generate(prompt=prompt, temperature=0.5, max_tokens=1024)
         except Exception as e:
             logger.error(f"Analisis kelas gagal: {e}")
             return f"Analisis otomatis gagal untuk kelas {nama_kelas}. Lakukan analisis manual."
