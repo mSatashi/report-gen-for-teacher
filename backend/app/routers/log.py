@@ -48,6 +48,7 @@ def logs_by_kelas(
 @router.get("/murid/{murid_id}", response_model=List[LogPertemuanResponse])
 def logs_by_murid(
     murid_id: str,
+    mata_pelajaran_id: Optional[str] = Query(None, description="Filter per mata pelajaran"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, le=200),
     current_user: Pengguna = Depends(require_pengajar),
