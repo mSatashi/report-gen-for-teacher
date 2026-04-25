@@ -1,3 +1,5 @@
+import type { Activity, Student } from "../types";
+
 export interface KelasPayload {
   nama: string;
   mata_pelajaran: string;
@@ -18,24 +20,20 @@ export interface KelasResponse {
 export interface Toast { id: number; message: string; type: "success" | "error" }
 
 export interface SiswaPayload {
-  username: string;
   email_address: string;
-  password?: string;
   nama: string;
-  usia: string;
-  level: string;
-  credit_total?: number;
+  jenis_kelamin: string;
+  education_level: string;
+  is_active: boolean;
 }
  
 export interface SiswaResponse {
   id: string;
-  username: string;
   email_address: string;
   nama: string;
-  usia: string;
-  level: string;
-  credit_total: number;
-  credit_used?: number;
+  jenis_kelamin: string;
+  education_level: string;
+  is_active: boolean;
 }
 
 export interface addSiswaPayload {
@@ -134,3 +132,13 @@ export interface ReportGeneratorPayload {
   tipe_laporan?: string;
 }
 
+export interface DashboardResponse {  
+  total_siswa: number;
+  log_hari_ini: number;
+  plan_aktif: number;
+  report_pending: number;
+  // aktivitas_terbaru: Record<string, string[]>;
+  // progress_siswa: Record<string, string[]>;
+  aktivitas_terbaru: Activity[]; // ← pakai type Activity
+  progress_siswa: Student[];
+}

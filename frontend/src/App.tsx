@@ -98,7 +98,7 @@ const App: React.FC = () => {
   const renderPage = () => {
     switch (activeRoute) {
       case "home":
-        return <DashboardPage />;
+        return <DashboardPage namaLengkap={user?.username ?? "Pengguna"} />;
       case "dailyLog":
         return <DailyLogPage onNavigate={setActiveRoute} />;
       case "learningPlan":
@@ -164,8 +164,8 @@ const App: React.FC = () => {
       >
         {/* Header */}
         <Header onOpenMobileMenu={() => setMobileSidebarOpen(true)}
-        // namaLengkap={user?.full_name ?? user?.name ?? "Pengguna"}
-        // email={user?.email ?? ""}
+          namaLengkap={user?.username ?? "Pengguna"}
+          email={user?.email_address ?? ""}
           onSignOut={handleLogout}
         />
 
