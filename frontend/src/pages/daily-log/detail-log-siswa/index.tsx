@@ -19,12 +19,12 @@ type Tab = (typeof TABS)[number];
 
 const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
   dataSiswa,
-  dataKelas,
+  // dataKelas,
   logDataSiswa,
   onBackToIndex,
   onBack,
   onAddLog,
-  onEditLog,
+  // onEditLog,
 }) => {
 
   const [activeTab, setActiveTab] = useState<Tab>("Semua");
@@ -56,7 +56,7 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
             <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={onBack}>
-              {dataKelas?.mata_pelajaran}
+              {'dataKelas?.mata_pelajaran'}
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{dataSiswa.nama}</span>
@@ -72,7 +72,7 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
                 {dataSiswa.nama}
               </h2>
               <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
-                {dataSiswa.level} · {dataKelas?.mata_pelajaran}
+                {/* {dataSiswa.level} · {dataKelas?.mata_pelajaran} */}
               </p>
             </div>
           </div>
@@ -180,7 +180,7 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
                       </td>
                       <td style={{ padding: "12px 14px" }}>
                         <button
-                          onClick={() => onEditLog(log.id)}
+                          // onClick={() => onEditLog(log.id)}
                           style={{ background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
                         >
                           Edit

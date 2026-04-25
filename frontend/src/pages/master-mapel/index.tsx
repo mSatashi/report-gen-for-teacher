@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { styles } from "./styles";
 import { IconClose, IconEdit, IconPlus, IconTrash } from "../../icons";
 import { useMapelApi } from "./useMapelApi";
-import type { MapelPayload, MapelResponse, MataPelajaranObj, Toast } from "../../service/payload";
+import type { MapelPayload, MapelResponse, Toast } from "../../service/payload";
 
 type ModalMode = "add-mapel" | "edit-mapel" | null;
 

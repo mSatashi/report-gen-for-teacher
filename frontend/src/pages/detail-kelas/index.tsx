@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
-import type { addSiswaPayload, KelasResponse, SiswaResponse } from "../../service/payload";
+import { useCallback, useEffect, useState } from "react";
+import type { addSiswaPayload, GenerateplanResponse, KelasResponse, SiswaResponse } from "../../service/payload";
 import { useKelasApi } from "../master-kelas/useKelasApi";
 import { styles } from "./styles";
 import { IconClose, IconPlus, IconTrash } from "../../icons";
 import type { Siswa, Toast } from "../../types";
 import { useSiswaApi } from "../master-siswa/useSiswaApi";
 import { addSiswaKelas, deleteSiswaKelas } from "../../service/kelasAPI";
+import { useLearningPlan } from "../learning-plan/useLearningPlan";
 // import type { Toast } from "../../types";
 
 interface DetailKelasProps {
@@ -21,6 +22,13 @@ const emptyKelasSiswa = (): addSiswaPayload => ({
 
 let toastId = 0;
 
+type RowStatus = "idle" | "loading" | "done" | "error";
+interface RowState {
+  status: RowStatus;
+  result: GenerateplanResponse | null;
+  errorMsg: string | null;
+}
+
 export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   const [kelas, setKelas] = useState<KelasResponse | null>(null);
   const [siswaList, setSiswaList] = useState<SiswaResponse[]>([]);
@@ -31,9 +39,11 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   const [modal, setModal] = useState<ModalMode>(null);
   const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ siswaId: string } | null>(null);
+  const [rows, setRows] = useState<Record<string, RowState>>({});
 
   const { loadSiswa } = useSiswaApi();
   const { errorMsg, loadKelas, loadSiswaKelas } = useKelasApi();
+  const { submitGeneratePlan } = useLearningPlan();
 
   const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
     id: data.id,
@@ -45,24 +55,6 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   });
 
   useEffect(() => {
-    
-    // const fetchData = async () => {
-    //   setLoading(true);
-    //   try {
-    //     // Load kelas list dan cari yang sesuai id
-    //     const allKelas = await loadKelas();
-    //     const found = allKelas.find((k) => k.id === kelasId) ?? null;
-    //     setKelas(found);
-
-    //     // Load siswa dalam kelas
-    //     const siswa = await loadSiswaKelas(kelasId);
-    //     setSiswaList(siswa ?? []);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchData();
-
     loadKelas().then((data) => {
       setLoading(true);
       if (data?.length) 
@@ -93,7 +85,6 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
   const openAddSiswa = () => {
     setAddSiswaForm(emptyKelasSiswa());
-    // setEditingKelasId(null);
     setModal("add-siswa");
   };
 
@@ -138,6 +129,32 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
     }
   };
 
+  const doneCount = Object.values(rows).filter((r) => r.status === "done").length;
+  // const totalCount = kelas.length;
+  const totalCount = kelas?.mata_pelajaran_obj?.topik?.length ?? 0;
+
+  const handleGenerate = useCallback(async (kelas: KelasResponse) => {
+    setRows((prev) => ({
+      ...prev,
+      [kelas.id]: { status: "loading", result: null, errorMsg: null },
+    }));
+    
+    console.log("Generate plan untuk kelas", kelas.id);
+    const result = await submitGeneratePlan(kelas.id);
+  
+      if (result) {
+        setRows((prev) => ({
+          ...prev,
+          [kelas.id]: { status: "done", result, errorMsg: null },
+        }));
+      } else {
+        setRows((prev) => ({
+          ...prev,
+          [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
+        }));
+      }
+    }, [submitGeneratePlan]);
+
   return (
     <div style={styles.root}>
       {/* Back button */}
@@ -154,6 +171,28 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
         <div style={styles.loadingWrap}>Kelas tidak ditemukan.</div>
       ) : (
         <div style={styles.layout}>
+
+          {/* Progress banner — hanya muncul jika ada yang sudah done */}
+          {doneCount > 0 && (
+            <div style={{
+              background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 10,
+              padding: "11px 16px", fontSize: 13, color: "#166534", fontWeight: 500,
+              flexShrink: 0, display: "flex", alignItems: "center", gap: 10,
+            }}>
+              <span>✓</span>
+              <span>{doneCount} dari {totalCount} kelas sudah memiliki learning plan.</span>
+              <div style={{ flex: 1, background: "#bbf7d0", borderRadius: 99, height: 5, marginLeft: 4 }}>
+                <div style={{
+                  width: `${Math.round((doneCount / totalCount) * 100)}%`,
+                  background: "#16a34a", borderRadius: 99, height: "100%", transition: "width .4s",
+                }} />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 700 }}>
+                {Math.round((doneCount / totalCount) * 100)}%
+              </span>
+            </div>
+          )}
+
           {/* ── Left Panel ── */}
           <div style={styles.leftPanel}>
             {/* Info Kelas */}
@@ -247,42 +286,82 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
           {/* ── Right Panel — Mapel & Topik ── */}
           <div style={styles.rightPanel}>
-            <div style={styles.mapelName}>
-              {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "-"}
+            <div style={styles.rightPanel}>
+              <div style={styles.mapelName}>
+                {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "-"}
+              </div>
+              <span style={styles.badge}>Mata Pelajaran</span>
+
+              <hr style={styles.divider} />
+
+              <p style={{ ...styles.sectionTitle, fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
+                LIST TOPIK
+              </p>
+
+              {topikList.length === 0 ? (
+                <div style={{ fontSize: "12px", color: "#CBD5E1" }}>Belum ada topik</div>
+              ) : (
+                topikList.map((topik, i) => (
+                  <div key={i} style={styles.topikItem}>
+                    <span style={{
+                      width: "20px",
+                      height: "20px",
+                      background: "#EEF2FF",
+                      color: "#4338CA",
+                      borderRadius: "50%",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}>
+                      {i + 1}
+                    </span>
+                    {topik}
+                  </div>
+                ))
+              )}
             </div>
-            <span style={styles.badge}>Mata Pelajaran</span>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <button
+                type="button"
+                // onClick={() => openEditMapel(s)}
+                // style={styles.btnEdit}
+                // title="Edit mata pelajaran"
+                onClick={() => handleGenerate(kelas)}
+                // disabled={isLoading}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  // background: isLoading ? "#f3f4f6" : "#f59e0b",
+                  // color: isLoading ? "#9ca3af" : "#fff",
+                  border: "none", borderRadius: 8,
+                  padding: "8px 14px", fontSize: 12, fontWeight: 700,
+                  // cursor: isLoading ? "not-allowed" : "pointer",
+                  whiteSpace: "nowrap",
+                }}
+                // onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = "#d97706"; }}
+                // onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = "#f59e0b"; }}
+              >
+                {/* {isLoading
+                  ? <><Spinner color="#9ca3af" /> Generating…</>
+                  : isDone ? <>✦ Regenerate</> : <>✦ Generate Plan</>
+                } */}
+                {/* <IconEdit /> */}
+                Generate Plan
+              </button>
 
-            <hr style={styles.divider} />
-
-            <p style={{ ...styles.sectionTitle, fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
-              LIST TOPIK
-            </p>
-
-            {topikList.length === 0 ? (
-              <div style={{ fontSize: "12px", color: "#CBD5E1" }}>Belum ada topik</div>
-            ) : (
-              topikList.map((topik, i) => (
-                <div key={i} style={styles.topikItem}>
-                  <span style={{
-                    width: "20px",
-                    height: "20px",
-                    background: "#EEF2FF",
-                    color: "#4338CA",
-                    borderRadius: "50%",
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}>
-                    {i + 1}
-                  </span>
-                  {topik}
-                </div>
-              ))
-            )}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onNavigate?.("planDetail") }}
+                // onClick={() => setDeleteConfirm({ siswaId: s.id })}
+                style={styles.btnDanger}
+              >
+                Detail Plan
+              </button>
+            </div>
           </div>
+          
         </div>
       )}
 

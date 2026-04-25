@@ -51,8 +51,8 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
     durasi_menit: dataLog?.durasi_menit || 0,
     metode_belajar: dataLog?.metode_belajar || "",
   });
-  const [logResult, setLogResult] = useState<DailyLogResponse[]>([]);
-  const [selectedSiswaId, setSelectedSiswaId] = useState<string | null>(null);
+  const [, setLogResult] = useState<DailyLogResponse[]>([]);
+  const [selectedSiswaId, ] = useState<string | null>(null);
 
   const { loadLogSiswa, submitCreateLog, submitUpdateLog } = useDailyLog();
 

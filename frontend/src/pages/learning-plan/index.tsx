@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import type { GenerateplanResponse, KelasResponse } from "../../service/payload";
+import type { GenerateplanResponse } from "../../service/payload";
 import PlanDetail from "./plan-detail";
 import { useLearningPlan } from "./useLearningPlan";
 import type { Kelas } from "../../types";
@@ -57,16 +57,16 @@ const DEFAULT_ROW: RowState = { status: "idle", result: null, errorMsg: null };
 
 // ─── Mapper ───────────────────────────────────────────────────────────────────
 
-const mapApiToKelas = (data: KelasResponse): Kelas => ({
-  id: data.id,
-  nama: data.nama,
-  mata_pelajaran: data.mata_pelajaran,
-  pengajar_id: data.pengajar_id,
-  kredit: data.kredit,
-  jadwal: data.jadwal,
-  created_at: data.created_at,
-  siswa: [],
-});
+// const mapApiToKelas = (data: KelasResponse): Kelas => ({
+//   id: data.id,
+//   nama: data.nama,
+//   mata_pelajaran: data.mata_pelajaran,
+//   pengajar_id: data.pengajar_id,
+//   kredit: data.kredit,
+//   jadwal: data.jadwal,
+//   created_at: data.created_at,
+//   siswa: [],
+// });
 
 // const mapApiToPlan = (data: GenerateplanResponse): GenerateplanResponse => ({
 //   id: data.id,
@@ -83,7 +83,7 @@ const mapApiToKelas = (data: KelasResponse): Kelas => ({
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const PlanList: React.FC = () => {
-  const [kelasList, setKelasList] = useState<Kelas[]>([]);
+  const [kelasList, ] = useState<Kelas[]>([]);
   // const [planList, setPlanList] = useState<GenerateplanResponse[]>([]);
   const [isLoadingKelas, setIsLoadingKelas] = useState(true);
 
@@ -101,11 +101,11 @@ const PlanList: React.FC = () => {
       try {
         const kelasData = await loadKelas();
 
-        const mappedKelas = kelasData.map(mapApiToKelas);
-        setKelasList(mappedKelas);
+        // const mappedKelas = kelasData.map(mapApiToKelas);
+        // setKelasList(kelasData);
 
         const planResults = await Promise.all(
-          mappedKelas.map(async (kelas) => {
+          kelasData.map(async (kelas) => {
             const plans = await loadPlan(kelas.id);
             return {
               kelasId: kelas.id,
@@ -279,10 +279,10 @@ const PlanList: React.FC = () => {
                   {/* Mata Pelajaran */}
                   <td style={{ padding: "15px 16px 15px 0" }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
-                      {kelas.mata_pelajaran}
+                      {/* {kelas.mata_pelajaran} */}
                     </div>
                     <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
-                      {kelas.nama} · {kelas.jadwal}
+                      {/* {kelas.nama} · {kelas.jadwal} */}
                     </div>
                   </td>
 

@@ -1,14 +1,11 @@
-import React, { useEffect } from "react";
+// import React, { useEffect } from "react";
+// import type { Kelas } from "../../types";
+// import type { GenerateplanResponse } from "../../service/payload";
 // import { SCHEDULE } from "../constants";
 // import type { Session } from "../types";
-import type { GenerateplanResponse } from "../../../service/payload";
-import type { Kelas } from "../../../types";
 
 interface Props {
-  kelas: Kelas;
-  plan: GenerateplanResponse | null;
-  onBack: () => void;
-  onGenerated?: (kelasId: string) => void;
+  onNavigate?: (route: string, params?: Record<string, unknown>) => void;
 }
 
 // ─── Session card ─────────────────────────────────────────────────────────────
@@ -48,13 +45,11 @@ interface Props {
 // );
 
 // ─── Subject Schedule page ────────────────────────────────────────────────────
-
-const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
-  console.log('plan', plan)
+export default function PlanDetail({ onNavigate }: Props) {
   
-  useEffect(() => {
-    onGenerated?.(kelas.id);
-  }, [kelas.id, onGenerated]);
+  // useEffect(() => {
+  //   onGenerated?.(kelas.id);
+  // }, [kelas.id, onGenerated]);
 
   // const filteredSchedule = plan.map((day) => ({
   //   ...day,
@@ -83,7 +78,7 @@ const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
       {/* Back + Header */}
       <div style={{ flexShrink: 0 }}>
         <button
-          onClick={onBack}
+          // onClick={onBack}
           style={{
             background: "none", border: "none", cursor: "pointer",
             color: "#6b7280", fontSize: 13, fontWeight: 600,
@@ -106,7 +101,7 @@ const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
           </div> */}
           <div>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: "#111827", margin: "0 0 3px" }}>
-              {kelas.nama}
+              {'kelas.nama'}
             </h2>
             <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>
               Jadwal mingguan
@@ -173,7 +168,7 @@ const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
 
         {/* Day headers */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 12 }}>
-          {plan?.daftar_rekomendasi_materi.map((val) => (
+          {/* {plan?.daftar_rekomendasi_materi.map((val) => (
             <div
               key={val}
               style={{
@@ -189,7 +184,7 @@ const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
             >
               {val}
             </div>
-          ))}
+          ))} */}
         </div>
 
         {/* Session columns */}
@@ -208,5 +203,3 @@ const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
     </div>
   );
 };
-
-export default PlanDetail;
