@@ -95,25 +95,15 @@ export interface DailyLogPayload {
 
 
 export interface DailyLogResponse {
-  id: number;
-  // siswa: string;
-  // idMapel: number;
-  // mapel: string;
-  // materi: string;
-  // catatan: string;
-  // tingkat_penguasaan: string;
-  // tanggal: string;
-  // durasi: string;
-  // metode: string;
-  // keterlibatan: string;
+  id: string;
   kelas_id: string;
   murid_id: string;
   tanggal: string;
-  topik?: string;
-  nilai: Float32Array;
+  topik: string;
+  nilai: number;
   tingkat_pemahaman: string;
   tingkat_keterlibatan: string;
-  kompetensi_dicapai: string;
+  kompetensi_dicapai: number;
   target_materi_berikutnya: string;
   kendala?: string;
   catatan?: string;

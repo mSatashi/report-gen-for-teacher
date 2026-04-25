@@ -10,7 +10,7 @@ import { addSiswaKelas, deleteSiswaKelas } from "../../service/kelasAPI";
 
 interface DetailKelasProps {
   kelasId: string;
-  onNavigate?: (route: string, params?: Record<string, string>) => void;
+  onNavigate?: (route: string, params?: Record<string, unknown>) => void;
 }
 
 type ModalMode = "add-siswa" | "edit-siswa" | null;
@@ -226,7 +226,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                         <div style={styles.kelasActions}>
                           <button
                             style={styles.btnDetail}
-                            onClick={() => onNavigate?.("detailSiswa", { siswaId: siswa.id })}
+                            onClick={() => onNavigate?.("logSiswa", { siswaId: siswa.id, siswa: siswa, mapel: kelas.mata_pelajaran_obj, kelasId: kelas.id })}
                           >
                             Detail
                           </button>

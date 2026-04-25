@@ -16,6 +16,9 @@ import { setUnauthorizedHandler } from "./service/apiFetch";
 import MasterSiswa from "./pages/master-siswa";
 import MasterMapel from "./pages/master-mapel";
 import DetailKelas from "./pages/detail-kelas";
+import DetailLogSiswa from "./pages/detail-log-siswa";
+import DailyLogFormLog from "./pages/form-daily-log";
+import type { MapelResponse, SiswaResponse } from "./service/payload";
 
 // Helper token
 const TOKEN_KEY = "auth_token";
@@ -34,9 +37,9 @@ const App: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
-  const [routeParams, setRouteParams] = useState<Record<string, string>>({});
+  const [routeParams, setRouteParams] = useState<Record<string, unknown>>({});
 
-  const handleNavigate = (route: string, params?: Record<string, string>) => {
+  const handleNavigate = (route: string, params?: Record<string, unknown>) => {
     setActiveRoute(route);
     setRouteParams(params ?? {});
   };
@@ -121,7 +124,16 @@ const App: React.FC = () => {
       case "masterMapel":
         return <MasterMapel />;
       case "detailKelas":
-        return <DetailKelas kelasId={routeParams.kelasId} onNavigate={handleNavigate} />;
+        return <DetailKelas kelasId={routeParams.kelasId as string} onNavigate={handleNavigate} />;
+      case "logSiswa":
+        return <DetailLogSiswa 
+          onNavigate={handleNavigate} 
+          siswaId={routeParams.siswaId as string} 
+          kelasId={routeParams.kelasId as string} 
+          mapel={routeParams.mapel as MapelResponse} 
+          siswa={routeParams.siswa as SiswaResponse} />;
+      case "formDailyLog":
+        return <DailyLogFormLog onNavigate={handleNavigate} namaSiswa={routeParams.namaSiswa as string} />;
       default:
         return (
           <div style={styles.pageNotFound}>
