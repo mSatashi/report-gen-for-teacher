@@ -35,7 +35,6 @@ PRIOR_KNOWLEDGE   = 0.20  # P(L0) — default jika belum ada diagnostik
  
 
  
- 
 # ── SKILL PARAMETER ──────────────────────────────────────────────────────────
 
 class SkillParams:
@@ -93,6 +92,7 @@ class BKTEngine:
         skill_name: str,
         p_knowledge: float,
         score: float,
+        topic_list: List[str],
     ) -> Tuple[float, float]:
         """
         Update P(knowledge) untuk satu observasi.
@@ -126,6 +126,7 @@ class BKTEngine:
         skill_name: str,
         initial_knowledge: float,
         scores: List[float],
+        topic_list: List[str],
     ) -> float:
         """Update BKT dari semua skor historis secara berurutan."""
         p = initial_knowledge
