@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavItem[] = [
   { kind: "link", label: "Learning Plan", route: "learningPlan", icon: <IconCalendar /> },
   { kind: "section", label: "Master Data" },
   { kind: "link", label: "Kelas", route: "masterKelas", icon: <IconKelas /> },
+  { kind: "link", label: "Mata Pelajaran", route: "masterMapel", icon: <IconKelas /> },
   { kind: "link", label: "Siswa", route: "masterSiswa", icon: <IconStudents /> },
   { kind: "section", label: "Report" },
   { kind: "link", label: "Report Editor", route: "reportEditor", icon: <IconReport /> },

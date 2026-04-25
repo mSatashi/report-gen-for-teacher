@@ -1,49 +1,306 @@
 import { useEffect, useState } from "react";
-import { styles } from "./styles";
-import { IconChevron, IconClose, IconEdit, IconPlus, IconTrash, IconUsers } from "../../icons";
-import type { Kelas, Siswa } from "../../types";
+import { IconClose, IconEdit, IconPlus, IconTrash } from "../../icons";
 import { useKelasApi } from "./useKelasApi";
-import type { KelasResponse, SiswaResponse, Toast } from "../../service/payload";
-import { addSiswaKelas } from "../../service/kelasAPI";
-import { useSiswaApi } from "../master-siswa/useSiswaApi";
+import type { KelasResponse, Toast } from "../../service/payload";
 
-type ModalMode = "add-kelas" | "edit-kelas" | "add-siswa" | "edit-siswa" | null;
+type ModalMode = "add-kelas" | "edit-kelas" | null;
 
-// const jkBadge = (jk: string): React.CSSProperties => ({
-//   display: "inline-block",
-//   background: jk === "P" ? "#FDF2F8" : "#EFF8FF",
-//   color: jk === "P" ? "#D53F8C" : "#3182CE",
-//   borderRadius: "6px",
-//   padding: "2px 10px",
-//   fontSize: "11px",
-//   fontWeight: 700,
-// });
+// API returns hari as number: 1=Senin, 2=Selasa, ..., 7=Minggu
+const HARI_MAP: Record<number, string> = {
+  1: "Senin", 2: "Selasa", 3: "Rabu", 4: "Kamis",
+  5: "Jumat", 6: "Sabtu", 7: "Minggu",
+};
 
+const HARI_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 
-const emptyKelas = (): Omit<Kelas, "id" | "siswa"> => ({
-  nama: "", mata_pelajaran: "", pengajar_id: "", kredit: 0, jadwal: "",
+const HARI_COLORS: Record<string, { bg: string; border: string; label: string }> = {
+  Senin:  { bg: "#EEF2FF", border: "#818CF8", label: "#4338CA" },
+  Selasa: { bg: "#F0FDF4", border: "#4ADE80", label: "#15803D" },
+  Rabu:   { bg: "#FEF3C7", border: "#FCD34D", label: "#92400E" },
+  Kamis:  { bg: "#FDF2F8", border: "#F0ABFC", label: "#86198F" },
+  Jumat:  { bg: "#FFF7ED", border: "#FDBA74", label: "#9A3412" },
+  Sabtu:  { bg: "#F0F9FF", border: "#38BDF8", label: "#075985" },
+  Minggu: { bg: "#FFF1F2", border: "#FDA4AF", label: "#9F1239" },
+};
+
+const emptyKelasForm = () => ({
+  nama: "",
+  mata_pelajaran_id: "",
+  mata_pelajaran_obj: {
+    id: "",
+    nama_mata_pelajaran: "",
+    topik: [],
+    created_at: "",
+    updated_at: "",
+  },  
+  pengajar_id: "",
+  hari: "",
+  jam: "",
+  created_at: "",
 });
 
 let toastId = 0;
 
+const styles = {
+  root: {
+    fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+    background: "#F8FAFF",
+    minHeight: "100vh",
+    padding: "32px 28px",
+    color: "#1E293B",
+  } as React.CSSProperties,
+
+  header: {
+    marginBottom: "24px",
+  } as React.CSSProperties,
+
+  title: {
+    fontSize: "22px",
+    fontWeight: 700,
+    color: "#0F172A",
+    margin: 0,
+  } as React.CSSProperties,
+
+  subtitle: {
+    fontSize: "13px",
+    color: "#64748B",
+    margin: "4px 0 0",
+  } as React.CSSProperties,
+
+  statsRow: {
+    display: "flex",
+    gap: "12px",
+    marginBottom: "20px",
+    flexWrap: "wrap" as const,
+  } as React.CSSProperties,
+
+  statBadge: {
+    background: "#fff",
+    border: "1px solid #E2E8F0",
+    borderRadius: "10px",
+    padding: "10px 18px",
+    fontSize: "13px",
+    fontWeight: 600,
+    color: "#334155",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+  } as React.CSSProperties,
+
+  toolbar: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px",
+  } as React.CSSProperties,
+
+  btnPrimary: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    background: "#4F46E5",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    padding: "9px 16px",
+    fontSize: "13px",
+    fontWeight: 600,
+    cursor: "pointer",
+  } as React.CSSProperties,
+
+  scheduleGrid: {
+    display: "flex",
+    gap: "14px",
+    overflowX: "auto" as const,
+    paddingBottom: "12px",
+    alignItems: "flex-start",
+  } as React.CSSProperties,
+
+  dayColumn: {
+    minWidth: "160px",
+    flex: "1 1 160px",
+  } as React.CSSProperties,
+
+  dayHeader: {
+    textAlign: "center" as const,
+    fontWeight: 700,
+    fontSize: "12px",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase" as const,
+    padding: "8px 0 10px",
+    color: "#475569",
+  } as React.CSSProperties,
+
+  kelasCard: (hari: string) => ({
+    background: HARI_COLORS[hari]?.bg ?? "#F8FAFF",
+    border: `1.5px solid ${HARI_COLORS[hari]?.border ?? "#CBD5E1"}`,
+    borderRadius: "10px",
+    padding: "12px 13px",
+    marginBottom: "10px",
+    cursor: "pointer",
+    transition: "box-shadow 0.15s, transform 0.15s",
+    position: "relative" as const,
+  } as React.CSSProperties),
+
+  kelasNama: {
+    fontWeight: 700,
+    fontSize: "13px",
+    color: "#0F172A",
+    marginBottom: "3px",
+  } as React.CSSProperties,
+
+  kelasMaPel: {
+    fontSize: "12px",
+    color: "#334155",
+    fontWeight: 500,
+    marginBottom: "3px",
+  } as React.CSSProperties,
+
+  kelasJam: {
+    fontSize: "11px",
+    color: "#64748B",
+  } as React.CSSProperties,
+
+  kelasActions: {
+    display: "flex",
+    gap: "4px",
+    marginTop: "8px",
+  } as React.CSSProperties,
+
+  btnEdit: {
+    display: "flex",
+    alignItems: "center",
+    gap: "3px",
+    background: "#EFF6FF",
+    color: "#2563EB",
+    border: "1px solid #BFDBFE",
+    borderRadius: "5px",
+    padding: "3px 8px",
+    fontSize: "11px",
+    fontWeight: 600,
+    cursor: "pointer",
+  } as React.CSSProperties,
+
+  btnDanger: {
+    display: "flex",
+    alignItems: "center",
+    gap: "3px",
+    background: "#FFF1F2",
+    color: "#E11D48",
+    border: "1px solid #FECDD3",
+    borderRadius: "5px",
+    padding: "3px 8px",
+    fontSize: "11px",
+    fontWeight: 600,
+    cursor: "pointer",
+  } as React.CSSProperties,
+
+  emptyDay: {
+    textAlign: "center" as const,
+    color: "#CBD5E1",
+    fontSize: "12px",
+    padding: "20px 0",
+    border: "1.5px dashed #E2E8F0",
+    borderRadius: "10px",
+  } as React.CSSProperties,
+
+  overlay: {
+    position: "fixed" as const,
+    inset: 0,
+    background: "rgba(15,23,42,0.45)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+  } as React.CSSProperties,
+
+  modal: {
+    background: "#fff",
+    borderRadius: "16px",
+    padding: "28px 28px 24px",
+    width: "100%",
+    maxWidth: "420px",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+    position: "relative" as const,
+  } as React.CSSProperties,
+
+  modalTitle: {
+    fontSize: "17px",
+    fontWeight: 700,
+    color: "#0F172A",
+    marginBottom: "4px",
+  } as React.CSSProperties,
+
+  modalSubtitle: {
+    fontSize: "13px",
+    color: "#64748B",
+    marginBottom: "20px",
+  } as React.CSSProperties,
+
+  formGroup: { marginBottom: "14px" } as React.CSSProperties,
+  label: { fontSize: "12px", fontWeight: 600, color: "#475569", display: "block", marginBottom: "5px" } as React.CSSProperties,
+  input: {
+    width: "100%",
+    border: "1.5px solid #E2E8F0",
+    borderRadius: "8px",
+    padding: "9px 12px",
+    fontSize: "13px",
+    outline: "none",
+    boxSizing: "border-box" as const,
+    color: "#0F172A",
+  } as React.CSSProperties,
+
+  modalFooter: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "8px",
+    marginTop: "20px",
+  } as React.CSSProperties,
+
+  btnCancel: {
+    background: "#F1F5F9",
+    color: "#475569",
+    border: "none",
+    borderRadius: "8px",
+    padding: "9px 16px",
+    fontSize: "13px",
+    fontWeight: 600,
+    cursor: "pointer",
+  } as React.CSSProperties,
+
+  btnSave: {
+    background: "#4F46E5",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    padding: "9px 18px",
+    fontSize: "13px",
+    fontWeight: 600,
+    cursor: "pointer",
+  } as React.CSSProperties,
+
+  closeBtn: {
+    position: "absolute" as const,
+    top: "14px",
+    right: "14px",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "#94A3B8",
+    padding: "4px",
+  } as React.CSSProperties,
+};
+
 export default function MasterKelas() {
-  const [kelasList, setKelasList] = useState<Kelas[]>([]);
-  const [siswaList, setSiswaList] = useState<Siswa[]>([]);
-  const [siswaAll, setSiswaAll] = useState<Siswa[]>([]);
+  const [kelasList, setKelasList] = useState<KelasResponse[]>([]);
   const [, setToasts] = useState<Toast[]>([]);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [modal, setModal] = useState<ModalMode>(null);
-  const [kelasForm, setKelasForm] = useState(emptyKelas());
-  const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
+  const [kelasForm, setKelasForm] = useState(emptyKelasForm());
   const [editingKelasId, setEditingKelasId] = useState<string | null>(null);
-  const [, setEditingSiswaId] = useState<string | null>(null);
-  const [targetKelasId, setTargetKelasId] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "kelas" | "siswa"; kelasId: string; siswaId?: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ kelasId: string } | null>(null);
 
-  const { errorMsg, loadKelas, submitCreateKelas, submitUpdateKelas, submitDeleteKelas, loadSiswaKelas, submitDeleteSiswaKelas } = useKelasApi();
-  const { loadSiswa } = useSiswaApi();
-
-  // const isLoading = status === "loading";
+  const { errorMsg, loadKelas, submitCreateKelas, submitUpdateKelas, submitDeleteKelas } = useKelasApi();
 
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
@@ -51,74 +308,40 @@ export default function MasterKelas() {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
   };
 
-  const toggleExpand = (id: string) =>
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  useEffect(() => {
+    loadKelas().then((data) => {
+      if (data?.length) setKelasList(data);
+    });
+  }, []);
+
+  // Group kelas by hari (convert number → string via HARI_MAP)
+  const kelasByHari = HARI_ORDER.reduce<Record<string, KelasResponse[]>>((acc, hariStr) => {
+    acc[hariStr] = kelasList.filter((k) => HARI_MAP[Number(k.hari)] === hariStr);
+    return acc;
+  }, {});
+
+  // Only show days that have classes OR all days if none
+  // const activeDays = HARI_ORDER.filter((h) => kelasByHari[h].length > 0);
+  const displayDays = HARI_ORDER;
+
+  const totalSiswa = 0; // populated separately if needed
 
   // ── Kelas CRUD ──
   const openAddKelas = () => {
-    setKelasForm(emptyKelas());
+    setKelasForm(emptyKelasForm());
     setEditingKelasId(null);
     setModal("add-kelas");
   };
 
-  // ── Siswa CRUD ──
-  const openAddSiswa = (kelasId: string) => {
-    setEditingSiswaId(null);
-    setTargetKelasId(kelasId);
-    setModal("add-siswa");
-  };
-
-  const isModalKelas = modal === "add-kelas" || modal === "edit-kelas";
-  const isModalSiswa = modal === "add-siswa" || modal === "edit-siswa";
-
-  const mapApiToKelas = (data: KelasResponse): Kelas => ({
-    id: data.id,
-    nama: data.nama,
-    mata_pelajaran: data.mata_pelajaran,
-    pengajar_id: data.pengajar_id,
-    kredit: data.kredit,
-    jadwal: data.jadwal,
-    created_at: data.created_at,
-    siswa: [],
-  });
-
-  const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
-    id: data.id,
-    nama: data.nama,
-    email_address: data.email_address,
-    username: data.username,
-    usia: data.usia,
-    level: data.level,
-    credit_total: data.credit_total,
-    credit_used: data.credit_used,
-  });
-
-  useEffect(() => {
-    loadKelas().then((data) => {
-      if (data.length) setKelasList(data.map(mapApiToKelas));
-    });
-
-    loadSiswa().then((data) => {
-      if (data.length) setSiswaAll(data.map(mapApiToSiswa));
-    });
-
-    if (targetKelasId) {
-      loadSiswaKelas(targetKelasId).then((data) => {
-        if (data && data.length) setSiswaList(data.map(mapApiToSiswa));
-      });
-    }
-  }, [targetKelasId]);
-
-  const totalSiswa = kelasList.reduce((a, k) => a + k.siswa.length, 0);
-
-  const openEditKelas = (k: Kelas) => {
-    setKelasForm({ 
-      nama: k.nama, 
-      mata_pelajaran: k.mata_pelajaran, 
-      pengajar_id: k.pengajar_id, 
-      kredit: k.kredit, 
-      jadwal: k.jadwal, 
-      created_at: k.created_at 
+  const openEditKelas = (k: KelasResponse) => {
+    setKelasForm({     
+      nama: k.nama,
+      mata_pelajaran_id: k.mata_pelajaran_id ?? "",
+      mata_pelajaran_obj: k.mata_pelajaran_obj,
+      pengajar_id: k.pengajar_id,
+      hari: k.hari,
+      jam: k.jam,
+      created_at: k.created_at,
     });
     setEditingKelasId(k.id);
     setModal("edit-kelas");
@@ -127,28 +350,20 @@ export default function MasterKelas() {
   const saveKelas = async () => {
     if (!kelasForm.nama.trim()) return;
     if (editingKelasId) {
-      /** update */
       const result = await submitUpdateKelas(editingKelasId, kelasForm);
       if (result) {
         setKelasList((prev) =>
-          prev.map((k) =>
-            k.id === editingKelasId ? { ...k, ...mapApiToKelas(result), siswa: k.siswa } : k
-          )
+          prev.map((k) => k.id === editingKelasId ? result : k)
         );
         showToast("Kelas berhasil diperbarui ✓", "success");
-        setModal(null);
       } else {
         showToast(errorMsg ?? "Gagal memperbarui kelas", "error");
       }
     } else {
-      /** create */
       const result = await submitCreateKelas(kelasForm);
       if (result) {
-        const newKelas = mapApiToKelas(result);
-        setKelasList((prev) => [...prev, newKelas]);
-        setExpanded((prev) => ({ ...prev, [newKelas.id]: true }));
-        showToast(`Kelas ${newKelas.nama} berhasil ditambahkan ✓`, "success");
-        setModal(null);
+        setKelasList((prev) => [...prev, result]);
+        showToast(`Kelas ${result.nama} berhasil ditambahkan ✓`, "success");
       } else {
         showToast(errorMsg ?? "Gagal membuat kelas", "error");
       }
@@ -167,84 +382,27 @@ export default function MasterKelas() {
     setDeleteConfirm(null);
   };
 
-  const saveSiswa = async () => {
-    if (!targetKelasId) {
-      showToast("Kelas belum dipilih", "error");
-      return;
-    }
-    
-    for (const siswaId of selectedSiswaIds) {
-      const payload = { murid_id: siswaId };
-      const result = await addSiswaKelas(targetKelasId, payload);
-
-      if (result) {
-        showToast("Siswa berhasil ditambahkan ✓", "success");
-      } else {
-        showToast(errorMsg ?? "Gagal menambahkan siswa", "error");
-        return; // stop jika salah satu gagal
-      }
-      // try {
-      //   const result = await addSiswaKelas(targetKelasId, payload);
-      //   if (result) {
-      //     showToast("Siswa berhasil ditambahkan ✓", "success");
-      //   } else {
-      //     showToast(errorMsg ?? "Gagal menambahkan siswa", "error");
-      //     return; // stop jika salah satu gagal
-      //   }
-      //   // showToast("Siswa berhasil ditambahkan ✓", "success");
-      // } catch (err) {
-      //   console.log("Error detail:", err); // lihat pesan dari backend
-      //   showToast(err instanceof Error ? err.message : "Gagal menambahkan siswa", "error");
-      //   return;
-      // }
-    }
-    setModal(null);
-  };
-
-  const availableSiswa = siswaAll.filter(
-    (s) => !siswaList.some((ks) => ks.id === s.id)
-  );
-
-  const deleteSiswaKelas = async (id: string, idKelas: string) => {
-    const ok = await submitDeleteSiswaKelas(idKelas, id);
-    if (ok) {
-      setSiswaList((prev) => prev.filter((s) => s.id !== id));
-      showToast("Siswa berhasil dihapus", "success");
-    } else {
-      showToast(errorMsg ?? "Gagal menghapus siswa", "error");
-    }
-    setDeleteConfirm(null);
-  };
-
   return (
     <div style={styles.root}>
       {/* ── Header ── */}
       <div style={styles.header}>
-        <h2 style={styles.title}>Master Kelas &amp; Siswa</h2>
-        <p style={styles.subtitle}>Kelola data kelas dan daftar siswa per kelas</p>
+        <h2 style={styles.title}>Master Kelas</h2>
+        <p style={styles.subtitle}>Jadwal kelas berdasarkan hari</p>
       </div>
 
       {/* ── Stats ── */}
       <div style={styles.statsRow}>
-        <div style={styles.statCard}>
-          <div style={styles.statIcon}>🏫</div>
-          <div>
-            <div style={styles.statLabel}>Total Kelas</div>
-            <div style={styles.statValue}>{kelasList.length}</div>
-          </div>
+        <div style={styles.statBadge}>
+          🏫 Total Kelas: <span style={{ color: "#4F46E5" }}>{kelasList.length}</span>
         </div>
-        <div style={styles.statCard}>
-          <div style={{ ...styles.statIcon, background: "#F0FFF4", color: "#38A169" }}>👥</div>
-          <div>
-            <div style={styles.statLabel}>Total Siswa</div>
-            <div style={styles.statValue}>{totalSiswa}</div>
-          </div>
+        <div style={styles.statBadge}>
+          👥 Total Siswa: <span style={{ color: "#059669" }}>{totalSiswa}</span>
         </div>
       </div>
 
       {/* ── Toolbar ── */}
       <div style={styles.toolbar}>
-        <span style={{ fontSize: "14px", fontWeight: 600, color: "#6B7FA3" }}>
+        <span style={{ fontSize: "13px", color: "#94A3B8" }}>
           {kelasList.length} kelas ditemukan
         </span>
         <button style={styles.btnPrimary} onClick={openAddKelas}>
@@ -252,121 +410,109 @@ export default function MasterKelas() {
         </button>
       </div>
 
-      {/* ── Kelas List ── */}
-      {kelasList.length === 0 && (
-        <div style={{ ...styles.kelasCard, ...styles.emptyState }}>
-          <div style={{ fontSize: "32px", marginBottom: "8px" }}>🏫</div>
-          Belum ada kelas. Klik "Tambah Kelas" untuk memulai.
-        </div>
-      )}
+      {/* ── Schedule Grid ── */}
+      <div style={styles.scheduleGrid}>
+        {displayDays.map((hari) => {
+          const kelasHariIni = kelasByHari[hari];
+          const color = HARI_COLORS[hari] ?? { label: "#475569" };
+          return (
+            <div key={hari} style={styles.dayColumn}>
+              {/* Day Header */}
+              <div style={{ ...styles.dayHeader, color: color.label }}>
+                {hari}
+              </div>
 
-      {kelasList.map((kelas) => {
-        const isOpen = !!expanded[kelas.id];
-        return (
-          <div key={kelas.id} style={styles.kelasCard}>
-            {/* Header */}
-            <div style={styles.kelasHeader} onClick={() => { toggleExpand(kelas.id); setTargetKelasId(kelas.id); }}>
-              <div style={styles.kelasTitle}>
-                <div style={styles.kelasBadge}>Kelas {kelas.nama}</div>
-                <div style={styles.kelasMeta}>
-                  <span style={styles.metaItem}>
-                    Mata Pelajaran&nbsp;<span style={styles.metaLabel}>{kelas.mata_pelajaran || "–"}</span>
-                  </span>
-                  <span style={styles.metaItem}>
-                    Kredit&nbsp;<span style={styles.metaLabel}>{kelas.kredit || "–"}</span>
-                  </span>
-                  <span style={styles.metaItem}>
-                    Jadwal&nbsp;<span style={styles.metaLabel}>{kelas.jadwal}</span>
-                  </span>
-                  <span style={styles.siswaCount}>
-                    <IconUsers /> {siswaList.length} siswa
-                  </span>
-                </div>
-              </div>
-              <div style={styles.kelasActions}>
-                <button style={styles.btnEdit} onClick={(e) => { e.stopPropagation(); openEditKelas(kelas); }}>
-                  <IconEdit /> Edit
-                </button>
-                <button style={styles.btnDanger} onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ type: "kelas", kelasId: kelas.id }); }}>
-                  <IconTrash /> Hapus
-                </button>
-                <IconChevron open={isOpen} />
-              </div>
+              {/* Kelas Cards */}
+              {kelasHariIni.length === 0 ? (
+                <div style={styles.emptyDay}>–</div>
+              ) : (
+                kelasHariIni
+                  .sort((a, b) => a.jam.localeCompare(b.jam))
+                  .map((kelas) => (
+                    <div key={kelas.id} style={styles.kelasCard(hari)}>
+                      <div style={styles.kelasNama}>Kelas {kelas.nama}</div>
+                      <div style={styles.kelasMaPel}>
+                        {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "–"}
+                      </div>
+                      <div style={styles.kelasJam}>⏰ {kelas.jam}</div>
+
+                      {/* Topics if any */}
+                      {(kelas.mata_pelajaran_obj?.topik?.length ?? 0) > 0 && (
+                        <div style={{ marginTop: "5px", display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                          {kelas.mata_pelajaran_obj.topik.slice(0, 2).map((t) => (
+                            <span key={t} style={{
+                              fontSize: "10px",
+                              background: color.bg,
+                              border: `1px solid ${color.border}`,
+                              color: color.label,
+                              borderRadius: "4px",
+                              padding: "1px 6px",
+                              fontWeight: 500,
+                            }}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={styles.kelasActions}>
+                        <button
+                          style={styles.btnEdit}
+                          onClick={(e) => { e.stopPropagation(); openEditKelas(kelas); }}
+                        >
+                          <IconEdit /> Edit
+                        </button>
+                        <button
+                          style={styles.btnDanger}
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ kelasId: kelas.id }); }}
+                        >
+                          <IconTrash />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+              )}
             </div>
-
-            {/* Siswa Table */}
-            {isOpen && (
-              <>
-                <div style={styles.tableWrapper}>
-                  {siswaList.length === 0 ? (
-                    <div style={styles.emptyState}>Belum ada siswa di kelas ini.</div>
-                  ) : (
-                    <table style={styles.siswaTable}>
-                      <thead>
-                        <tr>
-                          <th style={styles.th}>#</th>
-                          <th style={styles.th}>Nama Siswa</th>
-                          <th style={styles.th}>Total Credit</th>
-                          <th style={styles.th}>Credit Used</th>
-                          <th style={styles.th}>Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {siswaList.map((s, i) => (
-                          <tr key={s.id}>
-                            <td style={{ ...styles.td, color: "#8A9BB0", fontWeight: 600 }}>{i + 1}</td>
-                            <td style={{ ...styles.td, fontWeight: 600 }}>{s.nama}</td>
-                            <td style={{ ...styles.td, fontFamily: "monospace", fontSize: "12px" }}>{s.credit_total || "–"}</td>
-                            <td style={{ ...styles.td, fontFamily: "monospace", fontSize: "12px" }}>{s.credit_used || "–"}</td>
-                            <td style={styles.td}>
-                              <div style={{ display: "flex", gap: "6px" }}>
-                                <button style={styles.btnDanger} onClick={() => setDeleteConfirm({ type: "siswa", kelasId: kelas.id, siswaId: s.id })}><IconTrash /></button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-                <div style={styles.addSiswaRow}>
-                  <button style={styles.btnSecondary} onClick={() => openAddSiswa(kelas.id)}>
-                    <IconPlus /> Tambah Siswa
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
       {/* ── Modal Kelas ── */}
-      {isModalKelas && (
+      {modal && (
         <div style={styles.overlay} onClick={() => setModal(null)}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button style={styles.closeBtn} onClick={() => setModal(null)}><IconClose /></button>
-            <div style={styles.modalTitle}>{modal === "add-kelas" ? "Tambah Kelas Baru" : "Edit Kelas"}</div>
+            <div style={styles.modalTitle}>
+              {modal === "add-kelas" ? "Tambah Kelas Baru" : "Edit Kelas"}
+            </div>
             <div style={styles.modalSubtitle}>Isi informasi kelas di bawah ini</div>
 
             <div style={styles.formGroup}>
               <label style={styles.label}>Nama Kelas *</label>
-              <input style={styles.input} placeholder="Masukkan nama kelas" value={kelasForm.nama}
-                onChange={(e) => setKelasForm((f) => ({ ...f, nama: e.target.value }))} />
+              <input
+                style={styles.input}
+                placeholder="Contoh: A, B, atau VII-A"
+                value={kelasForm.nama}
+                onChange={(e) => setKelasForm((f) => ({ ...f, nama: e.target.value }))}
+              />
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Mata Pelajaran *</label>
-              <input style={styles.input} placeholder="Masukkan nama mata pelajaran" value={kelasForm.mata_pelajaran}
-                onChange={(e) => setKelasForm((f) => ({ ...f, mata_pelajaran: e.target.value }))} />
+              <input
+                style={styles.input}
+                placeholder="Nama mata pelajaran"
+                value={kelasForm.mata_pelajaran}
+                onChange={(e) => setKelasForm((f) => ({ ...f, mata_pelajaran: e.target.value }))}
+              />
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Kredit *</label>
-              <input style={styles.input} placeholder="Masukkan jumlah sesi/kredit" value={kelasForm.kredit}
-                onChange={(e) => setKelasForm((f) => ({ ...f, kredit: Number(e.target.value) }))} />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Jadwal</label>
-              <input style={styles.input} placeholder="Masukkan jadwal" value={kelasForm.jadwal}
-                onChange={(e) => setKelasForm((f) => ({ ...f, jadwal: e.target.value }))} />
+              <label style={styles.label}>Jadwal (Hari & Jam)</label>
+              <input
+                style={styles.input}
+                placeholder="Contoh: Senin 10:00"
+                value={kelasForm.jadwal}
+                onChange={(e) => setKelasForm((f) => ({ ...f, jadwal: e.target.value }))}
+              />
             </div>
 
             <div style={styles.modalFooter}>
@@ -379,65 +525,22 @@ export default function MasterKelas() {
         </div>
       )}
 
-      {/* ── Modal Siswa ── */}
-      {isModalSiswa && (
-        <div style={styles.overlay} onClick={() => setModal(null)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <button style={styles.closeBtn} onClick={() => setModal(null)}><IconClose /></button>
-            <div style={styles.modalTitle}>{modal === "add-siswa" ? "Tambah Siswa" : "Edit Data Siswa"}</div>
-            <div style={styles.modalSubtitle}>
-              Kelas: <b>{kelasList.find((k) => k.id === targetKelasId)?.nama}</b>
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Siswa</label>
-              <select
-                multiple
-                style={{ ...styles.select, height: 150 }}
-                value={selectedSiswaIds}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
-                  setSelectedSiswaIds(selected);
-                }}
-              >
-                {availableSiswa.map((siswa) => (
-                  <option key={siswa.id} value={siswa.id}>
-                    {siswa.nama}
-                  </option>
-                ))}
-              </select>
-              <p style={{ fontSize: 12, color: "gray" }}>
-                Tahan Ctrl / Cmd untuk pilih lebih dari satu
-              </p>
-            </div>
-
-            <div style={styles.modalFooter}>
-              <button style={styles.btnCancel} onClick={() => setModal(null)}>Batal</button>
-              <button style={styles.btnSave} onClick={saveSiswa}>
-                {modal === "add-siswa" ? "Tambah Siswa" : "Simpan Perubahan"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Delete Confirm ── */}
       {deleteConfirm && (
         <div style={styles.overlay} onClick={() => setDeleteConfirm(null)}>
-          <div style={{ ...styles.modal, maxWidth: "380px" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: "36px", textAlign: "center", marginBottom: "12px" }}>⚠️</div>
+          <div style={{ ...styles.modal, maxWidth: "360px" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: "32px", textAlign: "center", marginBottom: "10px" }}>⚠️</div>
             <div style={{ ...styles.modalTitle, textAlign: "center" }}>Konfirmasi Hapus</div>
-            <div style={{ ...styles.modalSubtitle, textAlign: "center", marginBottom: "0" }}>
-              {deleteConfirm.type === "kelas"
-                ? `Hapus kelas "${kelasList.find((k) => k.id === deleteConfirm.kelasId)?.nama}"? Semua siswa dalam kelas ini akan ikut terhapus.`
-                : `Hapus siswa "${siswaList.find((s) => s.id === deleteConfirm.siswaId)?.nama}"?`}
+            <div style={{ ...styles.modalSubtitle, textAlign: "center" }}>
+              Hapus kelas "
+              {kelasList.find((k) => k.id === deleteConfirm.kelasId)?.nama}"?
             </div>
             <div style={{ ...styles.modalFooter, justifyContent: "center" }}>
               <button style={styles.btnCancel} onClick={() => setDeleteConfirm(null)}>Batal</button>
-              <button style={{ ...styles.btnSave, background: "linear-gradient(135deg, #E53E3E, #C53030)" }}
-                onClick={() => {
-                  if (deleteConfirm.type === "kelas") deleteKelas(deleteConfirm.kelasId);
-                  else deleteSiswaKelas(deleteConfirm.siswaId!, deleteConfirm.kelasId);
-                }}>
+              <button
+                style={{ ...styles.btnSave, background: "#E11D48" }}
+                onClick={() => deleteKelas(deleteConfirm.kelasId)}
+              >
                 Ya, Hapus
               </button>
             </div>
