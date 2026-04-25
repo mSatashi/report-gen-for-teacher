@@ -18,7 +18,7 @@ import MasterMapel from "./pages/master-mapel";
 import DetailKelas from "./pages/detail-kelas";
 import DetailLogSiswa from "./pages/detail-log-siswa";
 import DailyLogFormLog from "./pages/form-daily-log";
-import type { DailyLogResponse, MapelResponse, SiswaResponse } from "./service/payload";
+import type { DailyLogResponse, KelasResponse, MapelResponse, SiswaResponse } from "./service/payload";
 import PlanDetail from "./pages/plan-detail";
 
 // Helper token
@@ -145,7 +145,7 @@ const App: React.FC = () => {
         return <PlanDetail 
           onNavigate={handleNavigate} 
           // namaSiswa={routeParams.namaSiswa as string}
-          // kelasId={routeParams.kelasId as string}
+          kelas={routeParams.kelas as KelasResponse}
           // siswa={routeParams.siswa as SiswaResponse}
           // dataLog={routeParams.dataLog as DailyLogResponse | null}
           // mapel={routeParams.mapel as MapelResponse}

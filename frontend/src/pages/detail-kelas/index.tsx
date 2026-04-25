@@ -353,7 +353,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onNavigate?.("planDetail") }}
+                onClick={(e) => { e.stopPropagation(); onNavigate?.("planDetail", { kelas }) }}
                 // onClick={() => setDeleteConfirm({ siswaId: s.id })}
                 style={styles.btnDanger}
               >
