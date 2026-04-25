@@ -165,7 +165,7 @@ class LogPertemuanUpdate(BaseModel):
     tingkat_pemahaman: Optional[str] = None
     tingkat_keterlibatan: Optional[str] = None
     kompetensi_dicapai: Optional[str] = None
-    target_materi_berikutnya: Optional[MataPelajaranResponse] = None
+    target_materi_berikutnya: Optional[str] = None
     kendala: Optional[str] = None
     catatan: Optional[str] = None
     durasi_menit: Optional[int] = None
@@ -250,7 +250,6 @@ class RencanaStudiResponse(BaseModel):
 
     id: str
     kelas_id: str
-    murid_id: Optional[str] = None
     waktu: datetime
     daftar_rekomendasi_materi: Optional[List[str]] = None
     estimasi_waktu_selesai: Optional[datetime] = None

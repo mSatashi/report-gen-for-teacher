@@ -10,7 +10,6 @@ from app.models.models import (
     DraftAnalisis, KnowledgeState, LogPertemuan,
     RencanaStudi, Kelas, Murid,
 )
-from app.ai.ai_service import narrative_engine, planner_engine
 # [INTEGRASI] Pakai BKTEngine dengan parameter per-skill (dari bkt_engine.py)
 from app.ai.bkt_engine import bkt_engine, PRIOR_KNOWLEDGE, CORRECT_THRESHOLD
  
@@ -48,7 +47,8 @@ def update_knowledge_states(
     topik_scores: Dict[str, List[float]] = {}
     for log in logs:
         topik = log.topik.strip()
-        topik_scores.setdefault(topik, []).append(float(log.nilai))
+        nilai = float(log.nilai) if log.nilai is not None else 0.0
+        topik_scores.setdefault(topik, []).append(float(nilai))
  
     # 3. Ambil P(L0) dari diagnostic_result jika ada
     from app.models.models import DiagnosticResult
@@ -68,7 +68,7 @@ def update_knowledge_states(
             KnowledgeState.topik    == topik,
         ).first()
  
-        sp = bkt_engine._get_params(topik)  # ambil params yang dipakai
+        sp = bkt_engine._get_params(topik, list(topik_scores.keys()))  # ambil params yang dipakai
  
         if ks:
             ks.p_knowledge = p_final
@@ -123,99 +123,70 @@ def get_rencana_by_kelas(
 # ═══════════════════════════════════════════════════════════════════════════════
 # GENERATE RENCANA STUDI (F004)
 # ═══════════════════════════════════════════════════════════════════════════════
- 
+
 async def generate_rencana_studi(
     db: Session,
     kelas_id: str,
     murid_id: Optional[str] = None,
 ) -> RencanaStudi:
     """
-    F004 — Generate rencana studi adaptif (BKT + PSO via LLM).
- 
-    Alur:
-    1. Query Kelas & LogPertemuan dari PostgreSQL
-    2. NarrativeEngine → analisis log → draft_analisis
-    3. BKTEngine → update knowledge_state di PostgreSQL
-    4. PlannerEngine → rencana studi (PSO heuristik via LLM)
-    5. Simpan RencanaStudi ke PostgreSQL
+    F004 — Generate rencana studi adaptif tanpa LLM.
+    Tetap gunakan BKTEngine untuk update knowledge_state.
+    Isi RencanaStudi: id, kelas_id, daftar_rekomendasi_materi, jadwal_mingguan,
+    estimasi_waktu_selesai, version
     """
     # 1. Validasi kelas
     kelas = db.query(Kelas).filter(Kelas.id == kelas_id).first()
     if not kelas:
         raise ValueError(f"Kelas {kelas_id} tidak ditemukan")
- 
+
     # 2. Ambil log pertemuan dari PostgreSQL
     q = db.query(LogPertemuan).filter(LogPertemuan.kelas_id == kelas_id)
     if murid_id:
         q = q.filter(LogPertemuan.murid_id == murid_id)
     logs = q.order_by(LogPertemuan.tanggal.asc()).all()
- 
-    log_data = [
-        {
-            "tanggal": str(l.tanggal),
-            "topik":   l.topik,
-            "nilai":   float(l.nilai) if l.nilai else None,
-            "catatan": l.catatan,
-        }
-        for l in logs
-    ]
- 
-    # 3. Analisis log → draft_analisis via LLM
-    draft_text = await narrative_engine.analyze_class_data(
-        nama_kelas=kelas.nama,
-        log_data=log_data,
-    )
-    draft = DraftAnalisis(
-        id=str(uuid.uuid4()),
-        kelas_id=kelas_id,
-        murid_id=murid_id,
-        konten=draft_text,
-    )
-    db.add(draft)
-    db.flush()
- 
-    # 4. Update knowledge_state via BKTEngine (data masuk ke PostgreSQL)
+
+    # 3. Update knowledge_state via BKTEngine
     if murid_id:
         update_knowledge_states(db, murid_id, kelas_id)
         knowledge_state = get_knowledge_state(db, murid_id)
     else:
         knowledge_state = {}
- 
-    # 5. Sisa sesi = kredit kelas - jumlah log yang sudah ada
-    sisa_sesi = max(1, (kelas.kredit or 20) - len(logs))
- 
-    # 6. Nama murid
-    nama_murid = "Seluruh Kelas"
-    if murid_id:
-        murid = db.query(Murid).filter(Murid.id == murid_id).first()
-        if murid:
-            nama_murid = murid.nama or murid.pengguna.username
- 
-    # 7. Generate rencana via PlannerEngine (LLM + PSO heuristik)
-    rencana_data = await planner_engine.generate_rencana_studi(
-        nama_murid=nama_murid,
-        mata_pelajaran=kelas.mata_pelajaran or kelas.nama,
-        draft_analisis=draft_text,
-        knowledge_state=knowledge_state,
-        sisa_sesi=sisa_sesi,
-    )
- 
-    # 8. Simpan RencanaStudi ke PostgreSQL
+
+    # 4. Buat rekomendasi materi sederhana dari topik yang ada di log
+    topik_counts: Dict[str, int] = {}
+    for log in logs:
+        if log.topik is not None:
+            topik_counts[log.topik.strip()] = topik_counts.get(log.topik.strip(), 0) + 1
+
+    daftar_rekomendasi_materi: List[str] = [
+        t for t, _ in sorted(topik_counts.items(), key=lambda x: x[1])
+    ][:5]  # ambil 5 topik dengan frekuensi terendah
+
+    # 5. Buat jadwal mingguan sederhana
+    jadwal_mingguan = {
+        "minggu_1": daftar_rekomendasi_materi[:2],
+        "minggu_2": daftar_rekomendasi_materi[2:4],
+        "minggu_3": daftar_rekomendasi_materi[4:],
+    }
+
+    # 6. Estimasi waktu selesai (default 4 minggu)
+    estimasi_waktu_selesai = datetime.now() + timedelta(weeks=4)
+
+    # 7. Hitung versi
     versi = db.query(RencanaStudi).filter(
         RencanaStudi.kelas_id == kelas_id,
         RencanaStudi.murid_id == murid_id,
     ).count() + 1
- 
-    estimasi_minggu = rencana_data.get("estimasi_selesai_minggu", 4)
+
+    # 8. Simpan RencanaStudi ke PostgreSQL
     rencana = RencanaStudi(
         id=str(uuid.uuid4()),
         kelas_id=kelas_id,
         murid_id=murid_id,
-        draft_analisis_id=draft.id,
-        daftar_rekomendasi_materi=rencana_data.get("rekomendasi_materi", []),
-        jadwal_mingguan=rencana_data.get("jadwal_mingguan", {}),
-        catatan_analisa=rencana_data.get("catatan_analisa", draft_text),
-        estimasi_waktu_selesai=datetime.utcnow() + timedelta(weeks=estimasi_minggu),
+        daftar_rekomendasi_materi=daftar_rekomendasi_materi,
+        jadwal_mingguan=jadwal_mingguan,
+        estimasi_waktu_selesai=estimasi_waktu_selesai,
         version=versi,
     )
     db.add(rencana)

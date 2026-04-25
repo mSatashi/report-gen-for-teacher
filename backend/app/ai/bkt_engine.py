@@ -31,29 +31,18 @@ DEFAULT_SLIP      = 0.05  # P(S) — titik tengah rentang 0.05–0.1
 DEFAULT_GUESS     = 0.10  # P(G) — titik tengah rentang 0.1–0.2
 PRIOR_KNOWLEDGE   = 0.20  # P(L0) — default jika belum ada diagnostik
  
-# ── URUTAN SKILL KURIKULUM ────────────────────────────────────────────────────
-# Dari skill_graph di 01_generate_data.py — dipakai untuk hitung difficulty
-SKILL_ORDER = [
-    "bilangan_bulat", "penjumlahan", "pengurangan", "perkalian", "pembagian",
-    "pecahan", "persentase", "aljabar_dasar",
-    "persamaan_linear_satu_variabel", "perbandingan", "aritmatika_sosial",
-    "himpunan", "keliling_luas", "teorema_pythagoras", "statistika_dasar",
-    "pengolahan_data_dasar", "peluang_dasar", "bangun_ruang",
-    "eksponen_logaritma", "fungsi_kuadrat", "sistem_persamaan_linear",
-    "matriks", "barisan_deret", "trigonometri", "limit", "turunan", "integral",
-]
  
  
-def _difficulty(skill_name: str) -> float:
+def _difficulty(skill_name: str, topic_list: List[str]) -> float:
     """
-    Difficulty 0.2–1.0 berdasarkan posisi dalam SKILL_ORDER.
+    Difficulty 0.2–1.0 berdasarkan posisi dalam daftar topik kelas.
     Semakin lanjut → semakin sulit → difficulty lebih tinggi.
     """
-    if skill_name in SKILL_ORDER:
-        idx = SKILL_ORDER.index(skill_name)
-        return 0.2 + 0.8 * (idx / max(len(SKILL_ORDER) - 1, 1))
+    if skill_name in topic_list:
+        idx = topic_list.index(skill_name)
+        return 0.2 + 0.8 * (idx / max(len(topic_list) - 1, 1))
     return 0.5   # default untuk skill di luar daftar
- 
+
  
 # ── SKILL PARAMETER ──────────────────────────────────────────────────────────
  
@@ -63,9 +52,9 @@ class SkillParams:
     Slip naik seiring difficulty (topik sulit → lebih mudah salah walau tahu).
     """
  
-    def __init__(self, skill_name: str):
+    def __init__(self, skill_name: str, topic_list: List[str]):
         self.skill_name = skill_name
-        d = _difficulty(skill_name)
+        d = _difficulty(skill_name, topic_list)
  
         self.learn = DEFAULT_LEARN
         self.slip  = float(np.clip(DEFAULT_SLIP  + d * 0.05, 0.01, 0.15))
@@ -94,9 +83,9 @@ class BKTEngine:
         self._params: Dict[str, SkillParams] = {}
         self._custom = custom_params or {}
  
-    def _get_params(self, skill_name: str) -> SkillParams:
+    def _get_params(self, skill_name: str, topic_list: List[str]) -> SkillParams:
         if skill_name not in self._params:
-            sp = SkillParams(skill_name)
+            sp = SkillParams(skill_name, topic_list)
             if skill_name in self._custom:
                 c = self._custom[skill_name]
                 sp.override(c["learn"], c["slip"], c["guess"])
@@ -108,20 +97,9 @@ class BKTEngine:
         skill_name: str,
         p_knowledge: float,
         score: float,
+        topic_list: List[str],
     ) -> Tuple[float, float]:
-        """
-        Update P(knowledge) untuk satu observasi.
-        Formula identik dengan update_bkt() di 02_bkt_tuning.py.
- 
-        Args:
-            skill_name  : Nama topik
-            p_knowledge : P(L_{n-1}) — penguasaan sebelum sesi ini
-            score       : Nilai 0–100
- 
-        Returns:
-            (p_knowledge_baru, p_correct_pred)
-        """
-        sp      = self._get_params(skill_name)
+        sp      = self._get_params(skill_name, topic_list)
         correct = 1 if score >= CORRECT_THRESHOLD else 0
  
         # Bayes update (Corbett & Anderson 1995, ref [14] laporan)
@@ -156,10 +134,10 @@ class BKTEngine:
  
     def get_all_params(self) -> List[Dict]:
         """Kembalikan semua parameter skill (dipakai endpoint GET /bkt/params)."""
-        skills = SKILL_ORDER if not self._params else list(self._params.keys())
+        skills = list(self._params.keys())
         result = []
         for sname in skills:
-            sp = self._get_params(sname)
+            sp = self._get_params(sname, [])  # topic_list tidak diperlukan untuk endpoint ini
             result.append({
                 "skill_name": sp.skill_name,
                 "learn":      round(sp.learn, 4),

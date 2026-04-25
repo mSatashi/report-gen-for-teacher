@@ -71,24 +71,12 @@ def finalize_laporan(db: Session, laporan_id: str) -> Optional[Laporan]:
 # ── Generate Laporan (F003) ───────────────────────────────────────────────────
  
 async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
-    """
-    F003 — Generate laporan perkembangan otomatis via NarrativeEngine.
- 
-    Alur:
-    1. Ambil Murid dari PostgreSQL
-    2. Ambil LogPertemuan dalam periode dari PostgreSQL
-    3. Ambil KnowledgeState (BKT) dari PostgreSQL
-    4. [BARU] Ambil RencanaStudi terbaru → pso_recommended_route
-    5. Kirim ke NarrativeEngine dengan pso_route + report_style
-    6. Simpan hasil ke tabel laporan (PostgreSQL)
-    """
+
     # 1. Data murid (dari PostgreSQL)
     murid = db.query(Murid).filter(Murid.id == data.murid_id).first()
     if not murid:
         raise ValueError(f"Murid dengan id {data.murid_id} tidak ditemukan")
- 
     nama_murid     = murid.nama or murid.pengguna.username
-    mata_pelajaran = "Umum"
  
     if data.kelas_id:
         from app.models.models import Kelas
