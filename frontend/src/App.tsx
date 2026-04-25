@@ -15,6 +15,7 @@ import MasterKelas from "./pages/master-kelas";
 import { setUnauthorizedHandler } from "./service/apiFetch";
 import MasterSiswa from "./pages/master-siswa";
 import MasterMapel from "./pages/master-mapel";
+import DetailKelas from "./pages/detail-kelas";
 
 // Helper token
 const TOKEN_KEY = "auth_token";
@@ -32,6 +33,13 @@ const App: React.FC = () => {
   const [activeRoute, setActiveRoute] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
+
+  const [routeParams, setRouteParams] = useState<Record<string, string>>({});
+
+  const handleNavigate = (route: string, params?: Record<string, string>) => {
+    setActiveRoute(route);
+    setRouteParams(params ?? {});
+  };
 
   const isLoggedIn = !!user;
 
@@ -107,11 +115,13 @@ const App: React.FC = () => {
       case "reportEditor":
         return <ReportEditor />;
       case "masterKelas":
-        return <MasterKelas />;
+        return <MasterKelas onNavigate={handleNavigate} />;
       case "masterSiswa":
         return <MasterSiswa />;
       case "masterMapel":
         return <MasterMapel />;
+      case "detailKelas":
+        return <DetailKelas kelasId={routeParams.kelasId} onNavigate={handleNavigate} />;
       default:
         return (
           <div style={styles.pageNotFound}>

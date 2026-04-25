@@ -295,16 +295,30 @@ const styles = {
     color: "#0F172A",
     appearance: "auto" as const,
   } as React.CSSProperties,
+  
+  btnDetail: {
+    display: "flex",
+    alignItems: "center",
+    gap: "3px",
+    background: "#F5F3FF",
+    color: "#7C3AED",
+    border: "1px solid #DDD6FE",
+    borderRadius: "5px",
+    padding: "3px 8px",
+    fontSize: "11px",
+    fontWeight: 600,
+    cursor: "pointer",
+  } as React.CSSProperties,
 };
 
-export default function MasterKelas() {
+export default function MasterKelas({ onNavigate }: { onNavigate?: (route: string, params?: Record<string, string>) => void }) {
   const [kelasList, setKelasList] = useState<KelasResponse[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [modal, setModal] = useState<ModalMode>(null);
   const [kelasForm, setKelasForm] = useState<KelasPayload>(emptyKelasForm());
   const [editingKelasId, setEditingKelasId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ kelasId: string } | null>(null);
-    const [mataPelajaranList, setMataPelajaranList] = useState<MataPelajaranObj[]>([]);
+  const [mataPelajaranList, setMataPelajaranList] = useState<MataPelajaranObj[]>([]);
 
   const { errorMsg, loadKelas, submitCreateKelas, submitUpdateKelas, submitDeleteKelas } = useKelasApi();
     const { loadMapelList } = useMapelApi();
@@ -330,13 +344,9 @@ export default function MasterKelas() {
     return acc;
   }, {});
 
-  console.log(kelasList);
-
-  // Only show days that have classes OR all days if none
-  // const activeDays = HARI_ORDER.filter((h) => kelasByHari[h].length > 0);
   const displayDays = HARI_ORDER;
 
-  const totalSiswa = 0; // populated separately if needed
+  // const totalSiswa = 0;
 
   // ── Kelas CRUD ──
   const openAddKelas = () => {
@@ -406,9 +416,9 @@ export default function MasterKelas() {
         <div style={styles.statBadge}>
           🏫 Total Kelas: <span style={{ color: "#4F46E5" }}>{kelasList.length}</span>
         </div>
-        <div style={styles.statBadge}>
+        {/* <div style={styles.statBadge}>
           👥 Total Siswa: <span style={{ color: "#059669" }}>{totalSiswa}</span>
-        </div>
+        </div> */}
       </div>
 
       {/* ── Toolbar ── */}
@@ -447,26 +457,13 @@ export default function MasterKelas() {
                       </div>
                       <div style={styles.kelasJam}>⏰ {kelas.jam}</div>
 
-                      {/* Topics if any */}
-                      {/* {(kelas.mata_pelajaran_obj?.topik?.length ?? 0) > 0 && (
-                        <div style={{ marginTop: "5px", display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                          {kelas.mata_pelajaran_obj.topik.slice(0, 2).map((t) => (
-                            <span key={t} style={{
-                              fontSize: "10px",
-                              background: color.bg,
-                              border: `1px solid ${color.border}`,
-                              color: color.label,
-                              borderRadius: "4px",
-                              padding: "1px 6px",
-                              fontWeight: 500,
-                            }}>
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      )} */}
-
                       <div style={styles.kelasActions}>
+                        <button
+                          style={styles.btnDetail}
+                          onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId: kelas.id }); }}
+                        >
+                          Detail
+                        </button>
                         <button
                           style={styles.btnEdit}
                           onClick={(e) => { e.stopPropagation(); openEditKelas(kelas); }}
@@ -509,22 +506,6 @@ export default function MasterKelas() {
                 autoComplete="nama"
               />
             </div>
-            {/* <div style={styles.formGroup}>
-              <label style={styles.label}>Mata Pelajaran *</label>
-              <input
-                style={styles.input}
-                placeholder="Nama mata pelajaran"
-                value={kelasForm.mata_pelajaran_id}
-                onChange={(e) => setKelasForm((f) => ({ ...f, mata_pelajaran_id: e.target.value }))}
-                required
-                autoComplete="mata_pelajaran_id"
-              />
-              {mataPelajaranList.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nama_mata_pelajaran}
-                </option>
-              ))}
-            </div> */}
             <div style={styles.formGroup}>
               <label style={styles.label}>Mata Pelajaran *</label>
               <select
@@ -538,7 +519,6 @@ export default function MasterKelas() {
                   }));
                 }}
                 required
-                // disabled={loadingMapel}
               >
                 <option value="">
                   -- Pilih Mata Pelajaran --
