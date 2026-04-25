@@ -2,7 +2,7 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
  
-from app.ai.ollama_client import narrative_client, planner_client
+from app.ai.ollama_client import narrative_client
  
 logger = logging.getLogger(__name__)
  
@@ -216,7 +216,7 @@ Format: paragraf padat, maksimal 300 kata.
         Template statis jika LLM tidak tersedia.
         [INTEGRASI] Disertakan info BKT + PSO sesuai _template_report() di 04_llm_evaluation.py.
         """
-        nilai_list = [l.get("nilai") for l in logs if l.get("nilai") is not None]
+        nilai_list = [float(l["nilai"]) for l in logs if isinstance(l.get("nilai"), (int, float))]
         rata       = round(sum(nilai_list) / len(nilai_list), 1) if nilai_list else "-"
         topik_list = list({l.get("topik") for l in logs if l.get("topik")})
  
@@ -237,7 +237,7 @@ Format: paragraf padat, maksimal 300 kata.
             f"Mata Pelajaran: {mapel}\n\n"
             f"Siswa telah mengikuti {len(logs)} sesi pembelajaran "
             f"dengan rata-rata nilai {rata}.\n"
-            f"Topik yang dipelajari: {', '.join(topik_list[:5]) or '-'}."
+            f"Topik yang dipelajari: {', '.join([t for t in topik_list[:5] if t]) or '-'}."
             f"{bkt_line}{pso_line}\n\n"
             f"(Laporan ini dibuat secara otomatis. Model AI tidak tersedia.)"
         )
