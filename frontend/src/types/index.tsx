@@ -31,12 +31,27 @@ export type NavItem =
 export interface Kelas {
   id: string;
   nama: string;
-  mata_pelajaran: string;
+  mata_pelajaran_id?: string;
+  mata_pelajaran_obj: {
+    id: string;
+    nama_mata_pelajaran: string;
+    topik: string[];
+    created_at: string;
+    updated_at: string;
+  },  
   pengajar_id: string;
-  kredit: number;
-  jadwal: string;
-  created_at?: string;
-  siswa: Siswa[];
+  hari: string;
+  jam: string;
+  created_at: string;
+
+  // id: string;
+  // nama: string;
+  // mata_pelajaran: string;
+  // pengajar_id: string;
+  // kredit: number;
+  // jadwal: string;
+  // created_at?: string;
+  // siswa: Siswa[];
 }
 
 export interface Siswa {

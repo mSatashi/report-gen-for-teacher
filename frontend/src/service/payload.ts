@@ -2,16 +2,30 @@ import type { Activity, Student } from "../types";
 
 export interface KelasPayload {
   nama: string;
-  mata_pelajaran: string;
-  kredit: number;
-  jadwal: string;
+  mata_pelajaran_id?: string;
+  hari: string;
+  jam: string;
+
+  // nama: string;
+  // mata_pelajaran_id?: string;
+  // mata_pelajaran_obj: {
+  //   id: string;
+  //   nama_mata_pelajaran: string;
+  //   topik: string[];
+  //   created_at: string;
+  //   updated_at: string;
+  // },  
+  // pengajar_id: string;
+  // hari: string;
+  // jam: string;
+  // created_at: string;
 }
 
 export interface KelasResponse {
   id: string;
   nama: string;
-  mata_pelajaran_id: string;
-  mata_pelajaran_obj: MataPelajaranObj;
+  mata_pelajaran_id?: string;
+  mata_pelajaran_obj?: MataPelajaranObj;
   pengajar_id: string;
   hari: string;
   jam: string;
@@ -28,6 +42,7 @@ export interface MataPelajaranObj {
 
 
 export interface Toast { id: number; message: string; type: "success" | "error" }
+export interface ToastMsg { id: number; msg: string; type: "success" | "error" }
 
 export interface SiswaPayload {
   email_address: string;
