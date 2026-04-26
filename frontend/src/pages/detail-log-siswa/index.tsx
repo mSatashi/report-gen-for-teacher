@@ -1,47 +1,74 @@
-import React, { useState } from "react";
-import type { TingkatPemahaman } from "../components/types";
-import { PENGUASAAN_BADGE, btnAddStyle } from "../components/constants";
-import type { Kelas, Siswa } from "../../../types";
-import type { DailyLogResponse } from "../../../service/payload";
+import { useEffect, useState } from "react";
+import { useDailyLogSiswa } from "./useDailyLogSiswa";
+import type { DailyLogResponse, MapelResponse, SiswaResponse } from "../../service/payload";
+import type { TingkatPemahaman } from "../daily-log/components/types";
+import { btnAddStyle, PENGUASAAN_BADGE } from "../daily-log/components/constants";
+import { styles } from "./styles";
+import { deleteDailyLogApi } from "../../service/dailyLogAPI";
+import type { Toast } from "../../types";
+import { IconTrash } from "../../icons";
 
 interface DailyLogDetailSiswaProps {
-  dataSiswa: Siswa;
-  dataKelas?: Kelas | null;
-  logDataSiswa: DailyLogResponse[];          // semua log — difilter by siswa + idMapel
-  onBack: () => void;           // kembali ke listSiswa
-  onBackToIndex: () => void;  
-  onAddLog: () => void;
-  onEditLog: (logId: number) => void;
+  siswa: SiswaResponse;
+  mapel: MapelResponse;
+  siswaId: string;
+  kelasId: string;
+  onNavigate?: (route: string, params?: Record<string, unknown>) => void;
 }
 
 const TABS = ["Semua", "Sangat Paham", "Paham", "Cukup", "Perlu Review"] as const;
 type Tab = (typeof TABS)[number];
 
-const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
-  dataSiswa,
-  dataKelas,
-  logDataSiswa,
-  onBackToIndex,
-  onBack,
-  onAddLog,
-  onEditLog,
-}) => {
+let toastId = 0;
+
+export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, onNavigate }: DailyLogDetailSiswaProps) {
+  const [dailyList, setDailyList] = useState<DailyLogResponse[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ logId: string } | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const { errorMsg, loadLogSiswa } = useDailyLogSiswa();
+
+  useEffect(() => {  
+      loadLogSiswa(siswaId).then((data) => {
+        if (data?.length) setDailyList(data);
+      });
+  
+    }, []);
+
 
   const [activeTab, setActiveTab] = useState<Tab>("Semua");
 
-  const siswaLogs = logDataSiswa.filter(
-    (l) => l.murid_id === dataSiswa.nama
-  );
+  // const dataLogSiswa = dailyList.filter(
+  //   (l) => l.murid_id === siswaId
+  // );
+
+  const showToast = (message: string, type: "success" | "error") => {
+    const id = ++toastId;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
+  };
 
   const countByLevel = (level: TingkatPemahaman) =>
-    siswaLogs.filter((l) => l.tingkat_pemahaman as TingkatPemahaman === level).length;
+    dailyList.filter((l) => l.tingkat_pemahaman as TingkatPemahaman === level).length;
 
   const filtered =
     activeTab === "Semua"
-      ? siswaLogs
-      : siswaLogs.filter((l) => l.tingkat_pemahaman === activeTab);
+      ? dailyList
+      : dailyList.filter((l) => l.tingkat_pemahaman === activeTab);
 
-  const initials = dataSiswa.nama.split(" ").map((w) => w[0]).slice(0, 2).join("");
+  const initials = siswa.nama.split(" ").map((w) => w[0]).slice(0, 2).join("");
+
+  const deleteLog = async (logId: string) => {
+    try {
+      await deleteDailyLogApi(logId);
+      setDailyList((prev) => prev.filter((k) => k.id !== logId));
+      showToast("Log berhasil dihapus", "success");
+    } catch {
+      showToast(errorMsg ?? "Gagal menghapus log", "error");
+    } finally {
+      setDeleteConfirm(null);
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
@@ -51,15 +78,17 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
         <div>
           {/* Breadcrumb: Daily Log › Matematika › Aisya Putri */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={onBackToIndex}>
+            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} 
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog"); }}
+            >
               Daily Log
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
-            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={onBack}>
-              {dataKelas?.mata_pelajaran}
+            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onNavigate?.("listSiswa"); }}>
+              {mapel.nama_mata_pelajaran}
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
-            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{dataSiswa.nama}</span>
+            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{siswa.nama}</span>
           </div>
 
           {/* Siswa info row */}
@@ -69,20 +98,25 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
             </div>
             <div>
               <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: "0 0 2px" }}>
-                {dataSiswa.nama}
+                {siswa.nama}
               </h2>
               <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
-                {dataSiswa.level} · {dataKelas?.mata_pelajaran}
+                {siswa.education_level} · {mapel.nama_mata_pelajaran}
               </p>
             </div>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={onBack} style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId }) }}
+            style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>
             ← Kembali
           </button>
-          <button onClick={onAddLog} style={btnAddStyle}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog", { namaSiswa: siswa.nama, mapel: mapel, kelasId, siswa }) }}
+            style={btnAddStyle}
+            >
             + Tambah Log
           </button>
         </div>
@@ -94,7 +128,7 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
         {/* Stat cards */}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", flexShrink: 0 }}>
           {[
-            { label: "Total Log",    value: siswaLogs.length,          bg: "#eff6ff", color: "#3b82f6" },
+            { label: "Total Log",    value: dailyList.length,          bg: "#eff6ff", color: "#3b82f6" },
             { label: "Sangat Paham", value: countByLevel("Sangat Paham"), bg: "#dcfce7", color: "#15803d" },
             { label: "Paham",        value: countByLevel("Paham"),        bg: "#dbeafe", color: "#1d4ed8" },
             { label: "Cukup",        value: countByLevel("Cukup"),        bg: "#fef9c3", color: "#ca8a04" },
@@ -114,7 +148,7 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20, flexShrink: 0 }}>
             {TABS.map((tab) => {
               const active = activeTab === tab;
-              const count  = tab === "Semua" ? siswaLogs.length : countByLevel(tab as TingkatPemahaman);
+              const count  = tab === "Semua" ? dailyList.length : countByLevel(tab as TingkatPemahaman);
               const badge  = tab !== "Semua" ? PENGUASAAN_BADGE[tab as TingkatPemahaman] : null;
               return (
                 <button
@@ -160,6 +194,7 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
               <tbody>
                 {filtered.map((log, idx) => {
                   const badge = PENGUASAAN_BADGE[log.tingkat_pemahaman as TingkatPemahaman];
+                  // const badge = PENGUASAAN_BADGE["Sangat Paham"];
                   return (
                     <tr key={log.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "12px 14px", color: "#6b7280" }}>{idx + 1}</td>
@@ -180,10 +215,16 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
                       </td>
                       <td style={{ padding: "12px 14px" }}>
                         <button
-                          onClick={() => onEditLog(log.id)}
+                          onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog", { namaSiswa: siswa.nama, mapel: mapel, kelasId, siswa, dataLog: log }) }}
                           style={{ background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
                         >
                           Edit
+                        </button>
+                        <button
+                          style={styles.btnDanger}
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ logId: log.id }); }}
+                        >
+                          <IconTrash />
                         </button>
                       </td>
                     </tr>
@@ -204,8 +245,78 @@ const DailyLogDetailSiswa: React.FC<DailyLogDetailSiswaProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ── Delete Confirm ── */}
+      {deleteConfirm && (
+        <div style={styles.overlay}>
+          <div style={{ ...styles.modal, maxWidth: "360px" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: "32px", textAlign: "center", marginBottom: "10px" }}>⚠️</div>
+            <div style={{ ...styles.modalTitle, textAlign: "center" }}>Konfirmasi Hapus</div>
+            <div style={{ ...styles.modalSubtitle, textAlign: "center" }}>
+              Hapus log ? 
+              {/* "{dailyList.find((k) => k.id === deleteConfirm.logId)?.nama}"? */}
+            </div>
+            <div style={{ ...styles.modalFooter, justifyContent: "center" }}>
+              <button style={styles.btnCancel} onClick={() => setDeleteConfirm(null)}>Batal</button>
+              <button
+                style={{ ...styles.btnSave, background: "#E11D48" }}
+                onClick={() => deleteLog(deleteConfirm.logId)}
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Toast Notifications ── */}
+      <div style={{
+        position: "fixed",
+        bottom: "24px",
+        right: "24px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        zIndex: 2000,
+      }}>
+        {toasts.map((t) => (
+          <div key={t.id} style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            background: t.type === "success" ? "#F0FDF4" : "#FFF1F2",
+            border: `1.5px solid ${t.type === "success" ? "#4ADE80" : "#FDA4AF"}`,
+            color: t.type === "success" ? "#15803D" : "#9F1239",
+            borderRadius: "10px",
+            padding: "12px 16px",
+            fontSize: "13px",
+            fontWeight: 600,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+            minWidth: "260px",
+            maxWidth: "360px",
+            animation: "slideIn 0.2s ease",
+          }}>
+            <span style={{ fontSize: "16px" }}>
+              {t.type === "success" ? "✅" : "❌"}
+            </span>
+            <span style={{ flex: 1 }}>{t.message}</span>
+            <button
+              onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "inherit",
+                opacity: 0.6,
+                fontSize: "14px",
+                padding: "0 2px",
+              }}
+            >✕</button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
-export default DailyLogDetailSiswa;
+// export default DailyLogDetailSiswa;

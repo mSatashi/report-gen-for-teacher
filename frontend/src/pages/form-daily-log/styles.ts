@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { inputStyle } from "../components/constants";
+import { inputStyle } from "../daily-log/components/constants";
 
 export const styles: Record<string, CSSProperties> = {
   lockedFieldStyle: { 

@@ -1,17 +1,15 @@
-import type { Activity, Student } from "../types";
-
 export interface KelasPayload {
   nama: string;
-  mata_pelajaran: string;
-  kredit: number;
-  jadwal: string;
+  mata_pelajaran_id?: string;
+  hari: string;
+  jam: string;
 }
 
 export interface KelasResponse {
   id: string;
   nama: string;
-  mata_pelajaran_id: string;
-  mata_pelajaran_obj: MataPelajaranObj;
+  mata_pelajaran_id?: string;
+  mata_pelajaran_obj?: MataPelajaranObj;
   pengajar_id: string;
   hari: string;
   jam: string;
@@ -28,6 +26,7 @@ export interface MataPelajaranObj {
 
 
 export interface Toast { id: number; message: string; type: "success" | "error" }
+export interface ToastMsg { id: number; msg: string; type: "success" | "error" }
 
 export interface SiswaPayload {
   email_address: string;
@@ -54,20 +53,13 @@ export interface messageResponse {
   message: string;
 }
 
-export interface DailyLogPayload {
-  // siswa: string;
-  // mapel: string;
-  // catatanGuru?: string;
-  // pemahaman: string;
-  // durasi: string;
-  // metode: string;
-  // keterlibatan: string;
-  
+export interface DailyLogPayload { 
   kelas_id: string;
   murid_id: string;
+  mata_pelajaran_id: string;
   tanggal: string;
   topik?: string;
-  nilai: Float32Array;
+  nilai: number;
   tingkat_pemahaman: string;
   tingkat_keterlibatan: string;
   kompetensi_dicapai: string;
@@ -80,22 +72,13 @@ export interface DailyLogPayload {
 
 
 export interface DailyLogResponse {
-  id: number;
-  // siswa: string;
-  // idMapel: number;
-  // mapel: string;
-  // materi: string;
-  // catatan: string;
-  // tingkat_penguasaan: string;
-  // tanggal: string;
-  // durasi: string;
-  // metode: string;
-  // keterlibatan: string;
+  id: string;
   kelas_id: string;
   murid_id: string;
+  mata_pelajaran_id: string;
   tanggal: string;
   topik?: string;
-  nilai: Float32Array;
+  nilai: number;
   tingkat_pemahaman: string;
   tingkat_keterlibatan: string;
   kompetensi_dicapai: string;
@@ -144,13 +127,32 @@ export interface ReportGeneratorPayload {
 
 export interface DashboardResponse {  
   total_siswa: number;
-  log_hari_ini: number;
-  plan_aktif: number;
-  report_pending: number;
+  log_hari_ini: string;
+  plan_aktif: string;
+  report_pending: string;
   // aktivitas_terbaru: Record<string, string[]>;
   // progress_siswa: Record<string, string[]>;
-  aktivitas_terbaru: Activity[]; // ← pakai type Activity
-  progress_siswa: Student[];
+  aktivitas_terbaru: AktivitasTerbaruResponse[]; // ← pakai type Activity
+  progress_siswa: ProgressDashboardResponse[]; // ← pakai type ProgressDashboardResponse
+}
+
+export interface ProgressDashboardResponse {  
+  avg_nilai: number;
+  murid_id: string;
+  nama: string;
+  status: string;
+  total_sesi: number;
+}
+
+export interface AktivitasTerbaruResponse {  
+  tanggal: string;
+  topik: string;
+  kelas_id: string;
+  murid_id: string;
+  nilai: number;
+  tingkat_pemahaman: string;
+  tingkat_keterlibatan: string;
+  nama_mata_pelajaran: string;
 }
 
 export interface MapelResponse {  

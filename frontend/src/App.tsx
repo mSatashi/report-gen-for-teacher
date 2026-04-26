@@ -4,7 +4,6 @@ import Header from "./components/header";
 import Footer from "./components/footer";
 import DashboardPage from "./pages/dashboard/Dashboard";
 import { NAV_ITEMS } from "./data"; 
-import DailyLogPage from "./pages/daily-log";
 import LearningPlan from "./pages/learning-plan";
 import ReportEditor from "./pages/report-editor";
 import { sidebarStyles, styles } from "./styles";
@@ -15,6 +14,11 @@ import MasterKelas from "./pages/master-kelas";
 import { setUnauthorizedHandler } from "./service/apiFetch";
 import MasterSiswa from "./pages/master-siswa";
 import MasterMapel from "./pages/master-mapel";
+import DetailKelas from "./pages/detail-kelas";
+import DetailLogSiswa from "./pages/detail-log-siswa";
+import DailyLogFormLog from "./pages/form-daily-log";
+import type { DailyLogResponse, KelasResponse, MapelResponse, SiswaResponse } from "./service/payload";
+import PlanDetail from "./pages/plan-detail";
 
 // Helper token
 const TOKEN_KEY = "auth_token";
@@ -32,6 +36,13 @@ const App: React.FC = () => {
   const [activeRoute, setActiveRoute] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
+
+  const [routeParams, setRouteParams] = useState<Record<string, unknown>>({});
+
+  const handleNavigate = (route: string, params?: Record<string, unknown>) => {
+    setActiveRoute(route);
+    setRouteParams(params ?? {});
+  };
 
   const isLoggedIn = !!user;
 
@@ -100,18 +111,42 @@ const App: React.FC = () => {
     switch (activeRoute) {
       case "home":
         return <DashboardPage namaLengkap={user?.username ?? "Pengguna"} />;
-      case "dailyLog":
-        return <DailyLogPage onNavigate={setActiveRoute} />;
       case "learningPlan":
         return <LearningPlan />;
       case "reportEditor":
         return <ReportEditor />;
       case "masterKelas":
-        return <MasterKelas />;
+        return <MasterKelas onNavigate={handleNavigate} />;
       case "masterSiswa":
         return <MasterSiswa />;
       case "masterMapel":
         return <MasterMapel />;
+      case "detailKelas":
+        return <DetailKelas kelasId={routeParams.kelasId as string} onNavigate={handleNavigate} />;
+      case "logSiswa":
+        return <DetailLogSiswa 
+          onNavigate={handleNavigate} 
+          siswaId={routeParams.siswaId as string} 
+          kelasId={routeParams.kelasId as string} 
+          mapel={routeParams.mapel as MapelResponse} 
+          siswa={routeParams.siswa as SiswaResponse} />;
+      case "formDailyLog":
+        return <DailyLogFormLog 
+          onNavigate={handleNavigate} 
+          namaSiswa={routeParams.namaSiswa as string}
+          kelasId={routeParams.kelasId as string}
+          siswa={routeParams.siswa as SiswaResponse}
+          dataLog={routeParams.dataLog as DailyLogResponse | null}
+          mapel={routeParams.mapel as MapelResponse} />;
+      case "planDetail":
+        return <PlanDetail 
+          onNavigate={handleNavigate} 
+          // namaSiswa={routeParams.namaSiswa as string}
+          kelas={routeParams.kelas as KelasResponse}
+          // siswa={routeParams.siswa as SiswaResponse}
+          // dataLog={routeParams.dataLog as DailyLogResponse | null}
+          // mapel={routeParams.mapel as MapelResponse}
+           />;
       default:
         return (
           <div style={styles.pageNotFound}>

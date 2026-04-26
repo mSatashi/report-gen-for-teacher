@@ -22,3 +22,27 @@ export async function createDailyLog(
   }
   return res.json();
 }
+
+/** update daily log siswa */
+export async function updateDailyLog(
+  id: string,
+  payload: DailyLogPayload
+): Promise<DailyLogResponse> {
+  const res = await apiFetch(`/logs/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message ?? `Gagal memperbarui log (${res.status})`);
+  }
+  return res.json();
+}
+
+/** DELETE /logs/:id — hapus log */
+export async function deleteDailyLogApi(id: string): Promise<void> {
+  const res = await apiFetch(`/logs/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`Gagal menghapus log (${res.status})`);
+}

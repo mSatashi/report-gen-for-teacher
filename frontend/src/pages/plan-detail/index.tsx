@@ -1,38 +1,39 @@
-import React, { useEffect } from "react";
+// import React, { useEffect } from "react";
+// import type { Kelas } from "../../types";
+// import type { GenerateplanResponse } from "../../service/payload";
 // import { SCHEDULE } from "../constants";
 // import type { Session } from "../types";
-import type { GenerateplanResponse } from "../../../service/payload";
-import type { Kelas } from "../../../types";
+
+import { useEffect, useState } from "react";
+import type { GenerateplanResponse, KelasResponse } from "../../service/payload";
+import { useLearningPlan } from "./useLearningPlan";
+// import type { Session } from "react-router-dom";
 
 interface Props {
-  kelas: Kelas;
-  plan: GenerateplanResponse | null;
-  onBack: () => void;
-  onGenerated?: (kelasId: string) => void;
+  onNavigate?: (route: string, params?: Record<string, unknown>) => void;
+  kelas: KelasResponse;
 }
 
 // ─── Session card ─────────────────────────────────────────────────────────────
 
 // const SessionCard: React.FC<{ session: Session }> = ({ session: s }) => (
 //   <div style={{
-//     background: s.color,
-//     borderLeft: `4px solid ${s.borderColor}`,
+//     // background: s.color,
+//     // borderLeft: `4px solid ${s.borderColor}`,
 //     borderRadius: 10,
 //     padding: "12px 14px",
 //   }}>
 //     <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, display: "block", marginBottom: 4 }}>
-//       {s.time}
+//       {'s.time'}
 //     </span>
 //     <span style={{ fontSize: 14, fontWeight: 700, color: "#111827", display: "block", marginBottom: 3 }}>
-//       {s.subject}
+//       {'s.subject'}
 //     </span>
 //     <span style={{ fontSize: 12, color: "#6b7280", fontStyle: "italic" }}>
-//       {s.note}
+//       {'s.note'}
 //     </span>
 //   </div>
 // );
-
-// ─── Empty slot ───────────────────────────────────────────────────────────────
 
 // const EmptySlot: React.FC = () => (
 //   <div style={{
@@ -48,13 +49,23 @@ interface Props {
 // );
 
 // ─── Subject Schedule page ────────────────────────────────────────────────────
+export default function PlanDetail({ onNavigate, kelas }: Props) {
+const [planList, setPlanList] = useState<GenerateplanResponse[]>([]);
 
-const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
-  console.log('plan', plan)
-  
+  const { loadPlan } = useLearningPlan();
+
   useEffect(() => {
-    onGenerated?.(kelas.id);
-  }, [kelas.id, onGenerated]);
+    loadPlan(kelas.id).then((data) => {
+      if (data?.length) setPlanList(data);
+    });
+  }, []);
+
+  const latestPlan = planList
+    ?.sort((a, b) => b.version - a.version)[0];
+
+  // useEffect(() => {
+  //   onGenerated?.(kelas.id);
+  // }, [kelas.id, onGenerated]);
 
   // const filteredSchedule = plan.map((day) => ({
   //   ...day,
@@ -77,13 +88,15 @@ const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
   // }, 0);
   // const totalHours = (totalMinutes / 60).toFixed(1);
 
+  console.log("kelas di plan detail:", planList);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 20 }}>
 
       {/* Back + Header */}
       <div style={{ flexShrink: 0 }}>
         <button
-          onClick={onBack}
+          onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId: kelas.id }); }}
           style={{
             background: "none", border: "none", cursor: "pointer",
             color: "#6b7280", fontSize: 13, fontWeight: 600,
@@ -106,7 +119,7 @@ const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
           </div> */}
           <div>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: "#111827", margin: "0 0 3px" }}>
-              {kelas.nama}
+              {kelas?.mata_pelajaran_obj?.nama_mata_pelajaran }
             </h2>
             <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>
               Jadwal mingguan
@@ -172,10 +185,11 @@ const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
         </div>
 
         {/* Day headers */}
+        {Object.entries(latestPlan?.jadwal_mingguan ?? {}).map(([mingguKey]) => (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 12 }}>
-          {plan?.daftar_rekomendasi_materi.map((val) => (
+          {/* {planList?..map((val) => ( */}
             <div
-              key={val}
+              key={mingguKey}
               style={{
                 // background: day.sessions.length > 0 ? subject.bgColor : "#f3f4f6",
                 // border: day.sessions.length > 0 ? `1px solid ${subject.borderColor}33` : "none",
@@ -187,26 +201,25 @@ const PlanDetail: React.FC<Props> = ({ kelas, plan, onBack, onGenerated }) => {
                 // color: day.sessions.length > 0 ? subject.color : "#6b7280",
               }}
             >
-              {val}
+              {mingguKey}
             </div>
-          ))}
+          {/* ))} */}
         </div>
+        ))}
 
         {/* Session columns */}
-        {/* <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-          {filteredSchedule.map((day) => (
-            <div key={day.label} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {day.sessions.length > 0
-                ? day.sessions.map((session, i) => <SessionCard key={i} session={session} />)
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+          {/* {latestPlan?.jadwal_mingguan && Object.entries(latestPlan.jadwal_mingguan).map(([mingguKey, sessions]) => (
+            <div key={mingguKey} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {sessions.length > 0
+                ? sessions.map((session, i) => <SessionCard key={i} session={session} />)
                 : <EmptySlot />
               }
             </div>
-          ))}
-        </div> */}
+          ))} */}
+        </div>
       </div>
 
     </div>
   );
 };
-
-export default PlanDetail;

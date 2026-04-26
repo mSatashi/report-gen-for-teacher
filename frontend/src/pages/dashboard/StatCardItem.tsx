@@ -1,5 +1,4 @@
 import React from "react";
-import type { StatCard } from "../types";
 
 const badgeColors: Record<string, { bg: string; text: string }> = {
   green:  { bg: "#dcfce7", text: "#16a34a" },
@@ -8,11 +7,20 @@ const badgeColors: Record<string, { bg: string; text: string }> = {
   red:    { bg: "#fee2e2", text: "#dc2626" },
 };
 
+export interface StatCard {
+  label: string;
+  value: number | string;
+  badge: { count: number | string; text: string; color: "green" | "blue" | "yellow" | "red" };
+  bg: string;
+  iconColor: string;
+  icon: React.ReactNode;
+}
+
 interface StatCardItemProps {
   card: StatCard;
 }
 
-const StatCardItem2: React.FC<StatCardItemProps> = ({ card }) => {
+const StatCardItem: React.FC<StatCardItemProps> = ({ card }) => {
   const bc = badgeColors[card.badge.color];
 
   return (
@@ -56,4 +64,4 @@ const StatCardItem2: React.FC<StatCardItemProps> = ({ card }) => {
   );
 };
 
-export default StatCardItem2;
+export default StatCardItem;

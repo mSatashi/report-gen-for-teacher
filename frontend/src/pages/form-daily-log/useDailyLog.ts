@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 
 import type { DailyLogPayload, DailyLogResponse, SiswaResponse } from "../../service/payload";
 import { fetchSiswaByKelas } from "../../service/kelasAPI";
-import { createDailyLog, fetchLogSiswa } from "../../service/dailyLogAPI";
+import { createDailyLog, fetchLogSiswa, updateDailyLog } from "../../service/dailyLogAPI";
 
 export type ApiStatus = "idle" | "loading" | "success" | "error";
 
@@ -12,6 +12,7 @@ interface UseDailyLogReturn {
   loadSiswaByKelas: (kelasId: string) => Promise<SiswaResponse[]>;
   loadLogSiswa: (siswaId: string) => Promise<DailyLogResponse[]>;
   submitCreateLog: (payload: DailyLogPayload) => Promise<DailyLogResponse | null>;
+  submitUpdateLog: (id: string, payload: DailyLogPayload) => Promise<DailyLogResponse | null>;
   resetStatus: () => void; 
 }
 
@@ -70,12 +71,29 @@ export function useDailyLog(): UseDailyLogReturn {
     }
   }, []);
 
+  const submitUpdateLog = useCallback(
+  async (id: string, payload: DailyLogPayload): Promise<DailyLogResponse | null> => {
+    setStatus("loading");
+    setErrorMsg(null);
+    try {
+      const data = await updateDailyLog(id, payload);
+      setStatus("success");
+      return data;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Gagal memperbarui log";
+      setStatus("error");
+      setErrorMsg(msg);
+      return null;
+    }
+  }, []);
+
   return {
     status,
     errorMsg,
     loadSiswaByKelas,
     loadLogSiswa,
     submitCreateLog,
+    submitUpdateLog,
     resetStatus,
   };
 }
