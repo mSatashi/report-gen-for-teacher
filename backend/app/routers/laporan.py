@@ -1,6 +1,4 @@
-"""
-laporan.py — Router untuk Laporan Perkembangan (F003, F005, F006, F007)
-"""
+import os 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -70,27 +68,25 @@ def download_pdf(
     if not lap:
         raise HTTPException(status_code=404, detail="Laporan tidak ditemukan")
 
-    # Generate PDF jika belum ada
+    # Logika pengecekan file yang lebih bersih
+    need_build = False
     if not lap.pdf_path:
+        need_build = True
+    elif not os.path.exists(lap.pdf_path):
+        need_build = True
+
+    if need_build:
         pdf_path = generate_pdf(lap)
         if not pdf_path:
             raise HTTPException(status_code=500, detail="Gagal generate PDF")
         lap.pdf_path = pdf_path
         db.commit()
-    else:
-        import os
-        if not os.path.exists(lap.pdf_path):
-            lap.pdf_path = generate_pdf(lap)
-            db.commit()
 
     return FileResponse(
         path=lap.pdf_path,
         media_type="application/pdf",
         filename=f"laporan_{laporan_id}.pdf",
     )
-
-
-# ── POST ──────────────────────────────────────────────────────────────────────
 
 @router.post("/generate", response_model=LaporanResponse, status_code=201)
 async def buat_laporan(
@@ -100,13 +96,15 @@ async def buat_laporan(
 ):
     """F003 — Generate laporan perkembangan otomatis via AI."""
     try:
+        # Jika AI gagal, generate_laporan akan melempar error di sini
         laporan = await generate_laporan(db, data)
         return laporan
     except ValueError as e:
+        # Menangani error input/data tidak ditemukan (404)
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        # Menangani kegagalan AI (sekarang akan menghasilkan 500 yang benar)
         raise HTTPException(status_code=500, detail=f"Gagal generate laporan: {str(e)}")
-
 
 # ── PUT ───────────────────────────────────────────────────────────────────────
 
