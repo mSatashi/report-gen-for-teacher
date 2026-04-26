@@ -7,7 +7,7 @@
 
 ```
 frontend/
-├── dist/                        ← Build output
+├── dist/                        
 ├── node_modules/
 ├── public/
 │   ├── assets/
@@ -15,11 +15,6 @@ frontend/
 │   ├── favicon.svg
 │   └── icons.svg
 ├── src/
-│   ├── App.css
-│   ├── App.tsx
-│   ├── index.css
-│   ├── main.tsx
-│   ├── styles.ts
 │   ├── assets/
 │   │   ├── css/
 │   │   ├── images/
@@ -45,22 +40,7 @@ frontend/
 │   │   └── MainLayout-tx.tsx
 │   ├── pages/
 │   │   ├── daily-log/
-│   │   │   ├── components/
-│   │   │   ├── daily-log-index/
-│   │   │   ├── detail-log-siswa/
-│   │   │   ├── form/
-│   │   │   ├── form-makul/
-│   │   │   ├── index.tsx
-│   │   │   ├── list-siswa/
-│   │   │   └── useDailyLog.ts
-│   │   ├── daily-log copy/
-│   │   │   ├── components/
-│   │   │   ├── daily-log-index/
-│   │   │   ├── detail-log-siswa/
-│   │   │   ├── form/
-│   │   │   ├── form-makul/
-│   │   │   ├── index.tsx
-│   │   │   └── list-siswa/
+│   │   │   └── components/
 │   │   ├── dashboard/
 │   │   │   ├── ActivityItem.tsx
 │   │   │   ├── Dashboard.tsx
@@ -123,11 +103,16 @@ frontend/
 │   │   └── siswaAPI.ts
 │   ├── types/
 │   │   └── index.tsx
-│   └── ui/
-│       ├── ActivityItem.tsx
-│       ├── Notifications.tsx
-│       ├── StatCardItem.tsx
-│       └── StudentRow.tsx
+│   ├── ui/
+│   │   ├── ActivityItem.tsx
+│   │   ├── Notifications.tsx
+│   │   ├── StatCardItem.tsx
+│   │   └── StudentRow.tsx
+│   ├── App.css
+│   ├── App.tsx
+│   ├── index.css
+│   ├── main.tsx
+│   └── styles.ts
 ├── Dockerfile
 ├── eslint.config.js
 ├── index.html
