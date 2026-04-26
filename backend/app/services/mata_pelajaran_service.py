@@ -83,47 +83,85 @@ def get_mata_pelajaran_by_id(
     return MataPelajaranResponse.model_validate(mapel)
  
  
+from app.services.topik_service import tambah_prasyarat, hapus_prasyarat
+from app.models.models import Topik, TopikPrasyarat
+
 def update_mata_pelajaran(db: Session, mapel_id: str, data: MataPelajaranUpdate) -> MataPelajaranResponse:
     mapel = db.query(MataPelajaran).filter(MataPelajaran.id == mapel_id).first()
     if not mapel:
         raise HTTPException(status_code=404, detail="Mata pelajaran tidak ditemukan")
 
-    # 1. Update Nama Mata Pelajaran
+    # 1. Update Identitas Mapel
     if data.nama_mata_pelajaran:
         mapel.nama_mata_pelajaran = data.nama_mata_pelajaran
 
-    # 2. Update/Tambah Topik & Prasyarat
     if data.topik is not None:
+        # 2. Ambil data topik yang ada saat ini di DB
+        topik_lama_db = db.query(Topik).filter(Topik.mata_pelajaran_id == mapel_id).all()
+        # Mapping untuk mempermudah pencarian (ID -> Objek) dan (Nama -> Objek)
+        map_id_to_topik = {t.id: t for t in topik_lama_db}
+        map_nama_to_topik = {t.nama.lower(): t for t in topik_lama_db}
+        
+        id_topik_yang_dipertahankan = set()
+
+        # 3. Proses Sinkronisasi (Update atau Create)
         for t_item in data.topik:
-            target_topik_id = t_item.id
+            target_topik = None
             
-            # A. Jika topik baru (tidak ada ID), buat dulu
-            if not target_topik_id:
-                target_topik_id = str(uuid.uuid4())
-                baru_topik = Topik(
-                    id=target_topik_id,
+            # Cek berdasarkan ID dulu (jika ada)
+            if t_item.id and t_item.id in map_id_to_topik:
+                target_topik = map_id_to_topik[t_item.id]
+            # Jika ID tidak ada/null, cek berdasarkan Nama (untuk mencegah duplikasi)
+            elif t_item.nama.lower() in map_nama_to_topik:
+                target_topik = map_nama_to_topik[t_item.nama.lower()]
+            
+            if target_topik:
+                # Update data yang sudah ada
+                target_topik.nama = t_item.nama
+                target_topik.difficulty_index = t_item.difficulty_index
+                id_topik_yang_dipertahankan.add(target_topik.id)
+            else:
+                # Benar-benar topik baru
+                new_id = str(uuid.uuid4())
+                target_topik = Topik(
+                    id=new_id,
                     mata_pelajaran_id=mapel_id,
                     nama=t_item.nama,
                     difficulty_index=t_item.difficulty_index
                 )
-                db.add(baru_topik)
-                db.flush() # Agar ID tersimpan sementara untuk proses prasyarat
-            else:
-                # B. Jika topik lama, update datanya
-                t_db = db.query(Topik).filter(Topik.id == target_topik_id).first()
-                if t_db:
-                    t_db.nama = t_item.nama
-                    t_db.difficulty_index = t_item.difficulty_index
+                db.add(target_topik)
+                id_topik_yang_dipertahankan.add(new_id)
+            
+            db.flush() # Penting agar ID baru terdaftar di session untuk relasi prasyarat
 
-            # C. PROSES PRASYARAT (Menggunakan fungsi dari topik_service)
-            if t_item.prasyarat_ids:
+        # 4. Hapus Topik yang tidak dikirim lagi oleh Frontend
+        for t_old in topik_lama_db:
+            if t_old.id not in id_topik_yang_dipertahankan:
+                db.delete(t_old)
+
+        db.flush()
+
+        # 5. Proses Prasyarat (setelah semua ID topik stabil/tidak berubah)
+        for t_item in data.topik:
+            # Cari objek topik yang sedang diproses
+            current_topik = None
+            if t_item.id:
+                current_topik = db.query(Topik).filter(Topik.id == t_item.id).first()
+            else:
+                current_topik = db.query(Topik).filter(
+                    Topik.mata_pelajaran_id == mapel_id, 
+                    Topik.nama == t_item.nama
+                ).first()
+
+            if current_topik and t_item.prasyarat_ids is not None:
+                # Bersihkan relasi prasyarat lama agar tidak duplikat
+                db.query(TopikPrasyarat).filter(TopikPrasyarat.topik_id == current_topik.id).delete()
+                
                 for p_id in t_item.prasyarat_ids:
-                    # Memanggil fungsi existing agar validasi DFS tetap jalan
                     try:
-                        tambah_prasyarat(db, target_topik_id, p_id)
-                    except HTTPException:
-                        # Abaikan jika prasyarat sudah ada atau terjadi siklus
-                        # agar proses update lainnya tidak berhenti total
+                        # Panggil fungsi existing untuk validasi graf
+                        tambah_prasyarat(db, current_topik.id, p_id)
+                    except Exception:
                         continue
 
     db.commit()
