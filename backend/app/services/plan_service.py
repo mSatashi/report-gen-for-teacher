@@ -3,38 +3,29 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
  
-import numpy as np
 from sqlalchemy.orm import Session
- 
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
+
 from app.models.models import (
-    DraftAnalisis, KnowledgeState, LogPertemuan,
-    RencanaStudi, Kelas, Murid,
+    KnowledgeState, LogPertemuan, RencanaStudi, Kelas, KelasMurid,
+    TopikPrasyarat, Topik
 )
-# [INTEGRASI] Pakai BKTEngine dengan parameter per-skill (dari bkt_engine.py)
-from app.ai.bkt_engine import bkt_engine, PRIOR_KNOWLEDGE, CORRECT_THRESHOLD
+from app.ai.bkt_engine import bkt_engine, PRIOR_KNOWLEDGE
+from app.ai.pso_engine import run_pso_algorithm
  
 logger = logging.getLogger(__name__)
  
- 
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# KNOWLEDGE STATE — Query & Update dari PostgreSQL
+# 1. KNOWLEDGE STATE — UPDATE & GETTER
 # ═══════════════════════════════════════════════════════════════════════════════
  
-def update_knowledge_states(
-    db: Session,
-    murid_id: str,
-    kelas_id: Optional[str] = None,
-) -> None:
+def update_knowledge_states(db: Session, murid_id: str, kelas_id: Optional[str] = None) -> None:
     """
-    Hitung ulang knowledge_state untuk satu murid berdasarkan LogPertemuan di DB.
- 
-    [INTEGRASI] Menggunakan bkt_engine.batch_update() (per-skill params)
-    yang logika Bayes-nya identik dengan update_bkt() di 02_bkt_tuning.py.
- 
-    Dipanggil setiap kali log baru ditambahkan (dari routers/log.py).
-    Data disimpan ke tabel knowledge_state di PostgreSQL.
+    Dipanggil dari log_service.py setiap kali guru menyimpan Log Pertemuan baru.
+    Murni memperbarui tabel knowledge_state berdasarkan hitungan BKT.
     """
-    # 1. Ambil semua log dengan nilai (dari PostgreSQL, bukan CSV)
     q = db.query(LogPertemuan).filter(
         LogPertemuan.murid_id == murid_id,
         LogPertemuan.nilai.isnot(None),
@@ -43,39 +34,34 @@ def update_knowledge_states(
         q = q.filter(LogPertemuan.kelas_id == kelas_id)
     logs = q.order_by(LogPertemuan.tanggal.asc()).all()
  
-    # 2. Kelompokkan skor per topik (urutan kronologis penting untuk BKT)
     topik_scores: Dict[str, List[float]] = {}
     for log in logs:
         topik = log.topik.strip()
-        nilai = float(log.nilai) if log.nilai is not None else 0.0
-        topik_scores.setdefault(topik, []).append(float(nilai))
+        topik_scores.setdefault(topik,[]).append(float(log.nilai))
  
-    # 3. Ambil P(L0) dari diagnostic_result jika ada
     from app.models.models import DiagnosticResult
     diag_rows = db.query(DiagnosticResult).filter(
         DiagnosticResult.murid_id == murid_id
     ).all()
     diag_map = {d.topik: d.diagnostic_score / 100.0 for d in diag_rows}
  
-    # 4. Update per topik menggunakan BKTEngine
     for topik, scores in topik_scores.items():
-        p0      = diag_map.get(topik, PRIOR_KNOWLEDGE)   # P(L0) dari diagnostik atau 0.2
-        p_final = bkt_engine.batch_update(topik,p0, scores, list(topik_scores.keys()))
+        p0 = diag_map.get(topik, PRIOR_KNOWLEDGE)
+        p_final = bkt_engine.batch_update(db, topik, p0, scores) 
  
-        # Upsert ke tabel knowledge_state (PostgreSQL)
         ks = db.query(KnowledgeState).filter(
             KnowledgeState.murid_id == murid_id,
-            KnowledgeState.topik    == topik,
+            KnowledgeState.topik == topik,
         ).first()
  
-        sp = bkt_engine._get_params(topik, list(topik_scores.keys()))  # ambil params yang dipakai
+        sp = bkt_engine._get_params(db, topik)  
  
         if ks:
             ks.p_knowledge = p_final
-            ks.p_learn     = sp.learn
-            ks.p_guess     = sp.guess
-            ks.p_slip      = sp.slip
-            ks.updated_at  = datetime.utcnow()
+            ks.p_learn = sp.learn
+            ks.p_guess = sp.guess
+            ks.p_slip = sp.slip
+            ks.updated_at = datetime.utcnow()
         else:
             ks = KnowledgeState(
                 id=str(uuid.uuid4()),
@@ -89,107 +75,171 @@ def update_knowledge_states(
             db.add(ks)
  
     db.commit()
-    logger.debug(f"Knowledge state diperbarui untuk murid {murid_id}: {len(topik_scores)} topik")
- 
- 
+    logger.debug(f"BKT Ter-update untuk murid {murid_id}")
+
+
 def get_knowledge_state(db: Session, murid_id: str) -> Dict[str, float]:
-    """
-    Ambil semua knowledge_state dari PostgreSQL untuk satu murid.
-    Return: {topik: p_knowledge}
-    """
+    """Mengambil pemahaman BKT satu murid dengan mempertimbangkan efek lupa (decay)."""
     rows = db.query(KnowledgeState).filter(KnowledgeState.murid_id == murid_id).all()
-    return {ks.topik: float(ks.p_knowledge) for ks in rows}
- 
- 
+    result = {}
+    now = datetime.utcnow()
+    
+    for ks in rows:
+        p_known = float(ks.p_knowledge)
+        if ks.updated_at:
+            days_passed = (now - ks.updated_at).days
+            if days_passed >= 30:
+                months_passed = days_passed // 30
+                p_known = p_known * (0.95 ** months_passed)
+                p_known = max(0.2, p_known) # Baseline minimal
+        result[ks.topik] = p_known
+        
+    return result
+
+
+def get_class_knowledge_state(db: Session, kelas_id: str) -> Dict[str, float]:
+    """
+    [OPTIMIZED] Mendapatkan nilai acuan kelas dengan metode "Rata-Rata Kelas".
+    Menggunakan 1x Query massal agar terhindar dari N+1 Timeout Issue.
+    """
+    # 1. Ambil list ID murid
+    murid_ids_query = db.query(KelasMurid.murid_id).filter(KelasMurid.kelas_id == kelas_id).all()
+    murid_ids =[row.murid_id for row in murid_ids_query]
+    
+    if not murid_ids:
+        return {}
+
+    total_murid = len(murid_ids)
+    
+    # 2. Ambil semua KS sekaligus
+    ks_rows = db.query(KnowledgeState).filter(KnowledgeState.murid_id.in_(murid_ids)).all()
+    
+    # 3. Proses di memori (Sangat Cepat)
+    topic_sums = {}
+    topic_counts = {}
+    now = datetime.utcnow()
+    
+    for ks in ks_rows:
+        p_known = float(ks.p_knowledge)
+        # Kalkulasi decay (lupa)
+        if ks.updated_at:
+            days_passed = (now - ks.updated_at).days
+            if days_passed >= 30:
+                months_passed = days_passed // 30
+                p_known = max(0.2, p_known * (0.95 ** months_passed))
+                
+        topic_sums[ks.topik] = topic_sums.get(ks.topik, 0.0) + p_known
+        topic_counts[ks.topik] = topic_counts.get(ks.topik, 0) + 1
+        
+    # 4. Hitung rata-rata murni
+    rata_rata_kelas = {}
+    for topik in topic_sums:
+        # Jika ada murid yang belum punya log di topik ini, anggap nilainya baseline (0.2)
+        missing_students = total_murid - topic_counts[topik]
+        total_value = topic_sums[topik] + (missing_students * 0.2)
+        rata_rata_kelas[topik] = total_value / total_murid
+        
+    return rata_rata_kelas
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# PLAN CRUD
+# 2. GENERATE RENCANA STUDI KELAS (MANUAL TRIGGER OLEH GURU)
+# ═══════════════════════════════════════════════════════════════════════════════
+pso_pool = ProcessPoolExecutor(max_workers=4)
+
+async def generate_rencana_studi_kelas(
+    db: Session,
+    kelas_id: str
+) -> RencanaStudi:
+    """
+    Hanya dijalankan saat Guru menekan tombol "Generate Rencana Kelas".
+    Tidak ada LLM yang dilibatkan. Murni perhitungan matematika (PSO).
+    """
+    kelas = db.query(Kelas).filter(Kelas.id == kelas_id).first()
+    if not kelas:
+        raise ValueError(f"Kelas {kelas_id} tidak ditemukan")
+
+    # 1. Ambil Pemahaman Kelas (Rata-rata)
+    class_knowledge_state = get_class_knowledge_state(db, kelas_id)
+    if not class_knowledge_state:
+        raise ValueError("Gagal membuat rencana: Kelas belum memiliki murid atau log BKT.")
+
+    # 2. Hitung Sisa Sesi Berdasarkan KREDIT di tabel KELAS
+    murid_ids =[row.murid_id for row in db.query(KelasMurid.murid_id).filter(KelasMurid.kelas_id == kelas_id).all()]
+    jumlah_murid_di_kelas = len(murid_ids)
+    
+    kredit_kelas = kelas.kredit if kelas.kredit else 20
+    total_log_keseluruhan = db.query(LogPertemuan).filter(LogPertemuan.kelas_id == kelas_id).count()
+    sesi_telah_berjalan = total_log_keseluruhan // max(1, jumlah_murid_di_kelas)
+    sisa_sesi = max(1, kredit_kelas - sesi_telah_berjalan)
+
+    # 3. Bangun Data Graph (Dioptimasi di memori untuk cegah N+1 Database Call)
+    topik_list = db.query(Topik).filter(Topik.mata_pelajaran_id == kelas.mata_pelajaran_id).order_by(Topik.difficulty_index.asc()).all()
+    
+    # Bikin kamus untuk pemetaan cepat id -> nama
+    topik_dict = {t.id: t.nama for t in topik_list}
+    
+    skill_graph_dict = {t.nama: [] for t in topik_list}
+    heuristic_sequence =[t.nama for t in topik_list]
+    skill_params_dict = {t.nama: bkt_engine._get_params(db, t.nama).learn for t in topik_list}
+    
+    # Ambil semua relasi tanpa loop N+1
+    semua_relasi = db.query(TopikPrasyarat).all()
+    for relasi in semua_relasi:
+        anak_nama = topik_dict.get(relasi.topik_id)
+        syarat_nama = topik_dict.get(relasi.prasyarat_id)
+        # Jika keduanya ada di mapel ini, hubungkan
+        if anak_nama and syarat_nama:
+            skill_graph_dict[anak_nama].append(syarat_nama)
+
+    # 4. Eksekusi PSO di Background Process
+    loop = asyncio.get_running_loop()
+    rencana_data = await loop.run_in_executor(
+        pso_pool, 
+        run_pso_algorithm, 
+        f"KELAS-{kelas_id}",      
+        class_knowledge_state,    
+        skill_graph_dict,
+        skill_params_dict,
+        heuristic_sequence,
+        sisa_sesi
+    )
+
+    # 5. Penentuan Versi 
+    rencana_terakhir = db.query(RencanaStudi).filter(
+        RencanaStudi.kelas_id == kelas_id,
+        RencanaStudi.murid_id.is_(None) 
+    ).order_by(RencanaStudi.waktu.desc()).first()
+
+    versi_baru = rencana_terakhir.version + 1 if rencana_terakhir else 1
+
+    # 6. Simpan Hasil
+    rencana = RencanaStudi(
+        id=str(uuid.uuid4()),
+        kelas_id=kelas_id,
+        murid_id=None,
+        daftar_rekomendasi_materi=rencana_data.get("rekomendasi_materi",[]),
+        jadwal_mingguan=rencana_data.get("jadwal_mingguan",[]), 
+        catatan_analisa=rencana_data.get("catatan_analisa", "Rencana kelas berhasil dibuat."), 
+        estimasi_waktu_selesai=datetime.utcnow() + timedelta(weeks=rencana_data.get("estimasi_selesai_minggu", 4)),
+        version=versi_baru,
+    )
+    db.add(rencana)
+    db.commit()
+    db.refresh(rencana)
+    return rencana
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 3. PLAN CRUD
 # ═══════════════════════════════════════════════════════════════════════════════
  
 def get_rencana_by_id(db: Session, plan_id: str) -> Optional[RencanaStudi]:
     return db.query(RencanaStudi).filter(RencanaStudi.id == plan_id).first()
  
  
-def get_rencana_by_kelas(
-    db: Session,
-    kelas_id: str,
-    murid_id: Optional[str] = None,
-) -> List[RencanaStudi]:
-    q = db.query(RencanaStudi).filter(RencanaStudi.kelas_id == kelas_id)
-    if murid_id:
-        q = q.filter(RencanaStudi.murid_id == murid_id)
-    return q.order_by(RencanaStudi.waktu.desc()).all()
- 
- 
-# ═══════════════════════════════════════════════════════════════════════════════
-# GENERATE RENCANA STUDI (F004)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-async def generate_rencana_studi(
-    db: Session,
-    kelas_id: str,
-    murid_id: Optional[str] = None,
-) -> RencanaStudi:
-    """
-    F004 — Generate rencana studi adaptif tanpa LLM.
-    Tetap gunakan BKTEngine untuk update knowledge_state.
-    Isi RencanaStudi: id, kelas_id, daftar_rekomendasi_materi, jadwal_mingguan,
-    estimasi_waktu_selesai, version
-    """
-    # 1. Validasi kelas
-    kelas = db.query(Kelas).filter(Kelas.id == kelas_id).first()
-    if not kelas:
-        raise ValueError(f"Kelas {kelas_id} tidak ditemukan")
-
-    # 2. Ambil log pertemuan dari PostgreSQL
-    q = db.query(LogPertemuan).filter(LogPertemuan.kelas_id == kelas_id)
-    if murid_id:
-        q = q.filter(LogPertemuan.murid_id == murid_id)
-    logs = q.order_by(LogPertemuan.tanggal.asc()).all()
-
-    # 3. Update knowledge_state via BKTEngine
-    if murid_id:
-        update_knowledge_states(db, murid_id, kelas_id)
-        knowledge_state = get_knowledge_state(db, murid_id)
-    else:
-        knowledge_state = {}
-
-    # 4. Buat rekomendasi materi sederhana dari topik yang ada di log
-    topik_counts: Dict[str, int] = {}
-    for log in logs:
-        if log.topik is not None:
-            topik_counts[log.topik.strip()] = topik_counts.get(log.topik.strip(), 0) + 1
-
-    daftar_rekomendasi_materi: List[str] = [
-        t for t, _ in sorted(topik_counts.items(), key=lambda x: x[1])
-    ][:5]  # ambil 5 topik dengan frekuensi terendah
-
-    # 5. Buat jadwal mingguan sederhana
-    jadwal_mingguan = {
-        "minggu_1": daftar_rekomendasi_materi[:2],
-        "minggu_2": daftar_rekomendasi_materi[2:4],
-        "minggu_3": daftar_rekomendasi_materi[4:],
-    }
-
-    # 6. Estimasi waktu selesai (default 4 minggu)
-    estimasi_waktu_selesai = datetime.now() + timedelta(weeks=4)
-
-    # 7. Hitung versi
-    versi = db.query(RencanaStudi).filter(
+def get_rencana_by_kelas(db: Session, kelas_id: str) -> List[RencanaStudi]:
+    return db.query(RencanaStudi).filter(
         RencanaStudi.kelas_id == kelas_id,
-        RencanaStudi.murid_id == murid_id,
-    ).count() + 1
-
-    # 8. Simpan RencanaStudi ke PostgreSQL
-    rencana = RencanaStudi(
-        id=str(uuid.uuid4()),
-        kelas_id=kelas_id,
-        murid_id=murid_id,
-        daftar_rekomendasi_materi=daftar_rekomendasi_materi,
-        jadwal_mingguan=jadwal_mingguan,
-        estimasi_waktu_selesai=estimasi_waktu_selesai,
-        version=versi,
-    )
-    db.add(rencana)
-    db.commit()
-    db.refresh(rencana)
-    return rencana
+        RencanaStudi.murid_id.is_(None) 
+    ).order_by(RencanaStudi.waktu.desc()).all()

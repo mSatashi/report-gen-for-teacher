@@ -1,12 +1,13 @@
 import uuid
 from typing import List, Optional
- 
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.models import Murid, KelasMurid
-from app.schemas.schemas import MuridCreate, MuridResponse
- 
+# Tambahkan MuridUpdate pada import di bawah ini
+from app.schemas.schemas import MuridCreate, MuridUpdate, MuridResponse
+
 def create_murid(db: Session, data: MuridCreate) -> MuridResponse: 
     # cek duplikat langsung di Murid
     if db.query(Murid).filter(Murid.email_address == data.email_address).first():
@@ -47,7 +48,7 @@ def get_all_murid(
  
     rows = query.offset(skip).limit(limit).all()
  
-    result = []
+    result =[]
     for murid in rows:
         result.append(
             MuridResponse(
@@ -60,7 +61,6 @@ def get_all_murid(
             )
         )
     return result
- 
  
 def get_murid_by_id(db: Session, murid_id: str) -> MuridResponse:
     """Ambil data 1 siswa berdasarkan ID."""
@@ -77,8 +77,43 @@ def get_murid_by_id(db: Session, murid_id: str) -> MuridResponse:
         jenis_kelamin=murid.jenis_kelamin,
         is_active=murid.is_active,
     )
- 
- 
+
+# --- FUNGSI BARU UNTUK HANDLE UPDATE (PUT) ---
+def update_murid(db: Session, murid_id: str, data: MuridUpdate) -> MuridResponse:
+    """Perbarui sebagian atau seluruh data siswa."""
+    murid = db.query(Murid).filter(Murid.id == murid_id).first()
+    
+    if not murid or not murid.is_active:
+        raise HTTPException(status_code=404, detail="Siswa tidak ditemukan")
+    
+    # Ambil dictionary dari data Pydantic yang hanya dikirim oleh user (menghindari overwrite nilai menjadi None)
+    # Jika menggunakan Pydantic V2 gunakan data.model_dump(exclude_unset=True)
+    # Jika menggunakan Pydantic V1 gunakan data.dict(exclude_unset=True)
+    update_data = data.dict(exclude_unset=True) 
+
+    # Validasi opsional: Jika email diupdate, pastikan tidak bentrok dengan user lain
+    if "email_address" in update_data and update_data["email_address"] != murid.email_address:
+        email_exist = db.query(Murid).filter(Murid.email_address == update_data["email_address"]).first()
+        if email_exist:
+            raise HTTPException(status_code=400, detail="Email sudah terdaftar oleh siswa lain")
+
+    # Update atribut object murid dengan data baru
+    for key, value in update_data.items():
+        setattr(murid, key, value)
+    
+    db.commit()
+    db.refresh(murid)
+    
+    return MuridResponse(
+        id=murid.id,
+        email_address=murid.email_address,
+        nama=murid.nama,
+        education_level=murid.education_level,
+        jenis_kelamin=murid.jenis_kelamin,
+        is_active=murid.is_active,
+    )
+# ---------------------------------------------
+
 def delete_murid(db: Session, murid_id: str) -> dict:
     """
     Hapus permanen data siswa dari database.

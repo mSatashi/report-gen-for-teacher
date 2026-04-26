@@ -1,5 +1,6 @@
 import uuid
 from typing import List, Optional
+from datetime import datetime
  
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -36,7 +37,8 @@ def create_mata_pelajaran(
     mapel = MataPelajaran(
         id=str(uuid.uuid4()),
         nama_mata_pelajaran=data.nama_mata_pelajaran,
-        topik=data.topik,
+        hari=data.hari,
+        jam=data.jam,
     )
     db.add(mapel)
     db.commit()
@@ -112,6 +114,8 @@ def update_mata_pelajaran(
 
     for field, val in update_data.items():
         setattr(mapel, field, val)
+ 
+    mapel.updated_at = datetime.utcnow()
  
     db.commit()
     db.refresh(mapel)

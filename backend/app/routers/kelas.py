@@ -2,7 +2,7 @@
 kelas.py — Router untuk manajemen Kelas dan Murid
 """
 import uuid
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -10,7 +10,8 @@ from app.core.database import get_db
 from app.models.models import Pengguna, Kelas, KelasMurid, Murid, MataPelajaran
 from app.schemas.schemas import (
     KelasCreate, KelasUpdate, KelasResponse,
-    MuridCreate, MuridUpdate, MuridResponse, TambahMuridKeKelas,
+    MuridResponse, TambahMuridKeKelas,
+    MuridCreate, MuridUpdate
 )
 from app.services.auth_service import require_pengajar
 
@@ -28,9 +29,7 @@ def _murid_to_response(murid: Murid) -> MuridResponse:
     )
 
 
-
 def _cek_mata_pelajaran(db: Session, mata_pelajaran_id: str) -> MataPelajaran:
-    """Pastikan mata_pelajaran_id valid, raise 404 jika tidak ada."""
     mapel = db.query(MataPelajaran).filter(MataPelajaran.id == mata_pelajaran_id).first()
     if not mapel:
         raise HTTPException(
@@ -41,16 +40,15 @@ def _cek_mata_pelajaran(db: Session, mata_pelajaran_id: str) -> MataPelajaran:
 
 # ── Kelas CRUD ────────────────────────────────────────────────────────────────
 
-@router.get("/", response_model=List[KelasResponse])
+@router.get("/", response_model=List[KelasResponse], status_code=status.HTTP_200_OK)
 def list_kelas(
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
 ):
-    """Ambil semua kelas milik pengajar yang login."""
     return db.query(Kelas).filter(Kelas.pengajar_id == current_user.id).all()
 
 
-@router.get("/{kelas_id}", response_model=KelasResponse)
+@router.get("/{kelas_id}", response_model=KelasResponse, status_code=status.HTTP_200_OK)
 def get_kelas(
     kelas_id: str,
     current_user: Pengguna = Depends(require_pengajar),
@@ -62,16 +60,14 @@ def get_kelas(
     return k
 
 
-@router.post("/", response_model=KelasResponse, status_code=201)
+@router.post("/", response_model=KelasResponse, status_code=status.HTTP_201_CREATED)
 def buat_kelas(
     data: KelasCreate,
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
 ):
-    # Validasi mata_pelajaran_id
     _cek_mata_pelajaran(db, data.mata_pelajaran_id)
 
-    # Cek nama kelas unik
     if db.query(Kelas).filter(Kelas.nama == data.nama).first():
         raise HTTPException(
             status_code=400,
@@ -85,6 +81,7 @@ def buat_kelas(
         pengajar_id=current_user.id,
         hari=data.hari,
         jam=data.jam,
+        kredit=getattr(data, 'kredit', 20) 
     )
     db.add(kelas)
     db.commit()
@@ -92,7 +89,7 @@ def buat_kelas(
     return kelas
 
 
-@router.put("/{kelas_id}", response_model=KelasResponse)
+@router.put("/{kelas_id}", response_model=KelasResponse, status_code=status.HTTP_200_OK)
 def update_kelas(
     kelas_id: str,
     data: KelasUpdate,
@@ -107,11 +104,9 @@ def update_kelas(
 
     update_data = data.model_dump(exclude_none=True)
 
-    # Validasi mata_pelajaran_id jika diubah
     if "mata_pelajaran_id" in update_data:
         _cek_mata_pelajaran(db, update_data["mata_pelajaran_id"])
 
-    # Cek nama unik jika nama diubah
     if "nama" in update_data and update_data["nama"] != k.nama:
         if db.query(Kelas).filter(Kelas.nama == update_data["nama"]).first():
             raise HTTPException(
@@ -127,7 +122,7 @@ def update_kelas(
     return k
 
 
-@router.delete("/{kelas_id}", status_code=200)
+@router.delete("/{kelas_id}", status_code=status.HTTP_204_NO_CONTENT)
 def hapus_kelas(
     kelas_id: str,
     current_user: Pengguna = Depends(require_pengajar),
@@ -143,17 +138,16 @@ def hapus_kelas(
     return {"message": "Kelas ini sudah dihapus oleh sistem"}
 
 
-# ── Murid di dalam Kelas ──────────────────────────────────────────────────────
+# ── Murid di dalam Kelas (Relasional) ─────────────────────────────────────────
 
-@router.get("/{kelas_id}/murid", response_model=List[MuridResponse])
+@router.get("/{kelas_id}/murid", response_model=List[MuridResponse], status_code=status.HTTP_200_OK)
 def list_murid_kelas(
     kelas_id: str,
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
 ):
-    """Ambil daftar murid dalam satu kelas."""
     km_rows = db.query(KelasMurid).filter(KelasMurid.kelas_id == kelas_id).all()
-    result = []
+    result =[]
     for km in km_rows:
         murid = db.query(Murid).filter(Murid.id == km.murid_id).first()
         if murid:
@@ -161,18 +155,16 @@ def list_murid_kelas(
     return result
 
 
-@router.post("/{kelas_id}/murid", status_code=201)
+@router.post("/{kelas_id}/murid", status_code=status.HTTP_201_CREATED)
 def tambah_murid_ke_kelas(
     kelas_id: str,
     data: TambahMuridKeKelas,
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
 ):
-    """Tambahkan murid yang sudah ada ke dalam kelas."""
-    # Pastikan kelas ada
     if not db.query(Kelas).filter(Kelas.id == kelas_id).first():
         raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
-    # Pastikan murid ada
+    
     if not db.query(Murid).filter(Murid.id == data.murid_id).first():
         raise HTTPException(status_code=404, detail="Murid tidak ditemukan")
 
@@ -188,7 +180,7 @@ def tambah_murid_ke_kelas(
     return {"message": "Murid berhasil ditambahkan ke kelas"}
 
 
-@router.delete("/{kelas_id}/murid/{murid_id}", status_code=200)
+@router.delete("/{kelas_id}/murid/{murid_id}", status_code=status.HTTP_204_NO_CONTENT)
 def hapus_murid_dari_kelas(
     kelas_id: str,
     murid_id: str,
@@ -208,13 +200,12 @@ def hapus_murid_dari_kelas(
 
 # ── CRUD Murid (standalone) ───────────────────────────────────────────────────
 
-@router.post("/murid/tambah", response_model=MuridResponse, status_code=201)
+@router.post("/murid/tambah", response_model=MuridResponse, status_code=status.HTTP_201_CREATED)
 def tambah_murid_baru(
     data: MuridCreate,
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
 ):
-    """Buat akun murid baru sekaligus profilnya."""
     if db.query(Murid).filter(Murid.email_address == data.email_address).first():
         raise HTTPException(status_code=400, detail="Email sudah terdaftar")
 
@@ -248,7 +239,6 @@ def update_murid(
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
 ):
-    """Update profil murid."""
     murid = db.query(Murid).filter(Murid.id == murid_id).first()
     if not murid:
         raise HTTPException(status_code=404, detail="Murid tidak ditemukan")

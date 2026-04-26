@@ -4,22 +4,39 @@ Menyediakan data ringkasan untuk halaman Dashboard.
 """
 from datetime import date
 from fastapi import HTTPException
-from sqlalchemy import cast, Float, func
+from sqlalchemy import func
 from sqlalchemy.orm import Session
+
 from app.models.models import Kelas, KelasMurid, LogPertemuan, Laporan, RencanaStudi, Pengguna, Pengajar, Murid
 from app.schemas.schemas import DashboardSummary
+
 
 def get_dashboard_data(db: Session, user: Pengguna) -> DashboardSummary:
     """Ambil semua data ringkasan untuk dashboard pengajar."""
     today = date.today()
 
-    # Kelas-kelas milik pengajar ini
-    kelas_list = db.query(Kelas).filter(Kelas.pengajar_id == user.id).all()
-    kelas_ids  = [k.id for k in kelas_list]
+    # =========================================================================
+    # [PERBAIKAN 1] Validasi Pengajar. 
+    # Mencegah bug data tertimpa (override) oleh pengajar pertama di database.
+    # =========================================================================
+    pengajar = db.query(Pengajar).filter(Pengajar.id == user.id).first()
+    if not pengajar:
+        raise HTTPException(status_code=403, detail="Hanya pengajar yang memiliki akses dashboard")
 
-    user = db.query(Pengguna).filter(Pengajar.id == Pengguna.id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Pengguna tidak ditemukan")
+    # Kelas-kelas milik pengajar yang sedang login
+    kelas_list = db.query(Kelas).filter(Kelas.pengajar_id == user.id).all()
+    kelas_ids  =[k.id for k in kelas_list]
+
+    # Handle kasus jika pengajar baru belum memiliki kelas sama sekali
+    if not kelas_ids:
+        return DashboardSummary(
+            username=str(user.username),
+            total_siswa=0,
+            log_hari_ini=0,
+            plan_aktif=0,
+            report_pending=0,
+            aktivitas_terbaru=[]
+        )
 
     # Total siswa (unik)
     total_siswa = (
@@ -58,8 +75,14 @@ def get_dashboard_data(db: Session, user: Pengguna) -> DashboardSummary:
         .limit(10)
         .all()
     )
-    aktivitas_terbaru = [
-        {
+    
+    aktivitas_terbaru =[]
+    for a in aktivitas:
+        # =========================================================================
+        # [PERBAIKAN 2] Menghapus "nama_mata_pelajaran".
+        # LogPertemuan tidak memiliki relasi/kolom nama_mata_pelajaran.
+        # =========================================================================
+        aktivitas_terbaru.append({
             "tanggal": str(a.tanggal),
             "topik":   a.topik,
             "kelas_id": a.kelas_id,
@@ -67,13 +90,10 @@ def get_dashboard_data(db: Session, user: Pengguna) -> DashboardSummary:
             "nilai": float(a.nilai) if a.nilai is not None else None,
             "tingkat_pemahaman": a.tingkat_pemahaman,
             "tingkat_keterlibatan": a.tingkat_keterlibatan,
-            "nama_mata_pelajaran": a.nama_mata_pelajaran if a.nama_mata_pelajaran else None,
-        }
-        for a in aktivitas
-    ]
+        })
 
     # Progress per murid (simplifikasi: avg nilai dari log)
-    
+    # Progress per murid (simplifikasi: avg nilai dari log)
     progress_rows = (
         db.query(
             LogPertemuan.murid_id,
@@ -85,7 +105,8 @@ def get_dashboard_data(db: Session, user: Pengguna) -> DashboardSummary:
         .limit(10)
         .all()
     )
-    progress_siswa = []
+    
+    progress_siswa =[]
     for row in progress_rows:
         murid = db.query(Murid).filter(Murid.id == row.murid_id).first()
         nama  = murid.nama if murid else row.murid_id
@@ -98,13 +119,20 @@ def get_dashboard_data(db: Session, user: Pengguna) -> DashboardSummary:
             "status":     "On Track" if avg >= 70 else "Perlu Perhatian",
         })
 
+    # =========================================================================
+    #[PERBAIKAN 3] Sinkronisasi dengan Pydantic Schema.
+    # Hanya me-return key yang benar-benar ada di schemas.py -> DashboardSummary
+    # =========================================================================
     return DashboardSummary(
         username=str(user.username),          
-        email_address=str(user.email_address),
         total_siswa=total_siswa,
         log_hari_ini=log_hari_ini,
         plan_aktif=plan_aktif,
         report_pending=report_pending,
         aktivitas_terbaru=aktivitas_terbaru,
-        progress_siswa=progress_siswa,
+        
+        # Catatan: Jika Frontend Anda membutuhkan data 'progress_siswa', 
+        # pastikan Anda menambahkan field 'progress_siswa' pada class 
+        # DashboardSummary di file schemas.py terlebih dahulu, baru uncomment baris di bawah:
+        progress_siswa=progress_siswa 
     )

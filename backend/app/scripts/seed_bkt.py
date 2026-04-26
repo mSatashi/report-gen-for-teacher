@@ -75,9 +75,7 @@ def load_tuned_params(params_file: str) -> bool:
  
     try:
         from app.ai.bkt_engine import bkt_engine
-        for skill_name, params in custom_params.items():
-            sp = bkt_engine._get_params(skill_name)
-            sp.override(params["learn"], params["slip"], params["guess"])
+        bkt_engine._custom = custom_params
  
         logger.info(
             "✅ BKT params ter-load dari %s (%d skill).",

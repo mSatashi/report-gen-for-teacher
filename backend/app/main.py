@@ -23,6 +23,9 @@ from app.routers import (
     murid, 
     bkt, 
     mata_pelajaran,
+    topik,
+    # ks,
+    # ai,
 )
  
 logging.basicConfig(
@@ -38,18 +41,22 @@ if settings.APP_ENV == "development":
     Base.metadata.create_all(bind=engine)
     logger.info("Tabel database berhasil di-sync (dev mode)")
  
-# [OPSIONAL] Auto-load BKT params dari file tuning saat startup
-if getattr(settings, "AUTO_LOAD_BKT_PARAMS", False):
-    params_file = getattr(settings, "BKT_PARAMS_FILE", "experiment/models/bkt_global_params.csv")
-    try:
-        from scripts.seed_bkt_params import load_tuned_params
-        if load_tuned_params(params_file):
-            logger.info(f"BKT params auto-loaded dari {params_file}")
-        else:
-            logger.warning("BKT params tidak ter-load, pakai default")
-    except Exception as e:
-        logger.warning(f"Gagal auto-load BKT params: {e}")
- 
+# # [OPSIONAL] Auto-load BKT params dari file tuning saat startup
+# if getattr(settings, "AUTO_LOAD_BKT_PARAMS", False):
+#     params_file = getattr(settings, "BKT_PARAMS_FILE", "experiment/models/bkt_global_params.csv")
+#     try:
+#         from app.scripts.seed_topic import seed_topik
+#         from app.scripts.seed_bkt import load_tuned_params
+        
+#         seed_topik()
+        
+#         if load_tuned_params(params_file):
+#             logger.info(f"BKT params auto-loaded dari {params_file}")
+#         else:
+#             logger.warning("BKT params tidak ter-load, pakai default")
+#     except Exception as e:
+#         logger.warning(f"Gagal auto-load BKT params: {e}")
+
 app = FastAPI(
     title="Sistem Perencanaan Materi Adaptif & Pelaporan Otomatis",
     description=(
@@ -84,6 +91,9 @@ app.include_router(diagnostic.router,  prefix=PREFIX)
 app.include_router(murid.router,       prefix=PREFIX)
 app.include_router(bkt.router,         prefix=PREFIX)
 app.include_router(mata_pelajaran.router, prefix=PREFIX)
+app.include_router(topik.router, prefix=PREFIX)
+# app.include_router(ks.router,          prefix=PREFIX)
+# app.include_router(ai.router,          prefix=PREFIX)
  
  
 @app.get("/", tags=["Root"])

@@ -55,6 +55,7 @@ services:
         condition: service_started
     volumes:
       - ./uploads:/app/uploads
+      - ./experiment:/app/experiment
 
   # ── React Frontend ────────────────────────────────────────────────────────
   frontend:

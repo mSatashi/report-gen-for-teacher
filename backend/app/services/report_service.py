@@ -45,7 +45,7 @@ def get_laporan_by_murid(
  
 def get_laporan_pending(db: Session, pengajar_id: str) -> List[Laporan]:
     from app.models.models import Kelas
-    kelas_ids = [k.id for k in db.query(Kelas).filter(Kelas.pengajar_id == pengajar_id).all()]
+    kelas_ids =[k.id for k in db.query(Kelas).filter(Kelas.pengajar_id == pengajar_id).all()]
     return (
         db.query(Laporan)
         .filter(Laporan.kelas_id.in_(kelas_ids), Laporan.status != "terkirim")
@@ -66,21 +66,40 @@ def update_laporan(db: Session, laporan_id: str, data: LaporanUpdate) -> Optiona
  
 def finalize_laporan(db: Session, laporan_id: str) -> Optional[Laporan]:
     return update_laporan(db, laporan_id, LaporanUpdate(status="final"))
+
+def delete_laporan(db: Session, laporan_id: str) -> bool:
+    """Menghapus laporan berdasarkan ID."""
+    lap = get_laporan_by_id(db, laporan_id)
+    if not lap:
+        return False
+    
+    # Jika file PDF fisiknya juga ingin dihapus (Opsional)
+    if lap.pdf_path and os.path.exists(lap.pdf_path):
+        try:
+            os.remove(lap.pdf_path)
+        except Exception as e:
+            logger.warning(f"Gagal menghapus file PDF {lap.pdf_path}: {e}")
+
+    db.delete(lap)
+    db.commit()
+    return True
  
  
 # ── Generate Laporan (F003) ───────────────────────────────────────────────────
  
-# app/services/report_service.py
-
-# ... (import lainnya tetap)
-
 async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
+    """
+    F003 — Generate laporan perkembangan otomatis via NarrativeEngine.
+    """
     # 1. Data murid
     murid = db.query(Murid).filter(Murid.id == data.murid_id).first()
     if not murid:
         raise ValueError(f"Murid dengan id {data.murid_id} tidak ditemukan")
  
-    # Perbaikan logika pengambilan nama mata pelajaran
+    # Fallback ke email jika nama murid kosong
+    nama_murid = murid.nama or murid.email_address
+
+    # Perbaikan logika pengambilan nama mata pelajaran (Aman dari NoneType)
     nama_mapel = "Umum"
     if data.kelas_id:
         from app.models.models import Kelas
@@ -90,14 +109,17 @@ async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
             if mp:
                 nama_mapel = mp.nama_mata_pelajaran
 
-    # 2. Log pertemuan (Query tetap sama)
+    # 2. Log pertemuan dalam periode 
     q = db.query(LogPertemuan).filter(LogPertemuan.murid_id == data.murid_id)
     if data.kelas_id:
         q = q.filter(LogPertemuan.kelas_id == data.kelas_id)
-    # ... (filter periode tetap sama)
+    if data.periode_mulai:
+        q = q.filter(LogPertemuan.tanggal >= data.periode_mulai)
+    if data.periode_selesai:
+        q = q.filter(LogPertemuan.tanggal <= data.periode_selesai)
     logs = q.order_by(LogPertemuan.tanggal.asc()).all()
  
-    log_data = [
+    log_data =[
         {
             "tanggal": str(l.tanggal),
             "topik": l.topik,
@@ -108,18 +130,35 @@ async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
         for l in logs
     ]
  
-    # 3. Knowledge state (tetap sama)
+    # 3. Knowledge state 
     ks_rows = db.query(KnowledgeState).filter(KnowledgeState.murid_id == data.murid_id).all()
     knowledge_state = {str(ks.topik): float(ks.p_knowledge) for ks in ks_rows}
  
-    # 4. Ambil rekomendasi PSO (tetap sama)
-    pso_recommended_route = None
-    # ... (logika pso tetap sama)
+    # 4. Ambil rekomendasi PSO dari RencanaStudi Kelas terbaru
+    pso_recommended_route: Optional[str] = None
+    if data.kelas_id:
+        from app.models.models import RencanaStudi
+        rencana = (
+            db.query(RencanaStudi)
+            .filter(
+                RencanaStudi.kelas_id == data.kelas_id,
+                # Mengambil rencana global kelas (murid_id is NULL)
+                RencanaStudi.murid_id.is_(None) 
+            )
+            .order_by(RencanaStudi.waktu.desc())
+            .first()
+        )
+        
+        if rencana and rencana.daftar_rekomendasi_materi:
+            materi = rencana.daftar_rekomendasi_materi
+            if isinstance(materi, list) and materi:
+                pso_recommended_route = f"Lanjut ke materi (Acuan Kelas): {', '.join(materi[:3])}"
+            elif isinstance(materi, str):
+                pso_recommended_route = f"(Acuan Kelas) {materi}"
  
     # 5. Generate narasi via AI
-    # Jika AI gagal, baris ini akan melempar RuntimeError dan berhenti di sini (tidak commit ke DB)
     konten = await narrative_engine.generate_report(
-        nama_murid=str(murid.nama),
+        nama_murid=nama_murid,
         mata_pelajaran=nama_mapel,
         log_data=log_data,
         periode_mulai=str(data.periode_mulai) if data.periode_mulai else None,
@@ -129,7 +168,7 @@ async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
         report_style=getattr(data, "report_style", "Konstruktif dan Memotivasi"),
     )
  
-    # 6. Simpan ke PostgreSQL (Menggunakan datetime.now())
+    # 6. Simpan ke PostgreSQL
     laporan = Laporan(
         id=str(uuid.uuid4()),
         murid_id=data.murid_id,
@@ -140,12 +179,13 @@ async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
         is_ai_generated=True,
         periode_mulai=data.periode_mulai,
         periode_selesai=data.periode_selesai,
-        tanggal=datetime.now(), # Konsisten dengan plan_service
+        tanggal=datetime.utcnow(), 
     )
     db.add(laporan)
     db.commit()
     db.refresh(laporan)
     return laporan
+
 # ── Generate PDF ──────────────────────────────────────────────────────────────
  
 def generate_pdf(laporan: Laporan) -> str:
@@ -165,7 +205,7 @@ def generate_pdf(laporan: Laporan) -> str:
                                    fontSize=14, alignment=TA_CENTER, spaceAfter=12)
         b_style   = ParagraphStyle("B", parent=styles["Normal"],
                                    fontSize=11, leading=16, spaceAfter=8)
-        story = [Paragraph("Laporan Perkembangan Belajar Siswa", t_style), Spacer(1, 0.5*cm)]
+        story =[Paragraph("Laporan Perkembangan Belajar Siswa", t_style), Spacer(1, 0.5*cm)]
         for para in laporan.konten.split("\n"):
             if para.strip():
                 story.append(Paragraph(para.strip(), b_style))
