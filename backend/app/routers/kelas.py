@@ -40,7 +40,7 @@ def _cek_mata_pelajaran(db: Session, mata_pelajaran_id: str) -> MataPelajaran:
 
 # ── Kelas CRUD ────────────────────────────────────────────────────────────────
 
-@router.get("/", response_model=List[KelasResponse], status_code=status.HTTP_200_OK)
+@router.get("", response_model=List[KelasResponse], status_code=status.HTTP_200_OK)
 def list_kelas(
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
@@ -60,7 +60,7 @@ def get_kelas(
     return k
 
 
-@router.post("/", response_model=KelasResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=KelasResponse, status_code=status.HTTP_201_CREATED)
 def buat_kelas(
     data: KelasCreate,
     current_user: Pengguna = Depends(require_pengajar),

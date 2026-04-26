@@ -4,8 +4,9 @@ from datetime import datetime
  
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
- 
-from app.models.models import MataPelajaran
+
+from app.services.topik_service import tambah_prasyarat
+from app.models.models import MataPelajaran, Topik
 from app.schemas.schemas import (
     MataPelajaranCreate,
     MataPelajaranUpdate,
@@ -13,34 +14,33 @@ from app.schemas.schemas import (
 )
  
  
-def create_mata_pelajaran(
-    db: Session, data: MataPelajaranCreate
-) -> MataPelajaranResponse:
-    """
-    Buat mata pelajaran baru.
-    """
-    existing = (
-        db.query(MataPelajaran)
-        .filter(
-            MataPelajaran.nama_mata_pelajaran == data.nama_mata_pelajaran
-        )
-        .first()
-    )
+def create_mata_pelajaran(db: Session, data: MataPelajaranCreate) -> MataPelajaranResponse:
+    # 1. Cek duplikasi nama
+    existing = db.query(MataPelajaran).filter(
+        MataPelajaran.nama_mata_pelajaran == data.nama_mata_pelajaran
+    ).first()
+    
     if existing:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Mata pelajaran '{data.nama_mata_pelajaran}' sudah ada"
-            ),
-        )
- 
+        raise HTTPException(status_code=400, detail=f"Mata pelajaran '{data.nama_mata_pelajaran}' sudah ada")
+
+    # 2. Simpan Mata Pelajaran
+    mapel_id = str(uuid.uuid4())
     mapel = MataPelajaran(
-        id=str(uuid.uuid4()),
+        id=mapel_id,
         nama_mata_pelajaran=data.nama_mata_pelajaran,
-        hari=data.hari,
-        jam=data.jam,
     )
     db.add(mapel)
+    
+    # 3. Simpan Topik-topik awal (jika ada)
+    if data.topik_awal:
+        for t_data in data.topik_awal:
+            baru_topik = Topik(
+                id=str(uuid.uuid4()),
+                mata_pelajaran_id=mapel_id,
+                nama=t_data.nama,
+                difficulty_index=t_data.difficulty_index
+            )
+            db.add(baru_topik)
     db.commit()
     db.refresh(mapel)
     return MataPelajaranResponse.model_validate(mapel)
@@ -83,44 +83,52 @@ def get_mata_pelajaran_by_id(
     return MataPelajaranResponse.model_validate(mapel)
  
  
-def update_mata_pelajaran(
-    db: Session, mapel_id: str, data: MataPelajaranUpdate
-) -> MataPelajaranResponse:
-    """
-    Update mata pelajaran (partial update — hanya field yang dikirim).
-    """
+def update_mata_pelajaran(db: Session, mapel_id: str, data: MataPelajaranUpdate) -> MataPelajaranResponse:
     mapel = db.query(MataPelajaran).filter(MataPelajaran.id == mapel_id).first()
     if not mapel:
         raise HTTPException(status_code=404, detail="Mata pelajaran tidak ditemukan")
- 
-    update_data = data.model_dump(exclude_none=True)
- 
-    # Cek konflik nama jika nama diubah
-    if "nama_mata_pelajaran" in update_data:
-        nama_baru = update_data["nama_mata_pelajaran"]
-        konflik = (
-            db.query(MataPelajaran)
-            .filter(
-                MataPelajaran.nama_mata_pelajaran == nama_baru,
-                MataPelajaran.id != mapel_id,
-            )
-            .first()
-        )
-        if konflik:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Mata pelajaran '{nama_baru}' sudah ada",
-            )
 
-    for field, val in update_data.items():
-        setattr(mapel, field, val)
- 
-    mapel.updated_at = datetime.utcnow()
- 
+    # 1. Update Nama Mata Pelajaran
+    if data.nama_mata_pelajaran:
+        mapel.nama_mata_pelajaran = data.nama_mata_pelajaran
+
+    # 2. Update/Tambah Topik & Prasyarat
+    if data.topik is not None:
+        for t_item in data.topik:
+            target_topik_id = t_item.id
+            
+            # A. Jika topik baru (tidak ada ID), buat dulu
+            if not target_topik_id:
+                target_topik_id = str(uuid.uuid4())
+                baru_topik = Topik(
+                    id=target_topik_id,
+                    mata_pelajaran_id=mapel_id,
+                    nama=t_item.nama,
+                    difficulty_index=t_item.difficulty_index
+                )
+                db.add(baru_topik)
+                db.flush() # Agar ID tersimpan sementara untuk proses prasyarat
+            else:
+                # B. Jika topik lama, update datanya
+                t_db = db.query(Topik).filter(Topik.id == target_topik_id).first()
+                if t_db:
+                    t_db.nama = t_item.nama
+                    t_db.difficulty_index = t_item.difficulty_index
+
+            # C. PROSES PRASYARAT (Menggunakan fungsi dari topik_service)
+            if t_item.prasyarat_ids:
+                for p_id in t_item.prasyarat_ids:
+                    # Memanggil fungsi existing agar validasi DFS tetap jalan
+                    try:
+                        tambah_prasyarat(db, target_topik_id, p_id)
+                    except HTTPException:
+                        # Abaikan jika prasyarat sudah ada atau terjadi siklus
+                        # agar proses update lainnya tidak berhenti total
+                        continue
+
     db.commit()
     db.refresh(mapel)
     return MataPelajaranResponse.model_validate(mapel)
- 
  
 def delete_mata_pelajaran(db: Session, mapel_id: str) -> dict:
     """Hapus permanen mata pelajaran berdasarkan ID."""

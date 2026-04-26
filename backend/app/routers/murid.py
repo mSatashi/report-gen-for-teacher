@@ -21,7 +21,7 @@ from app.models.models import Pengguna
 router = APIRouter(prefix="/murid", tags=["Murid"])
 
 # 1. CREATE
-@router.post("/", response_model=MuridResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=MuridResponse, status_code=status.HTTP_201_CREATED)
 def tambah_siswa(
     data: MuridCreate,
     db: Session = Depends(get_db),
@@ -31,7 +31,7 @@ def tambah_siswa(
     return create_murid(db, data)
 
 # 2. READ (ALL)
-@router.get("/", response_model=List[MuridResponse], status_code=status.HTTP_200_OK)
+@router.get("", response_model=List[MuridResponse], status_code=status.HTTP_200_OK)
 def list_all_murid(
     skip: int = Query(0, ge=0, description="Offset paginasi"),
     limit: int = Query(100, ge=1, le=500, description="Jumlah maksimal data"),

@@ -217,7 +217,6 @@ async def generate_rencana_studi_kelas(
     rencana = RencanaStudi(
         id=str(uuid.uuid4()),
         kelas_id=kelas_id,
-        murid_id=None,
         daftar_rekomendasi_materi=rencana_data.get("rekomendasi_materi",[]),
         jadwal_mingguan=rencana_data.get("jadwal_mingguan",[]), 
         catatan_analisa=rencana_data.get("catatan_analisa", "Rencana kelas berhasil dibuat."), 

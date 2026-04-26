@@ -85,17 +85,21 @@ class TopikResponse(BaseModel):
     difficulty_index: float
     prasyarat: List["TopikResponse"] = []
 
+class TopikSimpleCreate(BaseModel):
+    nama: str
+    difficulty_index: float = Field(0.5, ge=0.0, le=1.0)
+    prasyarat_ids: Optional[List[str]] = Field(default_factory=list)
+
+
 class MataPelajaranCreate(BaseModel):
     nama_mata_pelajaran: str
-    hari: Optional[Hari] = None
-    jam: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    topik_awal: Optional[List[TopikSimpleCreate]] = Field(default_factory=list)
+    
 
 class MataPelajaranResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
     nama_mata_pelajaran: str
-    hari: Optional[str] = None
-    jam: Optional[str] = None
     topik_list: List[TopikResponse] = []
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -201,7 +205,6 @@ class RencanaStudiResponse(BaseModel):
     """
     model_config = ConfigDict(from_attributes=True)
     id: str
-    murid_id: Optional[str] = None
     daftar_rekomendasi_materi: Optional[List[str]] = Field(None, description="Urutan topik hasil optimasi PSO")
     jadwal_mingguan: Optional[List[Dict[str, Any]]] = None  # <--- UBAH DI SINI
     catatan_analisa: Optional[str] = None
@@ -266,10 +269,16 @@ class DashboardSummary(BaseModel):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # -- Mata Pelajaran --
+class TopikUpdateInline(BaseModel):
+    id: Optional[str] = None # Jika ada ID, berarti update. Jika tidak, berarti buat baru.
+    nama: str
+    difficulty_index: float = Field(0.5, ge=0.0, le=1.0)
+    prasyarat_ids: Optional[List[str]] = Field(default_factory=list)
+
+
 class MataPelajaranUpdate(BaseModel):
     nama_mata_pelajaran: Optional[str] = None
-    hari: Optional[Hari] = None
-    jam: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    topik: Optional[List[TopikUpdateInline]] = None
 
 # -- Kelas --
 class KelasUpdate(BaseModel):
