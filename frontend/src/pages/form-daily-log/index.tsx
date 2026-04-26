@@ -220,7 +220,9 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
                 )} */}
                 <select value={logForm.topik} onChange={(e) => setLogForm((f) => ({ ...f, topik: e.target.value }))} style={inputStyle}>
                   <option value="">-- Pilih --</option>
-                  {mapel.topik.map((m) => <option key={m}>{m}</option>)}
+                  {mapel.topik_list?.map((m) => (
+                    <option key={m.id} value={m.nama}>{m.nama}</option>
+                  ))}
                 </select>
               </div>
 
@@ -326,7 +328,9 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
               {/* <input type="text" value={logForm.target_materi_berikutnya} onChange={(e) => setLogForm((f) => ({ ...f, target_materi_berikutnya: e.target.value }))} placeholder="cth: Persamaan kuadrat" style={inputStyle} /> */}
               <select value={logForm.target_materi_berikutnya} onChange={(e) => setLogForm((f) => ({ ...f, target_materi_berikutnya: e.target.value }))} style={inputStyle}>
                 <option value="">-- Pilih --</option>
-                {mapel.topik.map((m) => <option key={m}>{m}</option>)}
+                {mapel.topik_list?.map((m) => (
+                  <option key={m.id} value={m.nama}>{m.nama}</option>
+                ))}
               </select>
             </div>
 

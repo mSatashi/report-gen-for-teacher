@@ -56,7 +56,10 @@ def get_dashboard_data(db: Session, user: Pengguna) -> DashboardSummary:
     # Plan aktif (rencana studi terbaru per kelas)
     plan_aktif = (
         db.query(RencanaStudi)
-        .filter(RencanaStudi.kelas_id.in_(kelas_ids))
+        .filter(
+            RencanaStudi.kelas_id.in_(kelas_ids),
+            RencanaStudi.is_outdated == False
+        )
         .count()
     )
 

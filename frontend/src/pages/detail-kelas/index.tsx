@@ -1,317 +1,703 @@
-import { useCallback, useEffect, useState } from "react";
-import type { addSiswaPayload, GenerateplanResponse, KelasResponse, SiswaResponse } from "../../service/payload";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { KelasResponse, SiswaResponse, MapelResponse } from "../../service/payload";
 import { useKelasApi } from "../master-kelas/useKelasApi";
-import { styles } from "./styles";
 import { IconClose, IconPlus, IconTrash } from "../../icons";
 import type { Siswa, Toast } from "../../types";
 import { useSiswaApi } from "../master-siswa/useSiswaApi";
 import { addSiswaKelas, deleteSiswaKelas } from "../../service/kelasAPI";
 import { useLearningPlan } from "../learning-plan/useLearningPlan";
-// import type { Toast } from "../../types";
+import { useMapelApi } from "../master-mapel/useMapelApi";
 
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
 interface DetailKelasProps {
   kelasId: string;
   onNavigate?: (route: string, params?: Record<string, unknown>) => void;
 }
 
-type ModalMode = "add-siswa" | "edit-siswa" | null;
+type ModalMode = "add-siswa" | "confirm-delete" | "confirm-generate" | null;
 
-const emptyKelasSiswa = (): addSiswaPayload => ({
-  murid_id: "",
+// ─────────────────────────────────────────────
+// Helper: map API → internal Siswa type
+// Defined outside component to avoid recreating on every render
+// ─────────────────────────────────────────────
+const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
+  id: data.id,
+  nama: data.nama,
+  email_address: data.email_address,
+  jenis_kelamin: data.jenis_kelamin,
+  education_level: data.education_level,
+  is_active: data.is_active,
 });
 
-let toastId = 0;
+// ─────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────
+const s = {
+  root: {
+    fontFamily: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
+    background: "#F8FAFC",
+    minHeight: "100vh",
+    padding: "24px",
+    boxSizing: "border-box" as const,
+  },
+  backBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    background: "none",
+    border: "1px solid #E2E8F0",
+    color: "#475569",
+    borderRadius: "8px",
+    padding: "7px 14px",
+    fontSize: "13px",
+    fontWeight: 600,
+    cursor: "pointer",
+    marginBottom: "20px",
+    transition: "all 0.15s",
+  },
+  pageTitle: {
+    fontSize: "22px",
+    fontWeight: 800,
+    color: "#0F172A",
+    margin: 0,
+  },
+  pageSubtitle: {
+    fontSize: "13px",
+    color: "#94A3B8",
+    margin: "4px 0 24px",
+  },
+  layout: {
+    display: "grid",
+    gridTemplateColumns: "1fr 300px",
+    gap: "20px",
+    alignItems: "start",
+  },
+  card: {
+    background: "#fff",
+    border: "1px solid #E2E8F0",
+    borderRadius: "12px",
+    padding: "20px",
+    marginBottom: "16px",
+  },
+  infoGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "14px",
+  },
+  infoLabel: {
+    fontSize: "11px",
+    fontWeight: 700,
+    color: "#94A3B8",
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.06em",
+    display: "block",
+    marginBottom: "3px",
+  },
+  infoValue: {
+    fontSize: "14px",
+    fontWeight: 600,
+    color: "#1E293B",
+  },
+  toolbar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: "14px",
+  },
+  sectionTitle: {
+    fontSize: "14px",
+    fontWeight: 700,
+    color: "#1E293B",
+    margin: 0,
+  },
+  badge: {
+    display: "inline-flex",
+    alignItems: "center",
+    background: "#EEF2FF",
+    color: "#4338CA",
+    borderRadius: "999px",
+    padding: "2px 10px",
+    fontSize: "11px",
+    fontWeight: 700,
+    marginLeft: "8px",
+  },
+  btnPrimary: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    background: "#4F46E5",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    padding: "8px 14px",
+    fontSize: "13px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  siswaRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "10px 12px",
+    background: "#F8FAFC",
+    border: "1px solid #F1F5F9",
+    borderRadius: "8px",
+    marginBottom: "8px",
+    transition: "border-color 0.15s",
+  },
+  siswaName: {
+    fontSize: "14px",
+    fontWeight: 600,
+    color: "#1E293B",
+  },
+  actionGroup: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flexShrink: 0,
+  },
+  btnOutline: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "5px",
+    border: "1px solid #E2E8F0",
+    background: "#F8FAFC",
+    borderRadius: "7px",
+    padding: "6px 12px",
+    fontSize: "12px",
+    fontWeight: 600,
+    color: "#475569",
+    whiteSpace: "nowrap" as const,
+    cursor: "pointer",
+  },
+  btnDanger: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid #FCA5A5",
+    background: "#FFF5F5",
+    color: "#DC2626",
+    borderRadius: "7px",
+    padding: "6px 8px",
+    cursor: "pointer",
+    fontSize: "13px",
+  },
+  emptyState: {
+    textAlign: "center" as const,
+    padding: "32px 16px",
+    color: "#94A3B8",
+    fontSize: "13px",
+    fontStyle: "italic" as const,
+  },
+  // Right panel
+  rightCard: {
+    background: "#fff",
+    border: "1px solid #E2E8F0",
+    borderRadius: "12px",
+    padding: "20px",
+  },
+  mapelName: {
+    fontSize: "18px",
+    fontWeight: 800,
+    color: "#1E293B",
+    marginBottom: "4px",
+  },
+  mapelBadge: {
+    display: "inline-block",
+    fontSize: "10px",
+    fontWeight: 700,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.08em",
+    background: "#F0FDF4",
+    color: "#16A34A",
+    borderRadius: "999px",
+    padding: "2px 10px",
+  },
+  divider: {
+    border: "none",
+    borderTop: "1px solid #F1F5F9",
+    margin: "16px 0",
+  },
+  topikItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    fontSize: "13px",
+    color: "#334155",
+    padding: "7px 0",
+    borderBottom: "1px solid #F8FAFC",
+  },
+  topikBullet: {
+    width: "22px",
+    height: "22px",
+    background: "#EEF2FF",
+    color: "#4338CA",
+    borderRadius: "50%",
+    fontSize: "11px",
+    fontWeight: 700,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  // Modal
+  overlay: {
+    position: "fixed" as const,
+    inset: 0,
+    background: "rgba(15,23,42,0.45)",
+    backdropFilter: "blur(2px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    padding: "16px",
+  },
+  modal: {
+    background: "#fff",
+    borderRadius: "14px",
+    padding: "28px",
+    width: "100%",
+    maxWidth: "450px",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+    position: "relative" as const,
+  },
+  modalTitle: {
+    fontSize: "16px",
+    fontWeight: 800,
+    color: "#0F172A",
+    marginBottom: "4px",
+  },
+  modalSubtitle: {
+    fontSize: "13px",
+    color: "#64748B",
+    marginBottom: "16px",
+  },
+  modalFooter: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px",
+    marginTop: "20px",
+  },
+  btnCancel: {
+    background: "#F1F5F9",
+    color: "#475569",
+    border: "none",
+    borderRadius: "8px",
+    padding: "9px 18px",
+    fontSize: "13px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  btnSave: {
+    background: "#4F46E5",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    padding: "9px 18px",
+    fontSize: "13px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  closeBtn: {
+    position: "absolute" as const,
+    top: "16px",
+    right: "16px",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "#94A3B8",
+    fontSize: "18px",
+    lineHeight: 1,
+    padding: "2px",
+  },
+  // Loading skeleton
+  skeleton: {
+    background: "linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%)",
+    backgroundSize: "200% 100%",
+    animation: "shimmer 1.4s infinite",
+    borderRadius: "6px",
+  },
+};
 
-type RowStatus = "idle" | "loading" | "done" | "error";
-interface RowState {
-  status: RowStatus;
-  result: GenerateplanResponse | null;
-  errorMsg: string | null;
+// ─────────────────────────────────────────────
+// Loading Skeleton Sub-component
+// ─────────────────────────────────────────────
+function SkeletonBlock({ width = "100%", height = "16px", style = {} }: { width?: string; height?: string; style?: React.CSSProperties }) {
+  return (
+    <div
+      style={{
+        ...s.skeleton,
+        width,
+        height,
+        ...style,
+      }}
+    />
+  );
 }
 
+function DetailKelasSkeletonLoader() {
+  return (
+    <div style={s.layout}>
+      <div>
+        <div style={s.card}>
+          <div style={s.infoGrid}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i}>
+                <SkeletonBlock width="60%" height="11px" style={{ marginBottom: "6px" }} />
+                <SkeletonBlock width="80%" height="16px" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={s.card}>
+          <div style={{ ...s.toolbar, marginBottom: "16px" }}>
+            <SkeletonBlock width="120px" height="16px" />
+            <SkeletonBlock width="100px" height="34px" style={{ borderRadius: "8px" }} />
+          </div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} style={{ ...s.siswaRow, marginBottom: "8px" }}>
+              <SkeletonBlock width="140px" height="14px" />
+              <SkeletonBlock width="180px" height="30px" style={{ borderRadius: "7px" }} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={s.rightCard}>
+        <SkeletonBlock width="70%" height="22px" style={{ marginBottom: "10px" }} />
+        <SkeletonBlock width="80px" height="18px" style={{ borderRadius: "999px", marginBottom: "16px" }} />
+        <hr style={s.divider} />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "10px" }}>
+            <SkeletonBlock width="22px" height="22px" style={{ borderRadius: "50%", flexShrink: 0 }} />
+            <SkeletonBlock height="13px" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────
 export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   const [kelas, setKelas] = useState<KelasResponse | null>(null);
-  const [siswaList, setSiswaList] = useState<SiswaResponse[]>([]);
-  const [siswaKelasList, setSiswaKelasList] = useState<SiswaResponse[]>([]);
+  const [mapelObj, setMapelObj] = useState<MapelResponse | null>(null);
+  const [siswaList, setSiswaList] = useState<Siswa[]>([]);
+  const [siswaKelasList, setSiswaKelasList] = useState<Siswa[]>([]);
   const [loading, setLoading] = useState(true);
-  const [, setAddSiswaForm] = useState<addSiswaPayload>(emptyKelasSiswa());
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [modal, setModal] = useState<ModalMode>(null);
   const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ siswaId: string } | null>(null);
-  const [rows, setRows] = useState<Record<string, RowState>>({});
+  const [deleteSiswaId, setDeleteSiswaId] = useState<string | null>(null);
+  const [isSavingSiswa, setIsSavingSiswa] = useState(false);
+  const [isDeletingSiswa, setIsDeletingSiswa] = useState(false);
+
+  // ✅ FIX: useRef for toastId — no shared module-level mutable state
+  const toastIdRef = useRef(0);
 
   const { loadSiswa } = useSiswaApi();
-  const { errorMsg, loadKelas, loadSiswaKelas } = useKelasApi();
+  const { loadKelas, loadSiswaKelas } = useKelasApi();
+  const { loadMapelList } = useMapelApi();
   const { submitGeneratePlan } = useLearningPlan();
 
-  const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
-    id: data.id,
-    nama: data.nama,
-    email_address: data.email_address,
-    jenis_kelamin: data.jenis_kelamin,
-    education_level: data.education_level,
-    is_active: data.is_active,
-  });
-
-  useEffect(() => {
-    loadKelas().then((data) => {
-      setLoading(true);
-      if (data?.length) 
-        if (data?.length) {
-          const found = data.find((k) => k.id === kelasId) ?? null;
-          setKelas(found);
-        }  
-      setLoading(false);
-    });
-    
-    loadSiswa().then((data) => {
-      if (data?.length) setSiswaList(data.map(mapApiToSiswa));
-    });
-
-    loadSiswaKelas(kelasId).then((data) => {
-      if (data?.length) setSiswaKelasList(data.map(mapApiToSiswa));
-    });
-
-  }, [kelasId]);
-
-  const topikList = kelas?.mata_pelajaran_obj?.topik ?? [];
-
-  const showToast = (message: string, type: "success" | "error") => {
-    const id = ++toastId;
+  // ─────────────────────────────────────────────
+  // Toast helper
+  // ─────────────────────────────────────────────
+  const showToast = useCallback((message: string, type: "success" | "error") => {
+    const id = ++toastIdRef.current;
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
-  };
+  }, []);
 
-  const openAddSiswa = () => {
-    setAddSiswaForm(emptyKelasSiswa());
-    setModal("add-siswa");
-  };
+  const dismissToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // ─────────────────────────────────────────────
+  // Data loading
+  // ✅ FIX: Promise.allSettled — partial failures don't wipe all data
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+
+    Promise.allSettled([
+      loadKelas(),
+      loadSiswa(),
+      loadSiswaKelas(kelasId),
+      loadMapelList(),
+    ]).then(([kelasResult, siswaResult, siswaKelasResult, mapelResult]) => {
+      if (cancelled) return;
+
+      // Kelas
+      if (kelasResult.status === "fulfilled") {
+        const kelasArr = Array.isArray(kelasResult.value) ? kelasResult.value : [];
+        const currentKelas = kelasArr.find((k) => k.id === kelasId) ?? null;
+        setKelas(currentKelas);
+
+        // Mapel — resolve setelah kelas diketahui
+        if (currentKelas?.mata_pelajaran_id && mapelResult.status === "fulfilled") {
+          const mapelArr = Array.isArray(mapelResult.value) ? mapelResult.value : [];
+          const found = mapelArr.find((m) => m.id === currentKelas.mata_pelajaran_id) ?? null;
+          setMapelObj(found);
+        }
+      } else {
+        showToast("Gagal memuat data kelas", "error");
+      }
+
+      // Siswa master
+      if (siswaResult.status === "fulfilled") {
+        const arr = Array.isArray(siswaResult.value) ? siswaResult.value : [];
+        setSiswaList(arr.map(mapApiToSiswa));
+      } else {
+        showToast("Gagal memuat daftar siswa", "error");
+      }
+
+      // Siswa kelas
+      if (siswaKelasResult.status === "fulfilled") {
+        const arr = Array.isArray(siswaKelasResult.value) ? siswaKelasResult.value : [];
+        setSiswaKelasList(arr.map(mapApiToSiswa));
+      } else {
+        showToast("Gagal memuat siswa kelas", "error");
+      }
+
+      setLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [kelasId, loadKelas, loadSiswa, loadSiswaKelas, loadMapelList, showToast]);
+
+  // ─────────────────────────────────────────────
+  // Derived data
+  // ─────────────────────────────────────────────
+  const topikList = mapelObj?.topik_list?.map((t) => t.nama) ?? [];
 
   const availableSiswa = siswaList.filter(
     (s) => !siswaKelasList.some((ks) => ks.id === s.id)
   );
 
-  const saveSiswa = async () => {
-    if (!kelasId) {
-      showToast("Kelas belum dipilih", "error");
+  const deleteSiswaTarget = deleteSiswaId
+    ? siswaKelasList.find((s) => s.id === deleteSiswaId)
+    : null;
+
+  // ─────────────────────────────────────────────
+  // Handlers
+  // ─────────────────────────────────────────────
+  const openAddSiswa = useCallback(() => {
+    setSelectedSiswaIds([]);
+    setModal("add-siswa");
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModal(null);
+    setDeleteSiswaId(null);
+  }, []);
+
+  const toggleSiswaSelection = useCallback((id: string, checked: boolean) => {
+    setSelectedSiswaIds((prev) =>
+      checked ? [...prev, id] : prev.filter((x) => x !== id)
+    );
+  }, []);
+
+  // ✅ FIX: proper try/catch/finally
+  const saveSiswa = useCallback(async () => {
+    if (!kelasId || selectedSiswaIds.length === 0) {
+      showToast("Pilih minimal 1 siswa", "error");
       return;
     }
-    
-    for (const siswaId of selectedSiswaIds) {
-      const payload = { murid_id: siswaId };
-      const result = await addSiswaKelas(kelasId, payload);
-
-      if (result) {
-        const updated = await loadSiswaKelas(kelasId);
-        if (updated?.length) setSiswaKelasList(updated.map(mapApiToSiswa));
-        
-        showToast("Siswa berhasil ditambahkan ", "success");
-        setSelectedSiswaIds([]);
-
-        setModal(null);
-      } else {
-        showToast(errorMsg ?? "Gagal menambahkan siswa", "error");
-        return; // stop jika salah satu gagal
-      }
-    }
-  };
-
-  const deleteSiswa = async (siswaId: string) => {
+    setIsSavingSiswa(true);
     try {
-      await deleteSiswaKelas(kelasId, siswaId);
-      setSiswaKelasList((prev) => prev.filter((k) => k.id !== siswaId));
-      showToast("Siswa berhasil dihapus", "success");
+      await Promise.all(selectedSiswaIds.map((id) => addSiswaKelas(kelasId, { murid_id: id })));
+      const updated = await loadSiswaKelas(kelasId);
+      const updatedArr = Array.isArray(updated) ? updated : [];
+      setSiswaKelasList(updatedArr.map(mapApiToSiswa));
+      showToast(`${selectedSiswaIds.length} siswa berhasil ditambahkan`, "success");
+      setModal(null);
+      setSelectedSiswaIds([]);
     } catch {
-      showToast(errorMsg ?? "Gagal menghapus siswa", "error");
+      showToast("Gagal menambahkan beberapa siswa", "error");
     } finally {
-      setDeleteConfirm(null);
+      setIsSavingSiswa(false);
     }
-  };
+  }, [kelasId, selectedSiswaIds, loadSiswaKelas, showToast]);
 
-  const doneCount = Object.values(rows).filter((r) => r.status === "done").length;
-  // const totalCount = kelas.length;
-  const totalCount = kelas?.mata_pelajaran_obj?.topik?.length ?? 0;
+  // ✅ FIX: proper try/catch/finally; guard against missing target
+  const confirmDeleteSiswa = useCallback(async () => {
+    if (!deleteSiswaId) return;
+    setIsDeletingSiswa(true);
+    try {
+      await deleteSiswaKelas(kelasId, deleteSiswaId);
+      setSiswaKelasList((prev) => prev.filter((s) => s.id !== deleteSiswaId));
+      showToast("Siswa berhasil dikeluarkan dari kelas", "success");
+      setModal(null);
+      setDeleteSiswaId(null);
+    } catch {
+      showToast("Gagal mengeluarkan siswa", "error");
+    } finally {
+      setIsDeletingSiswa(false);
+    }
+  }, [kelasId, deleteSiswaId, showToast]);
 
-  const handleGenerate = useCallback(async (kelas: KelasResponse) => {
-    setRows((prev) => ({
-      ...prev,
-      [kelas.id]: { status: "loading", result: null, errorMsg: null },
-    }));
-    
-    console.log("Generate plan untuk kelas", kelas.id);
-    const result = await submitGeneratePlan(kelas.id);
-  
+  // ✅ FIX: full try/catch/finally — isGeneratingPlan can never get stuck
+  const handleGeneratePlan = useCallback(async () => {
+    if (!kelas?.id) return;
+    setModal(null);
+    setIsGeneratingPlan(true);
+    showToast("Mengoptimasi rencana belajar dengan AI...", "success");
+    try {
+      const result = await submitGeneratePlan(kelas.id);
       if (result) {
-        setRows((prev) => ({
-          ...prev,
-          [kelas.id]: { status: "done", result, errorMsg: null },
-        }));
+        showToast("Rencana studi kelas berhasil di-generate!", "success");
+        onNavigate?.("planDetail", { kelas });
       } else {
-        setRows((prev) => ({
-          ...prev,
-          [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
-        }));
+        showToast("Gagal men-generate rencana studi", "error");
       }
-    }, 
-  [submitGeneratePlan]);
+    } catch {
+      showToast("Terjadi kesalahan saat generate rencana studi", "error");
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  }, [kelas, submitGeneratePlan, onNavigate, showToast]);
 
-  // const handleGenerateReport = useCallback(async (kelas: ReportGeneratorResponse) => {
-  //   setRows((prev) => ({
-  //     ...prev,
-  //     [kelas.id]: { status: "loading", result: null, errorMsg: null },
-  //   }));
-    
-  //   console.log("Generate plan untuk kelas", kelas.id);
-  //   const result = await submitGeneratePlan(kelas.id);
-  
-  //     if (result) {
-  //       setRows((prev) => ({
-  //         ...prev,
-  //         [kelas.id]: { status: "done", result, errorMsg: null },
-  //       }));
-  //     } else {
-  //       setRows((prev) => ({
-  //         ...prev,
-  //         [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
-  //       }));
-  //     }
-  //   }, 
-  // [submitGeneratePlan]);
-
+  // ─────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────
   return (
-    <div style={styles.root}>
-      {/* Back button */}
-      <button style={styles.backBtn} onClick={() => onNavigate?.("masterKelas")}>
+    <div style={s.root}>
+      {/* Shimmer keyframe — injected once */}
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      <button style={s.backBtn} onClick={() => onNavigate?.("masterKelas")}>
         ← Kembali ke Master Kelas
       </button>
 
-      <h2 style={styles.pageTitle}>Detail Kelas</h2>
-      <p style={styles.pageSubtitle}>Informasi lengkap kelas dan daftar siswa</p>
+      <h2 style={s.pageTitle}>Detail Kelas</h2>
+      <p style={s.pageSubtitle}>Informasi lengkap kelas dan daftar siswa</p>
 
+      {/* ── Loading Skeleton ── */}
       {loading ? (
-        <div style={styles.loadingWrap}>Memuat data...</div>
+        <DetailKelasSkeletonLoader />
       ) : !kelas ? (
-        <div style={styles.loadingWrap}>Kelas tidak ditemukan.</div>
+        <div style={s.emptyState}>Kelas tidak ditemukan.</div>
       ) : (
-        <div style={styles.layout}>
-
-          {/* Progress banner — hanya muncul jika ada yang sudah done */}
-          {doneCount > 0 && (
-            <div style={{
-              background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 10,
-              padding: "11px 16px", fontSize: 13, color: "#166534", fontWeight: 500,
-              flexShrink: 0, display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <span>✓</span>
-              <span>{doneCount} dari {totalCount} kelas sudah memiliki learning plan.</span>
-              <div style={{ flex: 1, background: "#bbf7d0", borderRadius: 99, height: 5, marginLeft: 4 }}>
-                <div style={{
-                  width: `${Math.round((doneCount / totalCount) * 100)}%`,
-                  background: "#16a34a", borderRadius: 99, height: "100%", transition: "width .4s",
-                }} />
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>
-                {Math.round((doneCount / totalCount) * 100)}%
-              </span>
-            </div>
-          )}
+        <div style={s.layout}>
 
           {/* ── Left Panel ── */}
-          <div style={styles.leftPanel}>
+          <div>
             {/* Info Kelas */}
-            <div style={styles.infoCard}>
-              <div style={styles.infoGrid}>
-                <div style={styles.infoItem}>
-                  <span style={styles.infoLabel}>Nama Kelas</span>
-                  <span style={styles.infoValue}>Kelas {kelas.nama}</span>
+            <div style={s.card}>
+              <div style={s.infoGrid}>
+                <div>
+                  <span style={s.infoLabel}>Nama Kelas</span>
+                  <span style={s.infoValue}>Kelas {kelas.nama}</span>
                 </div>
-                <div style={styles.infoItem}>
-                  <span style={styles.infoLabel}>Mata Pelajaran</span>
-                  <span style={styles.infoValue}>
-                    {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "-"}
-                  </span>
+                <div>
+                  <span style={s.infoLabel}>Mata Pelajaran</span>
+                  <span style={s.infoValue}>{mapelObj?.nama_mata_pelajaran ?? "—"}</span>
                 </div>
-                <div style={styles.infoItem}>
-                  <span style={styles.infoLabel}>Hari</span>
-                  <span style={styles.infoValue}>{kelas.hari}</span>
+                <div>
+                  <span style={s.infoLabel}>Hari</span>
+                  <span style={s.infoValue}>{kelas.hari}</span>
                 </div>
-                <div style={styles.infoItem}>
-                  <span style={styles.infoLabel}>Jam</span>
-                  <span style={styles.infoValue}>{kelas.jam}</span>
+                <div>
+                  <span style={s.infoLabel}>Jam</span>
+                  <span style={s.infoValue}>{kelas.jam}</span>
                 </div>
-                <div style={styles.infoItem}>
-                  <span style={styles.infoLabel}>Jumlah Siswa</span>
-                  <span style={styles.infoValue}>{siswaKelasList.length} siswa</span>
+                <div>
+                  <span style={s.infoLabel}>Jumlah Siswa</span>
+                  <span style={s.infoValue}>{siswaKelasList.length} siswa</span>
                 </div>
               </div>
             </div>
 
             {/* Daftar Siswa */}
-            <div style={styles.infoCard}>
-              <div style={styles.toolbar}>
-                <p style={styles.sectionTitle}>
+            <div style={s.card}>
+              <div style={s.toolbar}>
+                <p style={s.sectionTitle}>
                   Daftar Siswa
-                  <span style={{
-                    marginLeft: "8px",
-                    background: "#EEF2FF",
-                    color: "#4338CA",
-                    borderRadius: "999px",
-                    padding: "1px 10px",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                  }}>
-                    {siswaKelasList.length}
-                  </span>
+                  <span style={s.badge}>{siswaKelasList.length}</span>
                 </p>
-
-                <button style={styles.btnPrimary} onClick={openAddSiswa}>
+                <button style={s.btnPrimary} onClick={openAddSiswa}>
                   <IconPlus /> Tambah Siswa
                 </button>
               </div>
 
               {siswaKelasList.length === 0 ? (
-                <div style={styles.emptyState}>Belum ada siswa di kelas ini</div>
+                <div style={s.emptyState}>Belum ada siswa di kelas ini.</div>
               ) : (
-                <div style={styles.siswaList}>
+                <div>
                   {siswaKelasList.map((siswa) => (
-                    <div key={siswa.id} style={styles.siswaRow}>
+                    <div key={siswa.id} style={s.siswaRow}>
                       <div>
-                        <div style={styles.siswaName}>{siswa.nama}</div>
+                        <div style={s.siswaName}>{siswa.nama}</div>
+                        <div style={{ fontSize: "12px", color: "#94A3B8" }}>{siswa.education_level}</div>
                       </div>
 
-                      <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        flexShrink: 0,
-                      }}>
-                        <div style={styles.kelasActions}>
-                          <button
-                            type="button"
-                            onClick={() => handleGenerate(kelas)}
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: 6,
-                              border: "none", borderRadius: 8,
-                              padding: "8px 14px", fontSize: 12, fontWeight: 700,
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            Generate Report
-                          </button>
-                          <button
-                            style={styles.btnDetail}
-                            onClick={() => onNavigate?.("logSiswa", { siswaId: siswa.id, siswa: siswa, mapel: kelas.mata_pelajaran_obj, kelasId: kelas.id })}
-                          >
-                            Detail
-                          </button>
-                          <button
-                            style={styles.btnDanger}
-                            onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ siswaId: siswa.id }); }}
-                          >
-                            <IconTrash />
-                          </button>
-                        </div>
+                      <div style={s.actionGroup}>
+                        {/* Buat Laporan */}
+                        <button
+                          type="button"
+                          style={s.btnOutline}
+                          onClick={() => {
+                            if (!mapelObj) {
+                              // mapel belum loaded, jangan navigasi
+                              showToast("Data mapel belum tersedia", "error");
+                              return;
+                            }
+                            onNavigate?.("reportEditor", {
+                              siswaId: siswa.id,
+                              kelasId: kelas.id,
+                              siswa: siswa as unknown as SiswaResponse,
+                              mapel: mapelObj,   // ← sudah dijamin non-null
+                            });
+                          }}
+                        >
+                          📝 Laporan
+                        </button>
+
+                        {/* Detail Sesi */}
+                        <button
+                          type="button"
+                          style={s.btnOutline}
+                          onClick={() =>
+                            onNavigate?.("logSiswa", {
+                              siswaId: siswa.id,
+                              siswa,
+                              mapel: mapelObj,
+                              kelasId: kelas.id,
+                            })
+                          }
+                        >
+                          Detail Sesi
+                        </button>
+
+                        {/* Hapus */}
+                        <button
+                          type="button"
+                          style={s.btnDanger}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteSiswaId(siswa.id);
+                            setModal("confirm-delete");
+                          }}
+                          title="Keluarkan siswa dari kelas"
+                        >
+                          <IconTrash />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -320,191 +706,274 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
             </div>
           </div>
 
-          {/* ── Right Panel — Mapel & Topik ── */}
-          <div style={styles.rightPanel}>
-            <div style={styles.rightPanel}>
-              <div style={styles.mapelName}>
-                {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "-"}
+          {/* ── Right Panel ── */}
+          {/* ✅ FIX: removed duplicate nested rightPanel div */}
+          <div style={s.rightCard}>
+            <div style={s.mapelName}>{mapelObj?.nama_mata_pelajaran ?? "—"}</div>
+            <span style={s.mapelBadge}>Mata Pelajaran</span>
+
+            <hr style={s.divider} />
+
+            <p style={{ ...s.sectionTitle, fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
+              Kandungan Topik
+            </p>
+
+            {topikList.length === 0 ? (
+              <div style={{ fontSize: "13px", color: "#94A3B8", fontStyle: "italic" }}>
+                Belum ada topik untuk mapel ini.
               </div>
-              <span style={styles.badge}>Mata Pelajaran</span>
+            ) : (
+              topikList.map((topik, i) => (
+                <div key={i} style={s.topikItem}>
+                  <span style={s.topikBullet}>{i + 1}</span>
+                  {topik}
+                </div>
+              ))
+            )}
 
-              <hr style={styles.divider} />
+            <hr style={{ ...s.divider, marginTop: "16px" }} />
 
-              <p style={{ ...styles.sectionTitle, fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
-                LIST TOPIK
-              </p>
-
-              {topikList.length === 0 ? (
-                <div style={{ fontSize: "12px", color: "#CBD5E1" }}>Belum ada topik</div>
+            {/* Generate Plan */}
+            <button
+              type="button"
+              disabled={isGeneratingPlan}
+              onClick={() => setModal("confirm-generate")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "7px",
+                width: "100%",
+                background: isGeneratingPlan ? "#A5B4FC" : "#4F46E5",
+                color: "#fff",
+                border: "none",
+                borderRadius: "9px",
+                padding: "11px",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: isGeneratingPlan ? "not-allowed" : "pointer",
+                marginBottom: "10px",
+                transition: "background 0.2s",
+              }}
+            >
+              {isGeneratingPlan ? (
+                <>
+                  <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}>⏳</span>
+                  Memproses...
+                </>
               ) : (
-                topikList.map((topik, i) => (
-                  <div key={i} style={styles.topikItem}>
-                    <span style={{
-                      width: "20px",
-                      height: "20px",
-                      background: "#EEF2FF",
-                      color: "#4338CA",
-                      borderRadius: "50%",
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}>
-                      {i + 1}
-                    </span>
-                    {topik}
-                  </div>
-                ))
+                "✦ Generate Plan Kelas"
+              )}
+            </button>
+
+            {/* Lihat Jadwal */}
+            <button
+              type="button"
+              onClick={() => onNavigate?.("planDetail", { kelas, mapelObj })}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+                background: "#F8FAFC",
+                color: "#475569",
+                border: "1px solid #E2E8F0",
+                borderRadius: "9px",
+                padding: "11px",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Lihat Jadwal
+            </button>
+          </div>
+
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────
+          MODAL: Tambah Siswa
+      ──────────────────────────────────────── */}
+      {modal === "add-siswa" && (
+        // ✅ FIX: overlay click closes modal
+        <div style={s.overlay} onClick={closeModal}>
+          <div style={s.modal} onClick={(e) => e.stopPropagation()}>
+            <button style={s.closeBtn} onClick={closeModal} aria-label="Tutup modal">
+              <IconClose />
+            </button>
+            <div style={s.modalTitle}>Tambahkan Siswa ke Kelas</div>
+            <div style={s.modalSubtitle}>Pilih siswa dari daftar master data</div>
+
+            <div
+              style={{
+                maxHeight: "300px",
+                overflowY: "auto",
+                border: "1px solid #E2E8F0",
+                borderRadius: "8px",
+                padding: "8px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              {availableSiswa.length === 0 ? (
+                <div style={{ padding: "24px", textAlign: "center", color: "#94A3B8", fontSize: "13px" }}>
+                  Semua siswa sudah masuk ke kelas ini.
+                </div>
+              ) : (
+                availableSiswa.map((siswa) => {
+                  const checked = selectedSiswaIds.includes(siswa.id);
+                  return (
+                    <label
+                      key={siswa.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        padding: "10px 12px",
+                        background: checked ? "#EEF2FF" : "#F8FAFC",
+                        border: `1px solid ${checked ? "#C7D2FE" : "#E2E8F0"}`,
+                        borderRadius: "7px",
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => toggleSiswaSelection(siswa.id, e.target.checked)}
+                        style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#4F46E5" }}
+                      />
+                      <div>
+                        <div style={{ fontSize: "14px", fontWeight: 600, color: "#1E293B" }}>{siswa.nama}</div>
+                        <div style={{ fontSize: "12px", color: "#64748B" }}>{siswa.education_level}</div>
+                      </div>
+                    </label>
+                  );
+                })
               )}
             </div>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+
+            <p style={{ fontSize: "12px", color: "#64748B", marginTop: "8px", textAlign: "right" }}>
+              Terpilih: <b>{selectedSiswaIds.length}</b> siswa
+            </p>
+
+            <div style={s.modalFooter}>
+              <button style={s.btnCancel} onClick={closeModal}>Batal</button>
               <button
-                type="button"
-                // onClick={() => openEditMapel(s)}
-                // style={styles.btnEdit}
-                // title="Edit mata pelajaran"
-                onClick={() => handleGenerate(kelas)}
-                // disabled={isLoading}
                 style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  // background: isLoading ? "#f3f4f6" : "#f59e0b",
-                  // color: isLoading ? "#9ca3af" : "#fff",
-                  border: "none", borderRadius: 8,
-                  padding: "8px 14px", fontSize: 12, fontWeight: 700,
-                  // cursor: isLoading ? "not-allowed" : "pointer",
-                  whiteSpace: "nowrap",
+                  ...s.btnSave,
+                  opacity: selectedSiswaIds.length === 0 || isSavingSiswa ? 0.5 : 1,
+                  cursor: selectedSiswaIds.length === 0 || isSavingSiswa ? "not-allowed" : "pointer",
                 }}
-                // onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = "#d97706"; }}
-                // onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = "#f59e0b"; }}
+                onClick={saveSiswa}
+                disabled={selectedSiswaIds.length === 0 || isSavingSiswa}
               >
-                {/* {isLoading
-                  ? <><Spinner color="#9ca3af" /> Generating…</>
-                  : isDone ? <>✦ Regenerate</> : <>✦ Generate Plan</>
-                } */}
-                {/* <IconEdit /> */}
-                Generate Plan
-              </button>
-
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onNavigate?.("planDetail", { kelas }) }}
-                // onClick={() => setDeleteConfirm({ siswaId: s.id })}
-                style={styles.btnDanger}
-              >
-                Detail Plan
+                {isSavingSiswa ? "Menyimpan..." : "Simpan ke Kelas"}
               </button>
             </div>
           </div>
-          
         </div>
       )}
 
-      {/* ── Modal Kelas ── */}
-      {modal && (
-        <div style={styles.overlay}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <button style={styles.closeBtn} onClick={() => setModal(null)}><IconClose /></button>
-            <div style={styles.modalTitle}>
-              {modal === "add-siswa" ? "Tambah Siswa ke kelas" : "Edit Siswa"}
+      {/* ────────────────────────────────────────
+          MODAL: Konfirmasi Hapus Siswa
+      ──────────────────────────────────────── */}
+      {modal === "confirm-delete" && deleteSiswaTarget && (
+        // ✅ FIX: overlay click closes modal
+        <div style={s.overlay} onClick={closeModal}>
+          <div style={{ ...s.modal, maxWidth: "380px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: "36px", marginBottom: "12px" }}>⚠️</div>
+            <div style={s.modalTitle}>Keluarkan Siswa?</div>
+            <div style={s.modalSubtitle}>
+              <b>{deleteSiswaTarget.nama}</b> akan dikeluarkan dari kelas ini.
+              Aksi ini tidak dapat dibatalkan.
             </div>
-            <div style={styles.modalSubtitle}>Isi informasi siswa di bawah ini</div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Siswa</label>
-              <select
-                multiple
-                style={styles.select}
-                // value={addSiswaForm.murid_id}
-                // onChange={(e) => setAddSiswaForm((f) => ({ ...f, murid_id: e.target.value }))}
-                value={selectedSiswaIds}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
-                  setSelectedSiswaIds(selected);
+            <div style={{ ...s.modalFooter, justifyContent: "center" }}>
+              <button style={s.btnCancel} onClick={closeModal} disabled={isDeletingSiswa}>
+                Batal
+              </button>
+              <button
+                style={{
+                  ...s.btnSave,
+                  background: isDeletingSiswa ? "#FDA4AF" : "#E11D48",
+                  cursor: isDeletingSiswa ? "not-allowed" : "pointer",
                 }}
-                required
+                onClick={confirmDeleteSiswa}
+                disabled={isDeletingSiswa}
               >
-                {/* <option value="">-- Pilih Siswa --</option>
-                {siswaList.map((data) => (
-                  <option key={data.id} value={data.id}>{data.nama}</option>
-                ))} */}
-                {availableSiswa.map((siswa) => (
-                  <option key={siswa.id} value={siswa.id}>
-                    {siswa.nama}
-                  </option>
-                ))}
-                <p style={{ fontSize: 12, color: "gray" }}>
-                  Tahan Ctrl / Cmd untuk pilih lebih dari satu
-                </p>
-              </select>
-            </div>
-
-            <div style={styles.modalFooter}>
-              <button style={styles.btnCancel} onClick={() => setModal(null)}>Batal</button>
-              <button style={styles.btnSave} onClick={saveSiswa}>
-                {modal === "add-siswa" ? "Tambah Siswa" : "Simpan Perubahan"}
+                {isDeletingSiswa ? "Menghapus..." : "Ya, Keluarkan"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Delete Confirm ── */}
-      {deleteConfirm && (
-        <div style={styles.overlay}>
-          <div style={{ ...styles.modal, maxWidth: "360px" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: "32px", textAlign: "center", marginBottom: "10px" }}>⚠️</div>
-            <div style={{ ...styles.modalTitle, textAlign: "center" }}>Konfirmasi Hapus</div>
-            <div style={{ ...styles.modalSubtitle, textAlign: "center" }}>
-              Hapus siswa "
-              {siswaKelasList.find((k) => k.id === deleteConfirm.siswaId)?.nama}"?
+      {/* ────────────────────────────────────────
+          MODAL: Konfirmasi Generate Plan
+          ✅ NEW: prevent accidental destructive action
+      ──────────────────────────────────────── */}
+      {modal === "confirm-generate" && (
+        <div style={s.overlay} onClick={closeModal}>
+          <div style={{ ...s.modal, maxWidth: "400px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: "36px", marginBottom: "12px" }}>✦</div>
+            <div style={s.modalTitle}>Generate Rencana Belajar?</div>
+            <div style={s.modalSubtitle}>
+              Proses ini akan membuat rencana belajar baru menggunakan AI (PSO) untuk kelas{" "}
+              <b>{kelas?.nama}</b>. Rencana sebelumnya akan digantikan.
             </div>
-            <div style={{ ...styles.modalFooter, justifyContent: "center" }}>
-              <button style={styles.btnCancel} onClick={() => setDeleteConfirm(null)}>Batal</button>
+            <div style={{ ...s.modalFooter, justifyContent: "center" }}>
+              <button style={s.btnCancel} onClick={closeModal}>Batal</button>
               <button
-                style={{ ...styles.btnSave, background: "#E11D48" }}
-                onClick={() => deleteSiswa(deleteConfirm.siswaId)}
+                style={{ ...s.btnSave, background: "#4F46E5" }}
+                onClick={handleGeneratePlan}
               >
-                Ya, Hapus
+                Ya, Generate Sekarang
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <div style={{
-        position: "fixed",
-        bottom: "24px",
-        right: "24px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-        zIndex: 2000,
-      }}>
+      {/* ────────────────────────────────────────
+          Toast Container
+      ──────────────────────────────────────── */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          zIndex: 2000,
+        }}
+      >
         {toasts.map((t) => (
-          <div key={t.id} style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            background: t.type === "success" ? "#F0FDF4" : "#FFF1F2",
-            border: `1.5px solid ${t.type === "success" ? "#4ADE80" : "#FDA4AF"}`,
-            color: t.type === "success" ? "#15803D" : "#9F1239",
-            borderRadius: "10px",
-            padding: "12px 16px",
-            fontSize: "13px",
-            fontWeight: 600,
-            boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
-            minWidth: "260px",
-            maxWidth: "360px",
-            animation: "slideIn 0.2s ease",
-          }}>
-            <span style={{ fontSize: "16px" }}>
-              {t.type === "success" ? "✅" : "❌"}
-            </span>
+          <div
+            key={t.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              background: t.type === "success" ? "#F0FDF4" : "#FFF1F2",
+              border: `1.5px solid ${t.type === "success" ? "#4ADE80" : "#FDA4AF"}`,
+              color: t.type === "success" ? "#15803D" : "#9F1239",
+              borderRadius: "10px",
+              padding: "12px 16px",
+              fontSize: "13px",
+              fontWeight: 600,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+              minWidth: "260px",
+              maxWidth: "360px",
+              animation: "fadeInUp 0.2s ease",
+            }}
+          >
+            <span style={{ fontSize: "16px" }}>{t.type === "success" ? "✅" : "❌"}</span>
             <span style={{ flex: 1 }}>{t.message}</span>
             <button
-              onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+              onClick={() => dismissToast(t.id)}
               style={{
                 background: "none",
                 border: "none",
@@ -514,11 +983,13 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                 fontSize: "14px",
                 padding: "0 2px",
               }}
-            >✕</button>
+              aria-label="Tutup notifikasi"
+            >
+              ✕
+            </button>
           </div>
         ))}
       </div>
-
     </div>
   );
 }

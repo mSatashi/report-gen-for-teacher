@@ -137,7 +137,6 @@ class LogPertemuanCreate(BaseModel):
     """
     kelas_id: str
     murid_id: str
-    # mata_pelajaran_id: str  <-- HAPUS ATAU COMMENT BARIS INI
     tanggal: date
     topik: str  
     nilai: Optional[float] = Field(None, ge=0, le=100)
@@ -147,7 +146,7 @@ class LogPertemuanCreate(BaseModel):
     target_materi_berikutnya: Optional[str] = None
     kendala: Optional[str] = None
     catatan: Optional[str] = None
-    durasi_menit: Optional[int] = None
+    durasi_menit: Optional[int] = Field(None, gt=0, lt=480)
     metode_belajar: Optional[str] = None
 
 class LogPertemuanResponse(BaseModel):

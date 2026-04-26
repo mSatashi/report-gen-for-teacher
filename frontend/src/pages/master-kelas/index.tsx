@@ -367,9 +367,37 @@ export default function MasterKelas({ onNavigate }: { onNavigate?: (route: strin
   };
 
   const saveKelas = async () => {
-    if (!kelasForm.nama.trim()) return;
+    if (!kelasForm.nama.trim()) {
+      showToast("Nama kelas tidak boleh kosong", "error");
+      return;
+    }
+    if (!kelasForm.mata_pelajaran_id) {
+      showToast("Mata Pelajaran wajib dipilih", "error");
+      return;
+    }
+    if (!kelasForm.hari) {
+      showToast("Hari wajib dipilih", "error");
+      return;
+    }
+
+    // Auto-format jam (Misal input "8:00" diubah otomatis jadi "08:00")
+    let formattedJam = kelasForm.jam.trim();
+    if (/^\d:[0-5]\d$/.test(formattedJam)) {
+      formattedJam = `0${formattedJam}`; // Tambah 0 di depan
+    }
+    
+    // Validasi final format HH:MM
+    const jamRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (!jamRegex.test(formattedJam)) {
+      showToast("Format jam tidak valid! Gunakan format HH:MM (contoh: 08:00)", "error");
+      return;
+    }
+
+    // Update payload dengan jam yang sudah diformat
+    const finalPayload = { ...kelasForm, jam: formattedJam };
+
     if (editingKelasId) {
-      const result = await submitUpdateKelas(editingKelasId, kelasForm);
+      const result = await submitUpdateKelas(editingKelasId, finalPayload);
       if (result) {
         setKelasList((prev) =>
           prev.map((k) => k.id === editingKelasId ? result : k)
@@ -380,8 +408,7 @@ export default function MasterKelas({ onNavigate }: { onNavigate?: (route: strin
         showToast(errorMsg ?? "Gagal memperbarui kelas", "error");
       }
     } else {
-      const result = await submitCreateKelas(kelasForm);
-      console.log(result);
+      const result = await submitCreateKelas(finalPayload);
       if (result) {
         setKelasList((prev) => [...prev, result]);
         showToast(`Kelas ${result.nama} berhasil ditambahkan`, "success");

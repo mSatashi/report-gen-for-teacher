@@ -16,10 +16,17 @@ export interface KelasResponse {
   created_at: string;
 }
 
+export interface TopikObj {
+  id: string;
+  nama: string;
+  difficulty_index: number;
+  prasyarat?: TopikObj[]; 
+}
+
 export interface MataPelajaranObj {
   id: string;
   nama_mata_pelajaran: string;
-  topik: string[];
+  topik_list: TopikObj[]; 
   created_at: string;
   updated_at: string;
 }
@@ -158,12 +165,32 @@ export interface AktivitasTerbaruResponse {
 export interface MapelResponse {  
   id: string;
   nama_mata_pelajaran: string;
-  topik: string[];
+  topik_list: TopikObj[]; 
   created_at: string;
   updated_at: string;
 }
 
+export interface TopikResponse {
+  id: string;
+  nama: string;
+  difficulty_index: number;
+  prasyarat?: TopikResponse[]; 
+}
+
 export interface MapelPayload {  
   nama_mata_pelajaran: string;
-  topik: string[];
+}
+
+export interface TopikPayload {
+  mata_pelajaran_id: string;
+  nama: string;
+  difficulty_index: number;
+  prasyarat_ids?: string[];
+}
+
+export interface TopikFormItem {
+  id: string; 
+  nama: string;
+  prasyarat_ids: string[];
+  isDeleted?: boolean; 
 }

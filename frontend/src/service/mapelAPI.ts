@@ -10,11 +10,10 @@ export async function fetchMapelList(): Promise<MapelResponse[]> {
 
 /** POST /mata-pelajaran — buat mata pelajaran baru */
 export async function createMapel(payload: MapelPayload): Promise<MapelResponse> {
-  const res = await apiFetch(`/mata-pelajaran`, {
+  const res = await apiFetch(`/mata-pelajaran/`, {
     method: "POST",
     body: JSON.stringify({
       nama_mata_pelajaran: payload.nama_mata_pelajaran,
-      topik: payload.topik,
     }),
   });
   if (!res.ok) {
@@ -24,14 +23,12 @@ export async function createMapel(payload: MapelPayload): Promise<MapelResponse>
   return res.json();
 }
 
-
 /** PUT /mata-pelajaran — perbarui mata pelajaran */
 export async function updateMapel(payload: MapelPayload, idMapel: string): Promise<MapelResponse> {
   const res = await apiFetch(`/mata-pelajaran/${idMapel}`, {
     method: "PUT",
     body: JSON.stringify({
       nama_mata_pelajaran: payload.nama_mata_pelajaran,
-      topik: payload.topik,
     }),
   });
   if (!res.ok) {

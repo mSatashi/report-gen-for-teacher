@@ -20,11 +20,15 @@ export const buildStatCards = (data: DashboardResponse | null): StatCard[] => [
     icon: <IconLog />,
   },
   {
-    label: "Plan Aktif",
+    label: "Kelas Terencana", 
     value: data?.plan_aktif ?? 0,
-    badge: { count: data?.plan_aktif ?? 0, text: "Sesuai jadwal", color: "yellow" },
-    bg: "#fffbeb",
-    iconColor: "#f59e0b",
+    badge: { 
+      count: data?.plan_aktif ?? 0, 
+      text: "Terkini", 
+      color: "green" 
+    },
+    bg: "#f0fdf4", 
+    iconColor: "#15803d",
     icon: <IconPlan />,
   },
   {

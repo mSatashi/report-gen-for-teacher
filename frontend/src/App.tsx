@@ -113,8 +113,17 @@ const App: React.FC = () => {
         return <DashboardPage namaLengkap={user?.username ?? "Pengguna"} />;
       case "learningPlan":
         return <LearningPlan />;
-      case "reportEditor":
-        return <ReportEditor />;
+        case "reportEditor":
+          case "reportEditor":
+        return (
+          <ReportEditor
+            siswaId={(routeParams.siswaId as string) ?? ""}
+            kelasId={(routeParams.kelasId as string) ?? ""}
+            siswa={(routeParams.siswa as SiswaResponse) ?? null}
+            mapel={(routeParams.mapel as MapelResponse) ?? null}
+            onNavigate={handleNavigate}
+          />
+        );
       case "masterKelas":
         return <MasterKelas onNavigate={handleNavigate} />;
       case "masterSiswa":
