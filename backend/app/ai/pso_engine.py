@@ -52,7 +52,7 @@ def run_pso_algorithm(
     if not unmastered_skills:
         return {
             "rekomendasi_materi": [],
-            "jadwal_mingguan": {},
+            "jadwal_mingguan": [],
             "catatan_analisa": "Siswa sudah menguasai seluruh target kurikulum (≥85%).",
             "estimasi_selesai_minggu": 0,
             "prioritas_perhatian": []
@@ -197,10 +197,13 @@ def run_pso_algorithm(
     rute_rekomendasi = best_sequence[:sisa_sesi]
     
     # Generate jadwal mingguan (2 sesi/minggu)
-    jadwal_mingguan = {}
+    temp_jadwal = {}
     for i, topik in enumerate(rute_rekomendasi):
         minggu = f"Minggu {(i // 2) + 1}"
-        jadwal_mingguan.setdefault(minggu, []).append(topik)
+        temp_jadwal.setdefault(minggu,[]).append(topik)
+
+
+    jadwal_mingguan =[{"minggu": k, "topik": v} for k, v in temp_jadwal.items()]
 
     # Insight hasil optimasi
     catatan = f"Rute dioptimasi dengan PSO. Estimasi latihan: {int(gbest_value)} iterasi kognitif."

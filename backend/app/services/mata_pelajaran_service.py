@@ -37,7 +37,6 @@ def create_mata_pelajaran(
     mapel = MataPelajaran(
         id=str(uuid.uuid4()),
         nama_mata_pelajaran=data.nama_mata_pelajaran,
-        kredit=data.kredit,
         hari=data.hari,
         jam=data.jam,
     )

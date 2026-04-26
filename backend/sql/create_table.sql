@@ -36,7 +36,6 @@ CREATE TABLE IF NOT EXISTS murid (
 CREATE TABLE IF NOT EXISTS mata_pelajaran (
     id                  VARCHAR(50)  PRIMARY KEY,
     nama_mata_pelajaran VARCHAR(150) NOT NULL,
-    kredit              INTEGER      NOT NULL DEFAULT 0,
     hari                VARCHAR(10),
     jam                 VARCHAR(5),  -- Format HH:MM
     created_at          TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -67,6 +66,7 @@ CREATE TABLE IF NOT EXISTS kelas (
     pengajar_id       VARCHAR(50)  REFERENCES pengajar(id) ON DELETE SET NULL,
     hari              VARCHAR(10)  NOT NULL,
     jam               VARCHAR(5)   NOT NULL,
+    kredit            INTEGER      NOT NULL DEFAULT 20, -- <-- TAMBAH INI
     created_at        TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 

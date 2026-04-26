@@ -64,7 +64,6 @@ class MataPelajaran(Base):
     __tablename__ = "mata_pelajaran"
     id                  = Column(String(50), primary_key=True, default=_uuid)
     nama_mata_pelajaran = Column(String(150), nullable=False)
-    kredit              = Column(Integer, nullable=False, default=0)
     hari                = Column(String(10))
     jam                 = Column(String(5))
     created_at          = Column(DateTime, default=datetime.utcnow)
@@ -108,6 +107,7 @@ class Kelas(Base):
     hari              = Column(String(10), nullable=False)
     jam               = Column(String(5), nullable=False)
     created_at        = Column(DateTime, default=datetime.utcnow)
+    kredit            = Column(Integer, default=20)
 
     pengajar           = relationship("Pengajar", back_populates="kelas_diampu")
     mata_pelajaran_obj = relationship("MataPelajaran", back_populates="kelas_list")
@@ -196,7 +196,7 @@ class RencanaStudi(Base):
     murid_id                  = Column(String(50), ForeignKey("murid.id", ondelete="CASCADE"), nullable=True) # Null = Rencana Kelas
     draft_analisis_id         = Column(String(50), ForeignKey("draft_analisis.id", ondelete="SET NULL"))
     daftar_rekomendasi_materi = Column(JSON, default=list)
-    jadwal_mingguan           = Column(JSON, default=dict)
+    jadwal_mingguan           = Column(JSON, default=list)
     catatan_analisa           = Column(Text)
     estimasi_waktu_selesai    = Column(DateTime)
     is_outdated               = Column(Boolean, default=False)

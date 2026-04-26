@@ -17,8 +17,9 @@ class OllamaClient:
         model: Optional[str] = None,
         timeout: int = 600,
     ):
-        self.base_url = (base_url or settings.OLLAMA_BASE_URL).rstrip("/")
-        self.model = model or settings.OLLAMA_MODEL_NAME
+        # Menggunakan getattr untuk mencegah crash jika setting tidak ada di .env
+        self.base_url = (base_url or getattr(settings, "OLLAMA_BASE_URL", "http://localhost:11434")).rstrip("/")
+        self.model = model or getattr(settings, "OLLAMA_MODEL_NAME", "llama3")
         self.timeout = timeout
 
     async def is_available(self) -> bool:
@@ -28,7 +29,7 @@ class OllamaClient:
                 resp = await client.get(f"{self.base_url}/api/tags")
                 if resp.status_code != 200:
                     return False
-                models = [m["name"] for m in resp.json().get("models", [])]
+                models = [m["name"] for m in resp.json().get("models",[])]
                 return any(self.model in m for m in models)
         except Exception as e:
             logger.warning(f"Ollama tidak tersedia: {e}")
@@ -76,5 +77,10 @@ class OllamaClient:
             logger.error(f"Ollama generate gagal: {e}")
             raise RuntimeError(f"Gagal terhubung ke model AI: {str(e)}")
 
-# Singleton instance
-narrative_client = OllamaClient(model=settings.OLLAMA_MODEL_NAME)
+
+# ── Singleton instances ───────────────────────────────────────────────────────
+# Fallback aman jika variabel tidak diset di config.py / .env
+_default_model = getattr(settings, "OLLAMA_MODEL_NAME", "llama3")
+
+narrative_client = OllamaClient(model=_default_model)
+planner_client   = OllamaClient(model=getattr(settings, "PLANNER_MODEL_NAME", _default_model))

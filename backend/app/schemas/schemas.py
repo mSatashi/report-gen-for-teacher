@@ -73,6 +73,11 @@ class TopikCreate(BaseModel):
     difficulty_index: float = Field(0.5, ge=0.0, le=1.0, description="0.0 mudah, 1.0 sangat sulit")
     prasyarat_ids: Optional[List[str]] = Field(default_factory=list, description="ID topik lain yang harus dikuasai dulu")
 
+class TopikUpdate(BaseModel):
+    mata_pelajaran_id: Optional[str] = None
+    nama: Optional[str] = None
+    difficulty_index: Optional[float] = Field(None, ge=0.0, le=1.0)
+
 class TopikResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
@@ -82,7 +87,6 @@ class TopikResponse(BaseModel):
 
 class MataPelajaranCreate(BaseModel):
     nama_mata_pelajaran: str
-    kredit: int = Field(0, ge=0)
     hari: Optional[Hari] = None
     jam: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
 
@@ -90,7 +94,6 @@ class MataPelajaranResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
     nama_mata_pelajaran: str
-    kredit: int
     hari: Optional[str] = None
     jam: Optional[str] = None
     topik_list: List[TopikResponse] = []
@@ -104,6 +107,7 @@ class KelasCreate(BaseModel):
     mata_pelajaran_id: str
     hari: Hari
     jam: str = Field(..., description="Format HH:MM")
+    kredit: int = Field(20, ge=1, description="Saldo/Jumlah pertemuan maksimal") 
 
     @field_validator("jam")
     @classmethod
@@ -120,6 +124,7 @@ class KelasResponse(BaseModel):
     pengajar_id: Optional[str] = None
     hari: str
     jam: str
+    kredit: int
     created_at: datetime
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -132,9 +137,9 @@ class LogPertemuanCreate(BaseModel):
     """
     kelas_id: str
     murid_id: str
-    mata_pelajaran_id: str
+    # mata_pelajaran_id: str  <-- HAPUS ATAU COMMENT BARIS INI
     tanggal: date
-    topik: str  # Nama topik
+    topik: str  
     nilai: Optional[float] = Field(None, ge=0, le=100)
     tingkat_pemahaman: Optional[str] = None
     tingkat_keterlibatan: Optional[str] = None
@@ -144,6 +149,18 @@ class LogPertemuanCreate(BaseModel):
     catatan: Optional[str] = None
     durasi_menit: Optional[int] = None
     metode_belajar: Optional[str] = None
+
+class LogPertemuanResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    kelas_id: str | None = None
+    murid_id: str
+    # mata_pelajaran_id: str <-- HAPUS ATAU COMMENT BARIS INI
+    tanggal: date
+    topik: str
+    nilai: Optional[float]
+    catatan: Optional[str]
+    created_at: datetime
 
 
 class LogPertemuanUpdate(BaseModel):
@@ -159,20 +176,6 @@ class LogPertemuanUpdate(BaseModel):
     metode_belajar: Optional[str] = None
 
 
-class LogPertemuanResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: str
-    kelas_id: str | None = None
-    murid_id: str
-    mata_pelajaran_id: str
-class LogPertemuanResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: str
-    tanggal: date
-    topik: str
-    nilai: Optional[float]
-    catatan: Optional[str]
-    created_at: datetime
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # KNOWLEDGE STATE (Output BKT)
@@ -200,7 +203,7 @@ class RencanaStudiResponse(BaseModel):
     id: str
     murid_id: Optional[str] = None
     daftar_rekomendasi_materi: Optional[List[str]] = Field(None, description="Urutan topik hasil optimasi PSO")
-    jadwal_mingguan: Optional[Dict[str, Any]] = None
+    jadwal_mingguan: Optional[List[Dict[str, Any]]] = None  # <--- UBAH DI SINI
     catatan_analisa: Optional[str] = None
     estimasi_waktu_selesai: Optional[datetime] = None
     is_outdated: bool = False
@@ -228,8 +231,14 @@ class LaporanResponse(BaseModel):
 
 class DiagnosticCreate(BaseModel):
     murid_id: str
+    kelas_id: Optional[str] = None # <--- Tambahkan baris ini
     topik: str
     diagnostic_score: float = Field(..., ge=0, le=100)
+
+class DiagnosticUpdate(BaseModel):
+    diagnostic_score: Optional[float] = Field(None, ge=0, le=100)
+    topik: Optional[str] = None
+    kelas_id: Optional[str] = None
 
 class DiagnosticResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -259,7 +268,6 @@ class DashboardSummary(BaseModel):
 # -- Mata Pelajaran --
 class MataPelajaranUpdate(BaseModel):
     nama_mata_pelajaran: Optional[str] = None
-    kredit: Optional[int] = Field(None, ge=0)
     hari: Optional[Hari] = None
     jam: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
 
@@ -269,6 +277,7 @@ class KelasUpdate(BaseModel):
     mata_pelajaran_id: Optional[str] = None
     hari: Optional[str] = None
     jam: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    kredit: Optional[int] = Field(None, ge=1)
 
 class TambahMuridKeKelas(BaseModel):
     murid_id: str
