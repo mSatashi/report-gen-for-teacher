@@ -327,4 +327,17 @@ export const styles: Record<string, CSSProperties> = {
     color: "#8A9BB0",
     fontSize: "13px",
   },
+  btnDetail: {
+    display: "flex",
+    alignItems: "center",
+    gap: "3px",
+    background: "#F5F3FF",
+    color: "#7C3AED",
+    border: "1px solid #DDD6FE",
+    borderRadius: "5px",
+    padding: "3px 8px",
+    fontSize: "11px",
+    fontWeight: 600,
+    cursor: "pointer",
+  }
 };

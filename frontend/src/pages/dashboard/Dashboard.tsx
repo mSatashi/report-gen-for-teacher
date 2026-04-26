@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import Notification from "../../ui/Notifications";
-import StatCardItem from "../../ui/StatCardItem";
-import StudentRow from "../../ui/StudentRow";
-import ActivityItem from "../../ui/ActivityItem";
+import StatCardItem from "../dashboard/StatCardItem";
+import StudentRow from "../dashboard/studentRow";
 import type { DashboardResponse } from "../../service/payload";
 import { useDashboard } from "./useDashboard";
 import { buildStatCards } from "./statCards";
+import ActivityItem from "./ActivityItem";
 
 interface DashboardPageProps {
   /** Optional flash messages forwarded from the layout */
@@ -23,6 +23,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash, namaLengkap }) => 
   const { loadDashboard } = useDashboard();
 
   useEffect(() => {
+    console.log("useEffect dipanggil");
     loadDashboard().then((data) => {
       if (!data) return;
         setDataDashboard({
@@ -126,7 +127,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash, namaLengkap }) => 
             <StudentRow key={s.name} student={s} />
           ))} */}
           {progressSiswa.map((s) => (
-            <StudentRow key={s.name} student={s} />
+            <StudentRow key={s.nama} student={s} />
           ))}
         </div>
 
@@ -152,7 +153,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash, namaLengkap }) => 
             <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>
               Aktivitas Terbaru
             </span>
-            <button
+            {/* <button
               style={{
                 background: "#f3f4f6",
                 border: "none",
@@ -165,11 +166,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash, namaLengkap }) => 
               }}
             >
               Lihat Semua
-            </button>
+            </button> */}
           </div>
 
           {aktivitasTerbaru.map((a) => (
-            <ActivityItem key={a.title} activity={a} />
+            <ActivityItem key={a.kelas_id} activity={a} />
           ))}
         </div>
 

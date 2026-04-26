@@ -14,9 +14,9 @@ export async function createKelas(payload: KelasPayload): Promise<KelasResponse>
     method: "POST",
     body: JSON.stringify({
       nama: payload.nama,
-      mata_pelajaran: payload.mata_pelajaran,
-      kredit: payload.kredit,
-      jadwal: payload.jadwal,
+      mata_pelajaran_id: payload.mata_pelajaran_id,
+      hari: payload.hari,
+      jam: payload.jam,
     }),
   });
   if (!res.ok) {
@@ -32,9 +32,9 @@ export async function updateKelas(id: string, payload: KelasPayload): Promise<Ke
     method: "PUT",
     body: JSON.stringify({
       nama: payload.nama,
-      mata_pelajaran: payload.mata_pelajaran,
-      kredit: payload.kredit,
-      jadwal: payload.jadwal,
+      mata_pelajaran_id: payload.mata_pelajaran_id,
+      hari: payload.hari,
+      jam: payload.jam,
     }),
   });
   if (!res.ok) {

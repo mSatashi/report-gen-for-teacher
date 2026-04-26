@@ -51,15 +51,15 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
               Daily Log
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
-            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{dataKelas?.mata_pelajaran}</span>
+            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{'dataKelas?.mata_pelajaran'}</span>
           </div>
         )}
         <h2 style={{ fontSize: 24, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>
-          {dataKelas ? `Siswa — ${dataKelas.mata_pelajaran}` : "Daftar Siswa"}
+          {dataKelas ? `Siswa — ${'dataKelas.mata_pelajaran'}` : "Daftar Siswa"}
         </h2>
         <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
           {dataKelas
-            ? `Daftar siswa yang mengikuti ${dataKelas.mata_pelajaran} beserta progres belajar mereka`
+            ? `Daftar siswa yang mengikuti ${'dataKelas.mata_pelajaran'} beserta progres belajar mereka`
             : "Kelola data siswa dan lihat progres belajar"}
         </p>
       </div>
@@ -155,7 +155,7 @@ const DailyListSiswa: React.FC<DailyListSiswaProps> = ({
                         <span style={{ fontWeight: 500, color: "#111827" }}>{siswa.nama}</span>
                       </div>
                     </td>
-                    <td style={{ padding: "12px 14px", color: "#6b7280" }}>{siswa.level}</td>
+                    <td style={{ padding: "12px 14px", color: "#6b7280" }}>{'siswa.level'}</td>
                     <td style={{ padding: "12px 14px" }}>
                       <span
                         style={{

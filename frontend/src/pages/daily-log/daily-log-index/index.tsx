@@ -57,7 +57,7 @@ const DailyLogIndex: React.FC<DailyLogIndexProps> = ({ kelasList, kelasSiswaMap,
                 return (
                   <tr key={row.id} style={table.tdBorderBottom}>
                     <td style={table.tdNumber}>{idx + 1}</td>
-                    <td style={table.td}>{row.mata_pelajaran}</td>
+                    <td style={table.td}>{'row.mata_pelajaran'}</td>
                     <td style={table.td}>{kelasSiswaMap[row.id] ?? 0}</td>
                     {/* <td style={{ padding: "12px 14px", color: colors.darkNavy }}>{row.deskripsi}</td> */}
                     <td style={table.tdPadding}>

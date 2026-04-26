@@ -22,8 +22,6 @@ export default function MasterMapel() {
 
   const { errorMsg, loadMapelList, submitCreateMapel, submitUpdateMapel, submitDeleteMapel } = useMapelApi();
 
-  // const isLoading = status === "loading";
-
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
     setToasts((prev) => [...prev, { id, message, type }]);

@@ -1,8 +1,8 @@
 import React from "react";
-import type { Activity } from "../../types";
+import type { AktivitasTerbaruResponse } from "../../service/payload";
 
 interface ActivityItemProps {
-  activity: Activity;
+  activity: AktivitasTerbaruResponse;
 }
 
 const ActivityItem: React.FC<ActivityItemProps> = ({ activity: a }) => (
@@ -17,7 +17,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity: a }) => (
       }}
     >
       <span style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", whiteSpace: "nowrap" }}>
-        {a.date}
+        {a.tanggal}
       </span>
       <div
         style={{
@@ -34,10 +34,10 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity: a }) => (
 
     {/* Content */}
     <div>
-      <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{a.title}</div>
-      <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>{a.subtitle}</div>
+      <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{a.nama_mata_pelajaran}</div>
+      <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>{a.topik}</div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {a.tags.map((t) => (
+        {/* {a.tags.map((t) => (
           <span
             key={t.label}
             style={{
@@ -51,7 +51,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity: a }) => (
           >
             {t.label}
           </span>
-        ))}
+        ))} */}
       </div>
     </div>
   </div>

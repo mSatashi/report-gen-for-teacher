@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { IconClose, IconEdit, IconPlus, IconTrash } from "../../icons";
 import { useKelasApi } from "./useKelasApi";
-import type { KelasResponse, Toast } from "../../service/payload";
+import type { KelasPayload, KelasResponse, MataPelajaranObj, Toast } from "../../service/payload";
+import { useMapelApi } from "../master-mapel/useMapelApi";
 
 type ModalMode = "add-kelas" | "edit-kelas" | null;
 
-// API returns hari as number: 1=Senin, 2=Selasa, ..., 7=Minggu
-const HARI_MAP: Record<number, string> = {
-  1: "Senin", 2: "Selasa", 3: "Rabu", 4: "Kamis",
-  5: "Jumat", 6: "Sabtu", 7: "Minggu",
+const HARI_MAP: Record<string, string> = {
+  "Senin": "Senin", "Selasa": "Selasa", "Rabu": "Rabu", "Kamis": "Kamis",
+  "Jumat": "Jumat", "Sabtu": "Sabtu", "Minggu": "Minggu",
 };
 
 const HARI_ORDER = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
@@ -26,17 +26,8 @@ const HARI_COLORS: Record<string, { bg: string; border: string; label: string }>
 const emptyKelasForm = () => ({
   nama: "",
   mata_pelajaran_id: "",
-  mata_pelajaran_obj: {
-    id: "",
-    nama_mata_pelajaran: "",
-    topik: [],
-    created_at: "",
-    updated_at: "",
-  },  
-  pengajar_id: "",
   hari: "",
   jam: "",
-  created_at: "",
 });
 
 let toastId = 0;
@@ -290,17 +281,47 @@ const styles = {
     color: "#94A3B8",
     padding: "4px",
   } as React.CSSProperties,
+
+  select: {
+    width: "100%",
+    border: "1.5px solid #E2E8F0",
+    borderRadius: "8px",
+    padding: "9px 12px",
+    fontSize: "13px",
+    outline: "none",
+    boxSizing: "border-box" as const,
+    background: "#fff",
+    cursor: "pointer",
+    color: "#0F172A",
+    appearance: "auto" as const,
+  } as React.CSSProperties,
+  
+  btnDetail: {
+    display: "flex",
+    alignItems: "center",
+    gap: "3px",
+    background: "#F5F3FF",
+    color: "#7C3AED",
+    border: "1px solid #DDD6FE",
+    borderRadius: "5px",
+    padding: "3px 8px",
+    fontSize: "11px",
+    fontWeight: 600,
+    cursor: "pointer",
+  } as React.CSSProperties,
 };
 
-export default function MasterKelas() {
+export default function MasterKelas({ onNavigate }: { onNavigate?: (route: string, params?: Record<string, string>) => void }) {
   const [kelasList, setKelasList] = useState<KelasResponse[]>([]);
-  const [, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
   const [modal, setModal] = useState<ModalMode>(null);
-  const [kelasForm, setKelasForm] = useState(emptyKelasForm());
+  const [kelasForm, setKelasForm] = useState<KelasPayload>(emptyKelasForm());
   const [editingKelasId, setEditingKelasId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ kelasId: string } | null>(null);
+  const [mataPelajaranList, setMataPelajaranList] = useState<MataPelajaranObj[]>([]);
 
   const { errorMsg, loadKelas, submitCreateKelas, submitUpdateKelas, submitDeleteKelas } = useKelasApi();
+    const { loadMapelList } = useMapelApi();
 
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
@@ -312,19 +333,20 @@ export default function MasterKelas() {
     loadKelas().then((data) => {
       if (data?.length) setKelasList(data);
     });
+    loadMapelList().then((data) => {
+      if (data?.length) setMataPelajaranList(data);
+    });
   }, []);
 
   // Group kelas by hari (convert number → string via HARI_MAP)
   const kelasByHari = HARI_ORDER.reduce<Record<string, KelasResponse[]>>((acc, hariStr) => {
-    acc[hariStr] = kelasList.filter((k) => HARI_MAP[Number(k.hari)] === hariStr);
+    acc[hariStr] = kelasList.filter((k) => k.hari=== hariStr);
     return acc;
   }, {});
 
-  // Only show days that have classes OR all days if none
-  // const activeDays = HARI_ORDER.filter((h) => kelasByHari[h].length > 0);
   const displayDays = HARI_ORDER;
 
-  const totalSiswa = 0; // populated separately if needed
+  // const totalSiswa = 0;
 
   // ── Kelas CRUD ──
   const openAddKelas = () => {
@@ -334,14 +356,11 @@ export default function MasterKelas() {
   };
 
   const openEditKelas = (k: KelasResponse) => {
-    setKelasForm({     
+    setKelasForm({
       nama: k.nama,
       mata_pelajaran_id: k.mata_pelajaran_id ?? "",
-      mata_pelajaran_obj: k.mata_pelajaran_obj,
-      pengajar_id: k.pengajar_id,
       hari: k.hari,
       jam: k.jam,
-      created_at: k.created_at,
     });
     setEditingKelasId(k.id);
     setModal("edit-kelas");
@@ -355,20 +374,22 @@ export default function MasterKelas() {
         setKelasList((prev) =>
           prev.map((k) => k.id === editingKelasId ? result : k)
         );
-        showToast("Kelas berhasil diperbarui ✓", "success");
+        showToast("Kelas berhasil diperbarui", "success");
+        setModal(null);
       } else {
         showToast(errorMsg ?? "Gagal memperbarui kelas", "error");
       }
     } else {
       const result = await submitCreateKelas(kelasForm);
+      console.log(result);
       if (result) {
         setKelasList((prev) => [...prev, result]);
-        showToast(`Kelas ${result.nama} berhasil ditambahkan ✓`, "success");
+        showToast(`Kelas ${result.nama} berhasil ditambahkan`, "success");
+        setModal(null);
       } else {
         showToast(errorMsg ?? "Gagal membuat kelas", "error");
       }
     }
-    setModal(null);
   };
 
   const deleteKelas = async (id: string) => {
@@ -395,9 +416,9 @@ export default function MasterKelas() {
         <div style={styles.statBadge}>
           🏫 Total Kelas: <span style={{ color: "#4F46E5" }}>{kelasList.length}</span>
         </div>
-        <div style={styles.statBadge}>
+        {/* <div style={styles.statBadge}>
           👥 Total Siswa: <span style={{ color: "#059669" }}>{totalSiswa}</span>
-        </div>
+        </div> */}
       </div>
 
       {/* ── Toolbar ── */}
@@ -436,26 +457,13 @@ export default function MasterKelas() {
                       </div>
                       <div style={styles.kelasJam}>⏰ {kelas.jam}</div>
 
-                      {/* Topics if any */}
-                      {(kelas.mata_pelajaran_obj?.topik?.length ?? 0) > 0 && (
-                        <div style={{ marginTop: "5px", display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                          {kelas.mata_pelajaran_obj.topik.slice(0, 2).map((t) => (
-                            <span key={t} style={{
-                              fontSize: "10px",
-                              background: color.bg,
-                              border: `1px solid ${color.border}`,
-                              color: color.label,
-                              borderRadius: "4px",
-                              padding: "1px 6px",
-                              fontWeight: 500,
-                            }}>
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
                       <div style={styles.kelasActions}>
+                        <button
+                          style={styles.btnDetail}
+                          onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId: kelas.id }); }}
+                        >
+                          Detail
+                        </button>
                         <button
                           style={styles.btnEdit}
                           onClick={(e) => { e.stopPropagation(); openEditKelas(kelas); }}
@@ -479,7 +487,7 @@ export default function MasterKelas() {
 
       {/* ── Modal Kelas ── */}
       {modal && (
-        <div style={styles.overlay} onClick={() => setModal(null)}>
+        <div style={styles.overlay}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button style={styles.closeBtn} onClick={() => setModal(null)}><IconClose /></button>
             <div style={styles.modalTitle}>
@@ -494,24 +502,59 @@ export default function MasterKelas() {
                 placeholder="Contoh: A, B, atau VII-A"
                 value={kelasForm.nama}
                 onChange={(e) => setKelasForm((f) => ({ ...f, nama: e.target.value }))}
+                required
+                autoComplete="nama"
               />
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Mata Pelajaran *</label>
-              <input
-                style={styles.input}
-                placeholder="Nama mata pelajaran"
-                value={kelasForm.mata_pelajaran}
-                onChange={(e) => setKelasForm((f) => ({ ...f, mata_pelajaran: e.target.value }))}
-              />
+              <select
+                style={styles.select}
+                value={kelasForm.mata_pelajaran_id}
+                onChange={(e) => {
+                  const selected = mataPelajaranList.find((m) => m.id === e.target.value);
+                  setKelasForm((f) => ({
+                    ...f,
+                    mata_pelajaran_id: selected?.id ?? "",
+                  }));
+                }}
+                required
+              >
+                <option value="">
+                  -- Pilih Mata Pelajaran --
+                </option>
+                {mataPelajaranList.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nama_mata_pelajaran}
+                  </option>
+                ))}
+              </select>
             </div>
+
             <div style={styles.formGroup}>
-              <label style={styles.label}>Jadwal (Hari & Jam)</label>
+              <label style={styles.label}>Hari</label>
+              <select
+                style={styles.select}
+                value={kelasForm.hari}
+                onChange={(e) => setKelasForm((f) => ({ ...f, hari: e.target.value }))}
+                required
+              >
+                <option value="">-- Pilih Hari --</option>
+                {Object.entries(HARI_MAP).map(([nama]) => (
+                  <option key={nama} value={nama}>{nama}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Jam Mulai</label>
               <input
                 style={styles.input}
-                placeholder="Contoh: Senin 10:00"
-                value={kelasForm.jadwal}
-                onChange={(e) => setKelasForm((f) => ({ ...f, jadwal: e.target.value }))}
+                placeholder="Contoh: 10:00"
+                value={kelasForm.jam}
+                onChange={(e) => setKelasForm((f) => ({ ...f, jam: e.target.value }))}
+                required
+                autoComplete="jam" 
               />
             </div>
 
@@ -527,7 +570,7 @@ export default function MasterKelas() {
 
       {/* ── Delete Confirm ── */}
       {deleteConfirm && (
-        <div style={styles.overlay} onClick={() => setDeleteConfirm(null)}>
+        <div style={styles.overlay}>
           <div style={{ ...styles.modal, maxWidth: "360px" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: "32px", textAlign: "center", marginBottom: "10px" }}>⚠️</div>
             <div style={{ ...styles.modalTitle, textAlign: "center" }}>Konfirmasi Hapus</div>
@@ -547,6 +590,53 @@ export default function MasterKelas() {
           </div>
         </div>
       )}
+
+      {/* ── Toast Notifications ── */}
+      <div style={{
+        position: "fixed",
+        bottom: "24px",
+        right: "24px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        zIndex: 2000,
+      }}>
+        {toasts.map((t) => (
+          <div key={t.id} style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            background: t.type === "success" ? "#F0FDF4" : "#FFF1F2",
+            border: `1.5px solid ${t.type === "success" ? "#4ADE80" : "#FDA4AF"}`,
+            color: t.type === "success" ? "#15803D" : "#9F1239",
+            borderRadius: "10px",
+            padding: "12px 16px",
+            fontSize: "13px",
+            fontWeight: 600,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+            minWidth: "260px",
+            maxWidth: "360px",
+            animation: "slideIn 0.2s ease",
+          }}>
+            <span style={{ fontSize: "16px" }}>
+              {t.type === "success" ? "✅" : "❌"}
+            </span>
+            <span style={{ flex: 1 }}>{t.message}</span>
+            <button
+              onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "inherit",
+                opacity: 0.6,
+                fontSize: "14px",
+                padding: "0 2px",
+              }}
+            >✕</button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
