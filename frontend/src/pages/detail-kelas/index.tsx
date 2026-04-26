@@ -7,6 +7,7 @@ import type { Siswa, Toast } from "../../types";
 import { useSiswaApi } from "../master-siswa/useSiswaApi";
 import { addSiswaKelas, deleteSiswaKelas } from "../../service/kelasAPI";
 import { useLearningPlan } from "../learning-plan/useLearningPlan";
+// import { useReportGeneratorApi } from "./useGenerateReport";
 // import type { Toast } from "../../types";
 
 interface DetailKelasProps {
@@ -44,6 +45,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   const { loadSiswa } = useSiswaApi();
   const { errorMsg, loadKelas, loadSiswaKelas } = useKelasApi();
   const { submitGeneratePlan } = useLearningPlan();
+  // const { submitCreateReportGenerator } = useReportGeneratorApi();
 
   const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
     id: data.id,
@@ -156,28 +158,16 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
     }, 
   [submitGeneratePlan]);
 
-  // const handleGenerateReport = useCallback(async (kelas: ReportGeneratorResponse) => {
-  //   setRows((prev) => ({
-  //     ...prev,
-  //     [kelas.id]: { status: "loading", result: null, errorMsg: null },
-  //   }));
-    
-  //   console.log("Generate plan untuk kelas", kelas.id);
-  //   const result = await submitGeneratePlan(kelas.id);
+  // const handleGenerateReport = useCallback(async (kelasId: string, siswaId: string, payload: ReportGeneratorPayload) => {
+  //   const result = await submitCreateReportGenerator(kelasId, siswaId, payload);
   
   //     if (result) {
-  //       setRows((prev) => ({
-  //         ...prev,
-  //         [kelas.id]: { status: "done", result, errorMsg: null },
-  //       }));
+  //       showToast("Report berhasil dihasilkan.", "success");
   //     } else {
-  //       setRows((prev) => ({
-  //         ...prev,
-  //         [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
-  //       }));
+  //       showToast("Gagal generate report. Coba lagi.", "error");
   //     }
   //   }, 
-  // [submitGeneratePlan]);
+  // [submitCreateReportGenerator]);
 
   return (
     <div style={styles.root}>
@@ -289,7 +279,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                         <div style={styles.kelasActions}>
                           <button
                             type="button"
-                            onClick={() => handleGenerate(kelas)}
+                            // onClick={() => handleGenerateReport(kelas.id, siswa.id)}
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 6,
                               border: "none", borderRadius: 8,
