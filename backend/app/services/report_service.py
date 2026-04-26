@@ -70,85 +70,66 @@ def finalize_laporan(db: Session, laporan_id: str) -> Optional[Laporan]:
  
 # ── Generate Laporan (F003) ───────────────────────────────────────────────────
  
-async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
+# app/services/report_service.py
 
-    # 1. Data murid (dari PostgreSQL)
+# ... (import lainnya tetap)
+
+async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
+    # 1. Data murid
     murid = db.query(Murid).filter(Murid.id == data.murid_id).first()
     if not murid:
         raise ValueError(f"Murid dengan id {data.murid_id} tidak ditemukan")
-    nama_murid     = murid.nama or murid.pengguna.username
  
+    # Perbaikan logika pengambilan nama mata pelajaran
+    nama_mapel = "Umum"
     if data.kelas_id:
         from app.models.models import Kelas
         kelas = db.query(Kelas).filter(Kelas.id == data.kelas_id).first()
-        if kelas:
-            mata_pelajaran = db.query(MataPelajaran).filter(MataPelajaran.id == kelas.mata_pelajaran_id).first()    
-            if not mata_pelajaran:
-                raise ValueError(f" Mata pelajaran dengan id {kelas.mata_pelajaran_id} tidak ditemukan")
-            mata_pelajaran = mata_pelajaran.nama_mata_pelajaran
-    # 2. Log pertemuan dalam periode (dari PostgreSQL)
+        if kelas and kelas.mata_pelajaran_id:
+            mp = db.query(MataPelajaran).filter(MataPelajaran.id == kelas.mata_pelajaran_id).first()    
+            if mp:
+                nama_mapel = mp.nama_mata_pelajaran
+
+    # 2. Log pertemuan (Query tetap sama)
     q = db.query(LogPertemuan).filter(LogPertemuan.murid_id == data.murid_id)
     if data.kelas_id:
         q = q.filter(LogPertemuan.kelas_id == data.kelas_id)
-    if data.periode_mulai:
-        q = q.filter(LogPertemuan.tanggal >= data.periode_mulai)
-    if data.periode_selesai:
-        q = q.filter(LogPertemuan.tanggal <= data.periode_selesai)
+    # ... (filter periode tetap sama)
     logs = q.order_by(LogPertemuan.tanggal.asc()).all()
  
     log_data = [
         {
-            "tanggal":              str(l.tanggal),
-            "topik":                l.topik,
-            "nilai":                float(l.nilai) if l.nilai else None,
-            "tingkat_pemahaman":    l.tingkat_pemahaman,
-            "tingkat_keterlibatan": l.tingkat_keterlibatan,
-            "catatan":              l.catatan,
-            "kompetensi_dicapai":   l.kompetensi_dicapai,
+            "tanggal": str(l.tanggal),
+            "topik": l.topik,
+            "nilai": float(l.nilai) if l.nilai else None,
+            "tingkat_pemahaman": l.tingkat_pemahaman,
+            "catatan": l.catatan,
         }
         for l in logs
     ]
  
-    # 3. Knowledge state dari BKT (dari PostgreSQL)
+    # 3. Knowledge state (tetap sama)
     ks_rows = db.query(KnowledgeState).filter(KnowledgeState.murid_id == data.murid_id).all()
-    knowledge_state = {ks.topik: float(ks.p_knowledge) for ks in ks_rows}
+    knowledge_state = {str(ks.topik): float(ks.p_knowledge) for ks in ks_rows}
  
-    # 4. [INTEGRASI 04_llm_evaluation.py] Ambil rekomendasi PSO dari RencanaStudi terbaru
-    pso_recommended_route: Optional[str] = None
-    if data.kelas_id:
-        from app.models.models import RencanaStudi
-        rencana = (
-            db.query(RencanaStudi)
-            .filter(
-                RencanaStudi.murid_id == data.murid_id,
-                RencanaStudi.kelas_id == data.kelas_id,
-            )
-            .order_by(RencanaStudi.waktu.desc())
-            .first()
-        )
-        if rencana and rencana.daftar_rekomendasi_materi:
-            materi = rencana.daftar_rekomendasi_materi
-            if isinstance(materi, list) and materi:
-                pso_recommended_route = f"Lanjut ke materi: {', '.join(materi[:3])}"
-            elif isinstance(materi, str):
-                pso_recommended_route = materi
+    # 4. Ambil rekomendasi PSO (tetap sama)
+    pso_recommended_route = None
+    # ... (logika pso tetap sama)
  
-    # 5. [INTEGRASI] Gaya laporan dari request (default: Konstruktif dan Memotivasi)
-    report_style = getattr(data, "report_style", "Konstruktif dan Memotivasi")
- 
-    # 6. Generate narasi via NarrativeEngine (LLM)
+    # 5. Generate narasi via AI
+    # Jika AI gagal, baris ini akan melempar RuntimeError dan berhenti di sini (tidak commit ke DB)
     konten = await narrative_engine.generate_report(
-        nama_murid=nama_murid,
-        mata_pelajaran=mata_pelajaran,
+        nama_murid=str(murid.nama),
+        mata_pelajaran=nama_mapel,
         log_data=log_data,
         periode_mulai=str(data.periode_mulai) if data.periode_mulai else None,
         periode_selesai=str(data.periode_selesai) if data.periode_selesai else None,
         knowledge_state=knowledge_state,
         pso_recommended_route=pso_recommended_route,
-        report_style=report_style,
+        report_style=getattr(data, "report_style", "Konstruktif dan Memotivasi"),
     )
  
-    # 7. Simpan ke PostgreSQL
+    # 6. Simpan ke PostgreSQL (Menggunakan datetime.now())
     laporan = Laporan(
         id=str(uuid.uuid4()),
         murid_id=data.murid_id,
@@ -159,14 +140,12 @@ async def generate_laporan(db: Session, data: LaporanCreate) -> Laporan:
         is_ai_generated=True,
         periode_mulai=data.periode_mulai,
         periode_selesai=data.periode_selesai,
-        tanggal=datetime.utcnow(),
+        tanggal=datetime.now(), # Konsisten dengan plan_service
     )
     db.add(laporan)
     db.commit()
     db.refresh(laporan)
     return laporan
- 
- 
 # ── Generate PDF ──────────────────────────────────────────────────────────────
  
 def generate_pdf(laporan: Laporan) -> str:

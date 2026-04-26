@@ -1,36 +1,25 @@
 """
 ollama_client.py
 Client untuk berkomunikasi dengan Ollama (model AI lokal).
-Mendukung: generate teks, streaming response, cek status model.
 """
 import json
 import logging
-from typing import AsyncGenerator, Optional
-
+from typing import Optional
 import httpx
-
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-
 class OllamaClient:
-    """
-    Wrapper HTTP untuk Ollama REST API.
-    Dokumentasi Ollama API: https://github.com/ollama/ollama/blob/main/docs/api.md
-    """
-
     def __init__(
         self,
         base_url: Optional[str] = None,
         model: Optional[str] = None,
-        timeout: int = 120,
+        timeout: int = 600,
     ):
         self.base_url = (base_url or settings.OLLAMA_BASE_URL).rstrip("/")
         self.model = model or settings.OLLAMA_MODEL_NAME
         self.timeout = timeout
-
-    # ── Health Check ─────────────────────────────────────────────────────────
 
     async def is_available(self) -> bool:
         """Cek apakah Ollama service berjalan dan model tersedia."""
@@ -45,30 +34,28 @@ class OllamaClient:
             logger.warning(f"Ollama tidak tersedia: {e}")
             return False
 
-    # ── Generate (non-streaming) ─────────────────────────────────────────────
-
     async def generate(
         self,
         prompt: str,
         system_prompt: Optional[str] = None,
-        temperature: float = 0.6,
-        top_p: float = 0.9,
-        max_tokens: int = 1024,
+        num_predict: int = 2048, # Default ditingkatkan untuk laporan panjang
     ) -> str:
         """
-        Mengirim prompt ke Ollama dan mengembalikan teks lengkap.
-        Gunakan ini untuk generate laporan (tidak perlu streaming).
+        Mengirim prompt ke Ollama. 
+        Menggunakan 'options' untuk num_predict sesuai spek API Ollama.
         """
         payload = {
             "model": self.model,
             "prompt": prompt,
             "stream": False,
+            "format": "json", # Memaksa output JSON sesuai Modelfile Sania
             "options": {
-                "temperature": temperature,
-                "top_p": top_p,
-                "num_predict": max_tokens,
-            },
+                "num_predict": num_predict,
+                "temperature": 0.7,
+                "top_p": 0.9
+            }
         }
+        
         if system_prompt:
             payload["system"] = system_prompt
 
@@ -79,19 +66,15 @@ class OllamaClient:
                     json=payload,
                 )
                 resp.raise_for_status()
+                # Menggunakan resp.json() yang lebih aman
                 data = resp.json()
                 return data.get("response", "").strip()
         except httpx.TimeoutException:
             logger.error("Ollama timeout saat generate")
             raise RuntimeError("Model AI timeout. Coba lagi atau periksa Ollama.")
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Ollama HTTP error: {e.response.status_code}")
-            raise RuntimeError(f"Ollama error: {e.response.text}")
         except Exception as e:
             logger.error(f"Ollama generate gagal: {e}")
             raise RuntimeError(f"Gagal terhubung ke model AI: {str(e)}")
 
-
-# ── Singleton instances ───────────────────────────────────────────────────────
-
+# Singleton instance
 narrative_client = OllamaClient(model=settings.OLLAMA_MODEL_NAME)

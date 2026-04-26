@@ -233,11 +233,11 @@ def tambah_murid_baru(
 
     return MuridResponse(
         id=uid,
-        email_address= str(murid.email_address),
-        nama= str(murid.nama),
-        education_level= murid.education_level,
-        jenis_kelamin=murid.jenis_kelamin,
-        is_active=bool(murid.is_active),
+        email_address= data.email_address,
+        nama= data.nama,
+        education_level= data.education_level,
+        jenis_kelamin=data.jenis_kelamin,
+        is_active=data.is_active,
     )
 
 
