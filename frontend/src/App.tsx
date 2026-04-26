@@ -4,7 +4,6 @@ import Header from "./components/header";
 import Footer from "./components/footer";
 import DashboardPage from "./pages/dashboard/Dashboard";
 import { NAV_ITEMS } from "./data"; 
-import DailyLogPage from "./pages/daily-log";
 import LearningPlan from "./pages/learning-plan";
 import ReportEditor from "./pages/report-editor";
 import { sidebarStyles, styles } from "./styles";
@@ -112,8 +111,6 @@ const App: React.FC = () => {
     switch (activeRoute) {
       case "home":
         return <DashboardPage namaLengkap={user?.username ?? "Pengguna"} />;
-      case "dailyLog":
-        return <DailyLogPage onNavigate={setActiveRoute} />;
       case "learningPlan":
         return <LearningPlan />;
       case "reportEditor":
