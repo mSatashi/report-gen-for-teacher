@@ -95,7 +95,56 @@ const [planList, setPlanList] = useState<GenerateplanResponse[]>([]);
 
       {/* Back + Header */}
       <div style={{ flexShrink: 0 }}>
-        <button
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "flex-start", 
+          marginBottom: 20, 
+          flexShrink: 0, 
+          flexWrap: "wrap", 
+          gap: 12 
+          }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+              <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} 
+              onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog"); }}
+              >
+                Daily Log
+              </span>
+            </div>
+  
+            {/* Siswa info row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
+                {'initials'}
+              </div>
+              <div>
+                {/* <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: "0 0 2px" }}>
+                  {siswa.nama}
+                </h2>
+                <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
+                  {siswa.education_level} · {mapel.nama_mata_pelajaran}
+                </p> */}
+              </div>
+            </div>
+          </div>
+  
+          <div style={{ display: "flex", gap: 10 }}>
+            <button 
+              // onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId }) }}
+              style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>
+              ← Kembali
+            </button>
+            <button 
+              // onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog", { namaSiswa: siswa.nama, mapel: mapel, kelasId, siswa }) }}
+              // style={btnAddStyle}
+              >
+              + Tambah Log
+            </button>
+          </div>
+        </div>
+
+        {/* <button
           onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId: kelas.id }); }}
           style={{
             background: "none", border: "none", cursor: "pointer",
@@ -105,18 +154,18 @@ const [planList, setPlanList] = useState<GenerateplanResponse[]>([]);
           }}
         >
           ← Kembali ke Mata Pelajaran
-        </button>
+        </button> */}
 
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          {/* <div style={{
+          <div style={{
             width: 48, height: 48, borderRadius: 12,
-            background: subject.bgColor,
-            border: `2px solid ${subject.borderColor}33`,
+            // background: subject.bgColor,
+            // border: `2px solid ${subject.borderColor}33`,
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 24, flexShrink: 0,
           }}>
-            {subject.icon}
-          </div> */}
+            {/* {subject.icon} */}
+          </div>
           <div>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: "#111827", margin: "0 0 3px" }}>
               {kelas?.mata_pelajaran_obj?.nama_mata_pelajaran }
