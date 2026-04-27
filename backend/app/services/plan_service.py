@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 from app.models.models import (
     KnowledgeState, LogPertemuan, RencanaStudi, Kelas, KelasMurid,
-    TopikPrasyarat, Topik
+    TopikPrasyarat, Topik, DiagnosticResult
 )
 from app.ai.bkt_engine import bkt_engine, PRIOR_KNOWLEDGE
 from app.ai.pso_engine import run_pso_algorithm
@@ -39,7 +39,7 @@ def update_knowledge_states(db: Session, murid_id: str, kelas_id: Optional[str] 
         topik = log.topik.strip()
         topik_scores.setdefault(topik,[]).append(float(log.nilai))
  
-    from app.models.models import DiagnosticResult
+    
     diag_rows = db.query(DiagnosticResult).filter(
         DiagnosticResult.murid_id == murid_id
     ).all()

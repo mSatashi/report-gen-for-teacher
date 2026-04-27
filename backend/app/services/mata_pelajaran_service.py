@@ -93,24 +93,24 @@ def update_mata_pelajaran(db: Session, mapel_id: str, data: MataPelajaranUpdate)
 
     # 1. Update Identitas Mapel
     if data.nama_mata_pelajaran:
-        mapel.nama_mata_pelajaran = data.nama_mata_pelajaran
+        setattr(mapel, "nama_mata_pelajaran", data.nama_mata_pelajaran)
 
-    if data.topik is not None:
+    if data.topik_list is not None:
         # 2. Ambil data topik yang ada saat ini di DB
         topik_lama_db = db.query(Topik).filter(Topik.mata_pelajaran_id == mapel_id).all()
         # Mapping untuk mempermudah pencarian (ID -> Objek) dan (Nama -> Objek)
-        map_id_to_topik = {t.id: t for t in topik_lama_db}
-        map_nama_to_topik = {t.nama.lower(): t for t in topik_lama_db}
+        map_id_to_topik: dict[str, Topik] = {str(t.id): t for t in topik_lama_db}
+        map_nama_to_topik: dict[str, Topik] = {t.nama.lower(): t for t in topik_lama_db}
         
         id_topik_yang_dipertahankan = set()
 
         # 3. Proses Sinkronisasi (Update atau Create)
-        for t_item in data.topik:
+        for t_item in data.topik_list:
             target_topik = None
             
             # Cek berdasarkan ID dulu (jika ada)
-            if t_item.id and t_item.id in map_id_to_topik:
-                target_topik = map_id_to_topik[t_item.id]
+            if t_item.id:
+                target_topik = map_id_to_topik.get(str(t_item.id))
             # Jika ID tidak ada/null, cek berdasarkan Nama (untuk mencegah duplikasi)
             elif t_item.nama.lower() in map_nama_to_topik:
                 target_topik = map_nama_to_topik[t_item.nama.lower()]
@@ -142,7 +142,7 @@ def update_mata_pelajaran(db: Session, mapel_id: str, data: MataPelajaranUpdate)
         db.flush()
 
         # 5. Proses Prasyarat (setelah semua ID topik stabil/tidak berubah)
-        for t_item in data.topik:
+        for t_item in data.topik_list:
             # Cari objek topik yang sedang diproses
             current_topik = None
             if t_item.id:
