@@ -181,7 +181,7 @@ async def generate_rencana_studi_kelas(
     
     skill_graph_dict = {t.nama: [] for t in topik_list}
     heuristic_sequence =[t.nama for t in topik_list]
-    skill_params_dict = {t.nama: bkt_engine._get_params(db, t.nama).learn for t in topik_list}
+    skill_params_dict = {t.nama: bkt_engine._get_params(db, str(t.nama)).learn for t in topik_list}
     
     # Ambil semua relasi tanpa loop N+1
     semua_relasi = db.query(TopikPrasyarat).all()
@@ -202,7 +202,7 @@ async def generate_rencana_studi_kelas(
         skill_graph_dict,
         skill_params_dict,
         heuristic_sequence,
-        sisa_sesi
+        int(sisa_sesi)
     )
 
     # 5. Penentuan Versi 
