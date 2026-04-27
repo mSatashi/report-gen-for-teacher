@@ -58,6 +58,7 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
   const [selectedSiswaId, ] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+
   const { loadLogSiswa, submitCreateLog, submitUpdateLog } = useDailyLog();
 
   const showToast = (message: string, type: "success" | "error") => {
@@ -208,7 +209,7 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
               <div>
                 <Label text="Mata Pelajaran" />
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={styles.lockedFieldStyle}>{mapel?.nama_mata_pelajaran}</div>
+                  <div style={styles.lockedFieldStyle}>{mapel?.nama_mata_pelajaran ?? "Mata Pelajaran"}</div>
                 </div>
               </div>
               <div>
@@ -220,7 +221,7 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
                 )} */}
                 <select value={logForm.topik} onChange={(e) => setLogForm((f) => ({ ...f, topik: e.target.value }))} style={inputStyle}>
                   <option value="">-- Pilih --</option>
-                  {mapel.topik.map((m) => <option key={m}>{m}</option>)}
+                  {mapel?.topik_list?.map((data) => <option key={data.nama}>{data.nama}</option>)}
                 </select>
               </div>
 
@@ -298,13 +299,6 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
               placeholder="cth: Siswa mampu memahami konsep dengan baik..."
               style={{ ...textareaStyle, marginBottom: 16 }}
             />
-
-            {/* <Label text="Rekomendasi Tindak Lanjut" />
-            <input
-              type="text" value={logForm.rekTindakLanjut} onChange={(e) => setLogForm((f) => ({ ...f, rekTindakLanjut: e.target.value }))}
-              placeholder="cth: Review konsep sebelum lanjut ke materi berikutnya"
-              style={inputStyle}
-            /> */}
           </div>
         </div>
 
@@ -323,11 +317,10 @@ export default function DailyLogFormLog({ onNavigate, namaSiswa, mapel, kelasId,
 
             <div>
               <Label text="Target Materi Berikutnya" />
-              {/* <input type="text" value={logForm.target_materi_berikutnya} onChange={(e) => setLogForm((f) => ({ ...f, target_materi_berikutnya: e.target.value }))} placeholder="cth: Persamaan kuadrat" style={inputStyle} /> */}
-              <select value={logForm.target_materi_berikutnya} onChange={(e) => setLogForm((f) => ({ ...f, target_materi_berikutnya: e.target.value }))} style={inputStyle}>
-                <option value="">-- Pilih --</option>
-                {mapel.topik.map((m) => <option key={m}>{m}</option>)}
-              </select>
+              <select value={logForm.topik} onChange={(e) => setLogForm((f) => ({ ...f, topik: e.target.value }))} style={inputStyle}>
+                  <option value="">-- Pilih --</option>
+                  {mapel?.topik_list?.map((data) => <option key={data.nama}>{data.nama}</option>)}
+                </select>
             </div>
 
             <div>

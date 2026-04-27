@@ -19,7 +19,7 @@ export interface KelasResponse {
 export interface MataPelajaranObj {
   id: string;
   nama_mata_pelajaran: string;
-  topik: string[];
+  topik_list: TopikPayload[];
   created_at: string;
   updated_at: string;
 }
@@ -158,12 +158,23 @@ export interface AktivitasTerbaruResponse {
 export interface MapelResponse {  
   id: string;
   nama_mata_pelajaran: string;
-  topik: string[];
+  topik_list: TopikPayload[];
   created_at: string;
   updated_at: string;
 }
 
 export interface MapelPayload {  
   nama_mata_pelajaran: string;
-  topik: string[];
+  topik_list?: TopikPayload[];
+}
+
+export interface TopikResponse {
+  id: string;
+  nama: string;
+  difficulty_index: number;
+}
+
+export interface TopikPayload {  
+  nama: string;
+  difficulty_index: number;
 }

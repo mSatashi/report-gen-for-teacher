@@ -14,7 +14,9 @@ export async function createMapel(payload: MapelPayload): Promise<MapelResponse>
     method: "POST",
     body: JSON.stringify({
       nama_mata_pelajaran: payload.nama_mata_pelajaran,
-      topik: payload.topik,
+      topik: [
+        ...(payload.topik_list?.map((t) => t.nama) ?? []),
+      ],
     }),
   });
   if (!res.ok) {
@@ -31,7 +33,9 @@ export async function updateMapel(payload: MapelPayload, idMapel: string): Promi
     method: "PUT",
     body: JSON.stringify({
       nama_mata_pelajaran: payload.nama_mata_pelajaran,
-      topik: payload.topik,
+      topik: [
+        ...(payload.topik_list?.map((t) => t.nama) ?? []),
+      ],
     }),
   });
   if (!res.ok) {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { addSiswaPayload, GenerateplanResponse, KelasResponse, SiswaResponse } from "../../service/payload";
+import type { addSiswaPayload, GenerateplanResponse, KelasResponse, MataPelajaranObj, SiswaResponse } from "../../service/payload";
 import { useKelasApi } from "../master-kelas/useKelasApi";
 import { styles } from "./styles";
 import { IconClose, IconPlus, IconTrash } from "../../icons";
@@ -7,6 +7,7 @@ import type { Siswa, Toast } from "../../types";
 import { useSiswaApi } from "../master-siswa/useSiswaApi";
 import { addSiswaKelas, deleteSiswaKelas } from "../../service/kelasAPI";
 import { useLearningPlan } from "../learning-plan/useLearningPlan";
+import { useMapelApi } from "../master-mapel/useMapelApi";
 // import type { Toast } from "../../types";
 
 interface DetailKelasProps {
@@ -40,10 +41,12 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ siswaId: string } | null>(null);
   const [rows, setRows] = useState<Record<string, RowState>>({});
+  const [mataPelajaranList, setMataPelajaranList] = useState<MataPelajaranObj[]>([]);
 
   const { loadSiswa } = useSiswaApi();
   const { errorMsg, loadKelas, loadSiswaKelas } = useKelasApi();
   const { submitGeneratePlan } = useLearningPlan();
+  const { loadMapelList } = useMapelApi();
 
   const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
     id: data.id,
@@ -73,9 +76,14 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
       if (data?.length) setSiswaKelasList(data.map(mapApiToSiswa));
     });
 
+    loadMapelList().then((data) => {
+      if (data?.length) setMataPelajaranList(data);
+    });
+
   }, [kelasId]);
 
-  const topikList = kelas?.mata_pelajaran_obj?.topik ?? [];
+  const topikList = mataPelajaranList.find((m) => m.id === kelas?.mata_pelajaran_id)?.topik_list ?? [];
+  const mataPelajaran = mataPelajaranList.find((m) => m.id === kelas?.mata_pelajaran_id) ?? null;
 
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
@@ -130,8 +138,8 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   };
 
   const doneCount = Object.values(rows).filter((r) => r.status === "done").length;
-  // const totalCount = kelas.length;
-  const totalCount = kelas?.mata_pelajaran_obj?.topik?.length ?? 0;
+
+  const totalCount = mataPelajaranList.find((m) => m.id === kelas?.mata_pelajaran_id)?.topik_list?.length ?? 0;
 
   const handleGenerate = useCallback(async (kelas: KelasResponse) => {
     setRows((prev) => ({
@@ -229,7 +237,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                 <div style={styles.infoItem}>
                   <span style={styles.infoLabel}>Mata Pelajaran</span>
                   <span style={styles.infoValue}>
-                    {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "-"}
+                    {mataPelajaranList.find((m) => m.id === kelas.mata_pelajaran_id)?.nama_mata_pelajaran ?? "-"}
                   </span>
                 </div>
                 <div style={styles.infoItem}>
@@ -301,7 +309,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                           </button>
                           <button
                             style={styles.btnDetail}
-                            onClick={() => onNavigate?.("logSiswa", { siswaId: siswa.id, siswa: siswa, mapel: kelas.mata_pelajaran_obj, kelasId: kelas.id })}
+                            onClick={() => onNavigate?.("logSiswa", { siswaId: siswa.id, siswa: siswa, mapel: mataPelajaran, kelasId: kelas.id })}
                           >
                             Detail
                           </button>
@@ -324,7 +332,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
           <div style={styles.rightPanel}>
             <div style={styles.rightPanel}>
               <div style={styles.mapelName}>
-                {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "-"}
+                {mataPelajaranList.find((m) => m.id === kelas.mata_pelajaran_id)?.nama_mata_pelajaran ?? "-"}
               </div>
               <span style={styles.badge}>Mata Pelajaran</span>
 
@@ -354,7 +362,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                     }}>
                       {i + 1}
                     </span>
-                    {topik}
+                    {topik.nama}
                   </div>
                 ))
               )}

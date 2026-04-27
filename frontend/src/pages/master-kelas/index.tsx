@@ -453,7 +453,9 @@ export default function MasterKelas({ onNavigate }: { onNavigate?: (route: strin
                     <div key={kelas.id} style={styles.kelasCard(hari)}>
                       <div style={styles.kelasNama}>Kelas {kelas.nama}</div>
                       <div style={styles.kelasMaPel}>
-                        {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "–"}
+                        <div style={styles.kelasMaPel}>
+                          {mataPelajaranList.find((m) => m.id === kelas.mata_pelajaran_id)?.nama_mata_pelajaran ?? "-"}
+                      </div>
                       </div>
                       <div style={styles.kelasJam}>⏰ {kelas.jam}</div>
 

@@ -38,10 +38,6 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
 
   const [activeTab, setActiveTab] = useState<Tab>("Semua");
 
-  // const dataLogSiswa = dailyList.filter(
-  //   (l) => l.murid_id === siswaId
-  // );
-
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -79,13 +75,13 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
           {/* Breadcrumb: Daily Log › Matematika › Aisya Putri */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} 
-            onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog"); }}
+            // onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog"); }}
             >
               Daily Log
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
             <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onNavigate?.("listSiswa"); }}>
-              {mapel.nama_mata_pelajaran}
+              {mapel?.nama_mata_pelajaran ?? "Mata Pelajaran"}
             </span>
             <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
             <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{siswa.nama}</span>
@@ -203,7 +199,7 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
                       <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.durasi_menit ? `${log.durasi_menit} mnt` : "—"}</td>
                       <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.metode_belajar ?? "—"}</td>
                       <td style={{ padding: "12px 14px" }}>
-                        <span style={{ background: badge.bg, color: badge.color, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>
+                        <span style={{ background: badge?.bg, color: badge?.color, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>
                           {log.tingkat_pemahaman}
                         </span>
                       </td>
