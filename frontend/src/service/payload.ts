@@ -180,7 +180,8 @@ export interface TopikResponse {
 }
 
 export interface TopikPayload {
-  id?: string;  
+  id: string | null;
   nama: string;
   difficulty_index: number;
+  prasyarat_ids: string[];
 }

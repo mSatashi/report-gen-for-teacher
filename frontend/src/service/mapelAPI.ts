@@ -33,10 +33,13 @@ export async function updateMapel(payload: MapelUpdatePayload, idMapel: string):
     method: "PUT",
     body: JSON.stringify({
       nama_mata_pelajaran: payload.nama_mata_pelajaran,
-      topik_list: [
-        ...(payload.topik_list?.map((t) => t.id) ?? []),
-      ],
-    }),
+      topik_list: payload.topik_list?.map((t) => ({
+        ...(t.id !== null && { id: t.id }),
+        nama: t.nama,
+        difficulty_index: t.difficulty_index,
+        prasyarat_ids: t.prasyarat_ids ?? [],
+      })) ?? [],
+      }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

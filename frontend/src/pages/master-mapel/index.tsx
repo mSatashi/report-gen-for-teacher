@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { styles } from "./styles";
 import { IconClose, IconEdit, IconPlus, IconTrash } from "../../icons";
 import { useMapelApi } from "./useMapelApi";
-import type { MapelPayload, MapelResponse, Toast, TopikPayload } from "../../service/payload";
+import type { MapelPayload, MapelResponse, MapelUpdatePayload, Toast, TopikPayload } from "../../service/payload";
 
 type ModalMode = "add-mapel" | "edit-mapel" | null;
 
@@ -12,8 +12,10 @@ type ModalMode = "add-mapel" | "edit-mapel" | null;
 const emptyMapelForm = () => ({ nama_mata_pelajaran: "" });
 
 const emptyTopik = (): TopikPayload => ({
+  id: undefined,
   nama: "",
   difficulty_index: 0.1,
+  prasyarat_ids: [],
 });
 
 let toastId = 0;
@@ -100,15 +102,25 @@ export default function MasterMapel() {
   const openEditMapel = (k: MapelResponse) => {
     setMapelForm({ nama_mata_pelajaran: k.nama_mata_pelajaran });
 
+    type TopikFromApi = {
+      id?: string | null;
+      nama?: string;
+      difficulty_index?: number;
+      prasyarat_ids?: string[];
+    };
+
     const parsed: TopikPayload[] =
       !k.topik_list || k.topik_list.length === 0
         ? [emptyTopik()]
-        : k.topik_list.map((t) => {
-            // handle jika API masih kirim string[]
-            if (typeof t === "string") return { nama: t, difficulty_index: 0.1 };
+        : (k.topik_list as unknown as TopikFromApi[]).map((t) => {
+            if (typeof t === "string") {
+              return { id: undefined, nama: t, difficulty_index: 0.1, prasyarat_ids: [] }; // ← di sini
+            }
             return {
+              id: t.id ?? undefined,   // ← dan di sini
               nama: t.nama ?? "",
               difficulty_index: t.difficulty_index ?? 0.1,
+              prasyarat_ids: t.prasyarat_ids ?? [],
             };
           });
 
@@ -117,19 +129,56 @@ export default function MasterMapel() {
     setModal("edit-mapel");
   };
 
+  // const openEditMapel = (k: MapelResponse) => {
+  // setMapelForm({ nama_mata_pelajaran: k.nama_mata_pelajaran });
+
+//   type TopikFromApi = {
+//     id?: string | null;
+//     nama?: string;
+//     difficulty_index?: number;
+//     prasyarat_ids?: string[];
+//   };
+  
+
+//   const parsed: TopikPayload[] =
+//     !k.topik_list || k.topik_list.length === 0
+//       ? [emptyTopik()]
+//       : (k.topik_list as unknown as TopikFromApi[]).map((t) => {
+//           if (typeof t === "string") {
+//             return { id: null, nama: t as string, difficulty_index: 0.1, prasyarat_ids: [] };
+//           }
+//           return {
+//             id: t.id ?? null,
+//             nama: t.nama ?? "",
+//             difficulty_index: t.difficulty_index ?? 0.1,
+//             prasyarat_ids: t.prasyarat_ids ?? [],
+//           };
+//         });
+
+//   setTopikForm(parsed);
+//   setEditingMapelId(k.id);
+//   setModal("edit-mapel");
+// };
+
 
   const saveMapel = async () => {
     if (!mapelForm.nama_mata_pelajaran.trim()) return;
 
-    const payload: Omit<MapelPayload, "id"> = {
-      nama_mata_pelajaran: mapelForm.nama_mata_pelajaran,
-      topik_awal: topikForm.filter((t) => t.nama.trim()),
-    };
-
-    // console.log("Payload untuk API:", editingMapelId);
+    const filteredTopik = topikForm.filter((t) => t.nama.trim());
+    console.log(filteredTopik)
 
     if (editingMapelId) {
-      const result = await submitUpdateMapel(payload, editingMapelId);
+      const updatePayload: MapelUpdatePayload = {
+        nama_mata_pelajaran: mapelForm.nama_mata_pelajaran,
+        topik_list: filteredTopik.map((t) => ({
+          id: t.id ?? null,  
+          nama: t.nama,
+          difficulty_index: t.difficulty_index,
+          prasyarat_ids: t.prasyarat_ids ?? [],
+        })),
+      };
+
+      const result = await submitUpdateMapel(updatePayload, editingMapelId);
       if (result) {
         setMapelList((prev) =>
           prev.map((k) => (k.id === editingMapelId ? { ...k, ...mapApiMapel(result) } : k))
@@ -140,6 +189,11 @@ export default function MasterMapel() {
         showToast(errorMsg ?? "Gagal memperbarui mata pelajaran", "error");
       }
     } else {
+      const payload: Omit<MapelPayload, "id"> = {
+        nama_mata_pelajaran: mapelForm.nama_mata_pelajaran,
+        topik_awal: topikForm.filter((t) => t.nama.trim()),
+      };
+      
       const result = await submitCreateMapel(payload);
       if (result) {
         const newMapel = mapApiMapel(result);
