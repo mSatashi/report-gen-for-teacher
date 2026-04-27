@@ -1,7 +1,7 @@
 import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
  
 from sqlalchemy.orm import Session
 import asyncio
@@ -57,11 +57,11 @@ def update_knowledge_states(db: Session, murid_id: str, kelas_id: Optional[str] 
         sp = bkt_engine._get_params(db, topik)  
  
         if ks:
-            ks.p_knowledge = p_final
-            ks.p_learn = sp.learn
-            ks.p_guess = sp.guess
-            ks.p_slip = sp.slip
-            ks.updated_at = datetime.utcnow()
+            setattr(ks, "p_knowledge", p_final)
+            setattr(ks, "p_learn", sp.learn)
+            setattr(ks, "p_guess", sp.guess)
+            setattr(ks, "p_slip", sp.slip)
+            ks.updated_at = cast(datetime, datetime.utcnow())
         else:
             ks = KnowledgeState(
                 id=str(uuid.uuid4()),
@@ -82,7 +82,7 @@ def get_knowledge_state(db: Session, murid_id: str) -> Dict[str, float]:
     """Mengambil pemahaman BKT satu murid dengan mempertimbangkan efek lupa (decay)."""
     rows = db.query(KnowledgeState).filter(KnowledgeState.murid_id == murid_id).all()
     result = {}
-    now = datetime.utcnow()
+    now = cast(datetime, datetime.utcnow())
     
     for ks in rows:
         p_known = float(ks.p_knowledge)
@@ -117,7 +117,7 @@ def get_class_knowledge_state(db: Session, kelas_id: str) -> Dict[str, float]:
     # 3. Proses di memori (Sangat Cepat)
     topic_sums = {}
     topic_counts = {}
-    now = datetime.utcnow()
+    now = cast(datetime, datetime.utcnow())
     
     for ks in ks_rows:
         p_known = float(ks.p_knowledge)
