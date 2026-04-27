@@ -141,25 +141,25 @@ class LogPertemuanCreate(BaseModel):
     """
     kelas_id: str
     murid_id: str
-    mata_pelajaran_id: str  
+    # mata_pelajaran_id: str  
     tanggal: date
     topik: str  
-    nilai: Optional[float] = Field(None, ge=0, le=100)
-    tingkat_pemahaman: Optional[str] = None
-    tingkat_keterlibatan: Optional[str] = None
+    nilai: float | None = Field(None, ge=0, le=100)
+    tingkat_pemahaman: str
+    tingkat_keterlibatan: str
     kompetensi_dicapai: Optional[str] = None
     target_materi_berikutnya: Optional[str] = None
     kendala: Optional[str] = None
     catatan: Optional[str] = None
-    durasi_menit: Optional[int] = None
-    metode_belajar: Optional[str] = None
+    durasi_menit: int | None = Field(None, ge=0)
+    metode_belajar: str 
 
 class LogPertemuanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
     kelas_id: str | None = None
     murid_id: str
-    mata_pelajaran_id: str | None = None
+    # mata_pelajaran_id: str | None = None
     tanggal: date
     topik: str
     nilai: Optional[float] = 0.0
