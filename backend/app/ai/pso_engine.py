@@ -49,14 +49,11 @@ def run_pso_algorithm(
     ]
     
     # Jika semua sudah dikuasai → tidak perlu rekomendasi
+    is_review_mode = False
     if not unmastered_skills:
-        return {
-            "rekomendasi_materi": [],
-            "jadwal_mingguan": [],
-            "catatan_analisa": "Siswa sudah menguasai seluruh target kurikulum (≥85%).",
-            "estimasi_selesai_minggu": 0,
-            "prioritas_perhatian": []
-        }
+        # Jika semua sudah dikuasai, gunakan semua topik yang ada untuk review
+        unmastered_skills = heuristic_sequence
+        is_review_mode = True
 
     # Asumsi: skill di luar daftar ini dianggap sudah dikuasai (ghost prerequisite)
     mastered_so_far_baseline = set(skill_graph_dict.keys()) - set(unmastered_skills)
@@ -213,6 +210,9 @@ def run_pso_algorithm(
             " (Peringatan: Terdapat pelanggaran prasyarat akibat "
             "sisa sesi terlalu sedikit atau konflik kurikulum)."
         )
+
+    if is_review_mode:
+        catatan = "Siswa sudah menguasai seluruh target (≥85%). Jadwal di atas adalah sesi Review & Penguatan."
 
     return {
         "rekomendasi_materi": rute_rekomendasi,
