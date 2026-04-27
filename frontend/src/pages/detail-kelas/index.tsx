@@ -189,13 +189,38 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
   return (
     <div style={styles.root}>
-      {/* Back button */}
-      <button style={styles.backBtn} onClick={() => onNavigate?.("masterKelas")}>
-        ← Kembali ke Master Kelas
-      </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexShrink: 0, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          {/* Siswa info row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: "0 0 2px" }}>
+                Detail Kelas
+              </h2>
+            </div>
+          </div>
+          {/* Breadcrumb: Daily Log › Matematika › Aisya Putri */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} 
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog"); }}
+            >
+              Detail Kelas
+            </span>
+            <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
+            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onNavigate?.("listSiswa"); }}>
+              Informasi lengkap kelas dan daftar siswa
+            </span>
+          </div>
+        </div>
 
-      <h2 style={styles.pageTitle}>Detail Kelas</h2>
-      <p style={styles.pageSubtitle}>Informasi lengkap kelas dan daftar siswa</p>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId }) }}
+            style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>
+            ← Kembali
+          </button>
+        </div>
+      </div>
 
       {loading ? (
         <div style={styles.loadingWrap}>Memuat data...</div>

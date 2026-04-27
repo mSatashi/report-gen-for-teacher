@@ -462,7 +462,8 @@ export default function MasterKelas({ onNavigate }: { onNavigate?: (route: strin
                       <div style={styles.kelasActions}>
                         <button
                           style={styles.btnDetail}
-                          onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId: kelas.id }); }}
+                          onClick={(e) => { e.stopPropagation(); 
+                            onNavigate?.("detailKelas", { kelasId: kelas.id }); }}
                         >
                           Detail
                         </button>

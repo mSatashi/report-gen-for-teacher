@@ -165,7 +165,7 @@ export interface MapelResponse {
 
 export interface MapelPayload {  
   nama_mata_pelajaran: string;
-  topik_list?: TopikPayload[];
+  topik_awal?: TopikPayload[];
 }
 
 export interface TopikResponse {
