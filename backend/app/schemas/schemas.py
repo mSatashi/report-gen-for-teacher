@@ -141,7 +141,7 @@ class LogPertemuanCreate(BaseModel):
     """
     kelas_id: str
     murid_id: str
-    # mata_pelajaran_id: str  <-- HAPUS ATAU COMMENT BARIS INI
+    mata_pelajaran_id: str  
     tanggal: date
     topik: str  
     nilai: Optional[float] = Field(None, ge=0, le=100)
@@ -159,15 +159,24 @@ class LogPertemuanResponse(BaseModel):
     id: str
     kelas_id: str | None = None
     murid_id: str
-    # mata_pelajaran_id: str <-- HAPUS ATAU COMMENT BARIS INI
+    mata_pelajaran_id: str | None = None
     tanggal: date
     topik: str
     nilai: Optional[float]
+    tingkat_pemahaman: Optional[str] = None
+    tingkat_keterlibatan: Optional[str] = None
+    kompetensi_dicapai: Optional[str] = None
+    target_materi_berikutnya: Optional[str] = None
+    kendala: Optional[str] = None
+    catatan: Optional[str] = None
+    durasi_menit: Optional[int] = None
+    metode_belajar: Optional[str] = None
     catatan: Optional[str]
     created_at: datetime
 
 
 class LogPertemuanUpdate(BaseModel):
+    tanggal: date 
     topik: Optional[str] = None
     nilai: Optional[float] = None
     tingkat_pemahaman: Optional[str] = None
@@ -282,8 +291,6 @@ class MataPelajaranUpdate(BaseModel):
 
 # -- Kelas --
 class KelasUpdate(BaseModel):
-    nama: Optional[str] = None
-    mata_pelajaran_id: Optional[str] = None
     hari: Optional[str] = None
     jam: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     kredit: Optional[int] = Field(None, ge=1)

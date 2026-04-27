@@ -104,16 +104,6 @@ def update_kelas(
 
     update_data = data.model_dump(exclude_none=True)
 
-    if "mata_pelajaran_id" in update_data:
-        _cek_mata_pelajaran(db, update_data["mata_pelajaran_id"])
-
-    if "nama" in update_data and update_data["nama"] != k.nama:
-        if db.query(Kelas).filter(Kelas.nama == update_data["nama"]).first():
-            raise HTTPException(
-                status_code=400,
-                detail=f"Kelas dengan nama '{update_data['nama']}' sudah ada",
-            )
-
     for field, val in update_data.items():
         setattr(k, field, val)
 
