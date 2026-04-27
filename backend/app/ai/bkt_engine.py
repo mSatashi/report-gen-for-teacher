@@ -92,7 +92,6 @@ class BKTEngine:
         skill_name: str,
         p_knowledge: float,
         score: float,
-        topik_list: List[str],
     ) -> Tuple[float, float]:
         """
         Update P(knowledge) untuk satu observasi.
@@ -126,7 +125,6 @@ class BKTEngine:
         skill_name: str,
         initial_knowledge: float,
         scores: List[float],
-        topik_list: List[str],
     ) -> float:
         """Update BKT dari semua skor historis secara berurutan."""
         p = initial_knowledge
