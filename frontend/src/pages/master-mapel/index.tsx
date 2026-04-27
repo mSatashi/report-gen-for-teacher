@@ -123,7 +123,7 @@ export default function MasterMapel() {
 
     const payload: Omit<MapelPayload, "id"> = {
       nama_mata_pelajaran: mapelForm.nama_mata_pelajaran,
-      topik_awal: topikForm.filter((t) => t.nama.trim()),
+      topik_list: topikForm.filter((t) => t.nama.trim()),
     };
 
     // console.log("Payload untuk API:", editingMapelId);

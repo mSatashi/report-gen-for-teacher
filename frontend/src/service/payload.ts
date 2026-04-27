@@ -163,9 +163,9 @@ export interface MapelResponse {
   updated_at: string;
 }
 
-export interface MapelPayload {  
+export interface MapelPayload { 
   nama_mata_pelajaran: string;
-  topik_awal?: TopikPayload[];
+  topik_list?: TopikPayload[];
 }
 
 export interface TopikResponse {
@@ -174,7 +174,8 @@ export interface TopikResponse {
   difficulty_index: number;
 }
 
-export interface TopikPayload {  
+export interface TopikPayload {
+  id?: string;  
   nama: string;
   difficulty_index: number;
 }
