@@ -49,18 +49,11 @@ def run_pso_algorithm(
     ]
     
     # Jika semua sudah dikuasai → tidak perlu rekomendasi
-    is_review_mode = False
-    if not unmastered_skills:
-        # Jika semua sudah dikuasai, gunakan semua topik yang ada untuk pengulangan
-        unmastered_skills = heuristic_sequence
-        is_review_mode = True
-
-    # Jika benar-benar tidak ada topik sama sekali di kurikulum (Sequence Kosong)
     if not unmastered_skills:
         return {
             "rekomendasi_materi": [],
             "jadwal_mingguan": [],
-            "catatan_analisa": "Tidak ada topik yang ditemukan dalam mata pelajaran ini.",
+            "catatan_analisa": "Siswa sudah menguasai seluruh target kurikulum (≥85%).",
             "estimasi_selesai_minggu": 0,
             "prioritas_perhatian": []
         }
@@ -220,9 +213,6 @@ def run_pso_algorithm(
             " (Peringatan: Terdapat pelanggaran prasyarat akibat "
             "sisa sesi terlalu sedikit atau konflik kurikulum)."
         )
-
-    if is_review_mode:
-        catatan = "Siswa sudah menguasai seluruh target (≥85%). Jadwal di atas adalah sesi Review & Penguatan."
 
     return {
         "rekomendasi_materi": rute_rekomendasi,

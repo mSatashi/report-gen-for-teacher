@@ -19,7 +19,7 @@ export interface KelasResponse {
 export interface MataPelajaranObj {
   id: string;
   nama_mata_pelajaran: string;
-  topik_list: TopikPayload[];
+  topik: string[];
   created_at: string;
   updated_at: string;
 }
@@ -93,19 +93,13 @@ export interface DailyLogResponse {
 export interface GenerateplanResponse {
   id: string;
   kelas_id: string;
-  murid_id: string;
+  murid_id?: string;
   waktu: string;
   daftar_rekomendasi_materi: string[];
   estimasi_waktu_selesai: string;
   catatan_analisa: string;
-  is_outdated: boolean;
-  jadwal_mingguan: JadwalMingguan[];
+  jadwal_mingguan: Record<string, string[]>;
   version: number;
-}
-
-export interface JadwalMingguan {
-  minggu: string; 
-  topik: string[];
 }
 
 export interface ReportGeneratorResponse {
@@ -125,10 +119,10 @@ export interface ReportGeneratorResponse {
 
 export interface ReportGeneratorPayload {  
   murid_id: string;
-  kelas_id: string;
-  periode_mulai: string;
-  periode_selesai: string;
-  tipe_laporan: string;
+  kelas_id?: string;
+  periode_mulai?: string;
+  periode_selesai?: string;
+  tipe_laporan?: string;
 }
 
 export interface DashboardResponse {  
@@ -164,30 +158,12 @@ export interface AktivitasTerbaruResponse {
 export interface MapelResponse {  
   id: string;
   nama_mata_pelajaran: string;
-  topik_list: TopikPayload[];
+  topik: string[];
   created_at: string;
   updated_at: string;
 }
 
-export interface MapelPayload { 
+export interface MapelPayload {  
   nama_mata_pelajaran: string;
-  topik_awal?: TopikPayload[];
-}
-
-export interface MapelUpdatePayload { 
-  nama_mata_pelajaran: string;
-  topik_list?: TopikPayload[];
-}
-
-export interface TopikResponse {
-  id: string;
-  nama: string;
-  difficulty_index: number;
-}
-
-export interface TopikPayload {
-  id: string | null | undefined;
-  nama: string;
-  difficulty_index: number;
-  prasyarat_ids: string[];
+  topik: string[];
 }

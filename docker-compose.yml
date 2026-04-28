@@ -55,6 +55,7 @@ services:
         condition: service_started
     volumes:
       - ./uploads:/app/uploads
+      - ./experiment:/app/experiment
 
   # ── React Frontend ────────────────────────────────────────────────────────
   frontend:
@@ -65,10 +66,6 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    env_file:
-      - .env
-    environment:
-      - VITE_API_URL=${VITE_API_URL}
     depends_on:
       - backend
 

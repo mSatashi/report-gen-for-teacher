@@ -85,21 +85,17 @@ class TopikResponse(BaseModel):
     difficulty_index: float
     prasyarat: List["TopikResponse"] = []
 
-class TopikSimpleCreate(BaseModel):
-    nama: str
-    difficulty_index: float = Field(0.5, ge=0.0, le=1.0)
-    prasyarat_ids: Optional[List[str]] = Field(default_factory=list)
-
-
 class MataPelajaranCreate(BaseModel):
     nama_mata_pelajaran: str
-    topik_awal: Optional[List[TopikSimpleCreate]] = Field(default_factory=list)
-    
+    hari: Optional[Hari] = None
+    jam: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
 
 class MataPelajaranResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
     nama_mata_pelajaran: str
+    hari: Optional[str] = None
+    jam: Optional[str] = None
     topik_list: List[TopikResponse] = []
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -141,28 +137,10 @@ class LogPertemuanCreate(BaseModel):
     """
     kelas_id: str
     murid_id: str
-    # mata_pelajaran_id: str  
+    # mata_pelajaran_id: str  <-- HAPUS ATAU COMMENT BARIS INI
     tanggal: date
     topik: str  
-    nilai: float | None = Field(None, ge=0, le=100)
-    tingkat_pemahaman: str
-    tingkat_keterlibatan: str
-    kompetensi_dicapai: Optional[str] = None
-    target_materi_berikutnya: Optional[str] = None
-    kendala: Optional[str] = None
-    catatan: Optional[str] = None
-    durasi_menit: int | None = Field(None, ge=0)
-    metode_belajar: str 
-
-class LogPertemuanResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: str
-    kelas_id: str | None = None
-    murid_id: str
-    # mata_pelajaran_id: str | None = None
-    tanggal: date
-    topik: str
-    nilai: Optional[float] = 0.0
+    nilai: Optional[float] = Field(None, ge=0, le=100)
     tingkat_pemahaman: Optional[str] = None
     tingkat_keterlibatan: Optional[str] = None
     kompetensi_dicapai: Optional[str] = None
@@ -171,12 +149,21 @@ class LogPertemuanResponse(BaseModel):
     catatan: Optional[str] = None
     durasi_menit: Optional[int] = None
     metode_belajar: Optional[str] = None
-    catatan: Optional[str] = ""
+
+class LogPertemuanResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    kelas_id: str | None = None
+    murid_id: str
+    # mata_pelajaran_id: str <-- HAPUS ATAU COMMENT BARIS INI
+    tanggal: date
+    topik: str
+    nilai: Optional[float]
+    catatan: Optional[str]
     created_at: datetime
 
 
 class LogPertemuanUpdate(BaseModel):
-    tanggal: date 
     topik: Optional[str] = None
     nilai: Optional[float] = None
     tingkat_pemahaman: Optional[str] = None
@@ -214,8 +201,9 @@ class RencanaStudiResponse(BaseModel):
     """
     model_config = ConfigDict(from_attributes=True)
     id: str
+    murid_id: Optional[str] = None
     daftar_rekomendasi_materi: Optional[List[str]] = Field(None, description="Urutan topik hasil optimasi PSO")
-    jadwal_mingguan: Optional[List[Dict[str, Any]]] = None 
+    jadwal_mingguan: Optional[List[Dict[str, Any]]] = None  # <--- UBAH DI SINI
     catatan_analisa: Optional[str] = None
     estimasi_waktu_selesai: Optional[datetime] = None
     is_outdated: bool = False
@@ -230,26 +218,20 @@ class LaporanCreate(BaseModel):
     kelas_id: Optional[str] = None
     periode_mulai: Optional[date] = None
     periode_selesai: Optional[date] = None
-    tipe_laporan : str = "Konstruktif dan Memotivasi"
+    report_style: str = "Konstruktif dan Memotivasi"
 
 class LaporanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
-    murid_id: str
-    kelas_id: str
     konten: str
-    tipe_laporan: str
     status: str
     pdf_path: Optional[str] = None
     tanggal: datetime
-    tanggal_kirim: Optional[datetime] = None
     is_ai_generated: bool
-    periode_mulai: Optional[date] = None
-    periode_selesai: Optional[date] = None
 
 class DiagnosticCreate(BaseModel):
     murid_id: str
-    kelas_id: Optional[str] = None 
+    kelas_id: Optional[str] = None # <--- Tambahkan baris ini
     topik: str
     diagnostic_score: float = Field(..., ge=0, le=100)
 
@@ -266,9 +248,9 @@ class DiagnosticResponse(BaseModel):
     diagnostic_score: float
     created_at: datetime
 
-
+# ═══════════════════════════════════════════════════════════════════════════════
 # DASHBOARD
-
+# ═══════════════════════════════════════════════════════════════════════════════
 
 class DashboardSummary(BaseModel):
     username: str       
@@ -279,24 +261,20 @@ class DashboardSummary(BaseModel):
     aktivitas_terbaru: List[Dict[str, Any]] = []
     progress_siswa: List[Dict[str, Any]] = []
 
-
+# ═══════════════════════════════════════════════════════════════════════════════
 # SCHEMA TAMBAHAN (UPDATE & REQUEST KHUSUS)
-
+# ═══════════════════════════════════════════════════════════════════════════════
 
 # -- Mata Pelajaran --
-class TopikUpdateInline(BaseModel):
-    id: Optional[str] = None # Jika ada ID, berarti update. Jika tidak, berarti buat baru.
-    nama: str
-    difficulty_index: float = Field(0.5, ge=0.0, le=1.0)
-    prasyarat_ids: Optional[List[str]] = Field(default_factory=list)
-
-
 class MataPelajaranUpdate(BaseModel):
     nama_mata_pelajaran: Optional[str] = None
-    topik_list: Optional[List[TopikUpdateInline]] = None
+    hari: Optional[Hari] = None
+    jam: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
 
 # -- Kelas --
 class KelasUpdate(BaseModel):
+    nama: Optional[str] = None
+    mata_pelajaran_id: Optional[str] = None
     hari: Optional[str] = None
     jam: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     kredit: Optional[int] = Field(None, ge=1)

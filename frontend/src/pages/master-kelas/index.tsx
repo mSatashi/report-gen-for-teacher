@@ -3,7 +3,6 @@ import { IconClose, IconEdit, IconPlus, IconTrash } from "../../icons";
 import { useKelasApi } from "./useKelasApi";
 import type { KelasPayload, KelasResponse, MataPelajaranObj, Toast } from "../../service/payload";
 import { useMapelApi } from "../master-mapel/useMapelApi";
-import { colors } from "../../components/colorstyle";
 
 type ModalMode = "add-kelas" | "edit-kelas" | null;
 
@@ -36,14 +35,10 @@ let toastId = 0;
 const styles = {
   root: {
     fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-    background: colors.white,
+    background: "#F8FAFF",
     minHeight: "100vh",
     padding: "32px 28px",
     color: "#1E293B",
-    borderRadius: "14px",
-    boxShadow: "rgba(30, 42, 59, 0.07) 0px 1px 4px", 
-    overflow: "hidden",
-    border: "1.5px solid rgb(234, 236, 245)",
   } as React.CSSProperties,
 
   header: {
@@ -458,17 +453,14 @@ export default function MasterKelas({ onNavigate }: { onNavigate?: (route: strin
                     <div key={kelas.id} style={styles.kelasCard(hari)}>
                       <div style={styles.kelasNama}>Kelas {kelas.nama}</div>
                       <div style={styles.kelasMaPel}>
-                        <div style={styles.kelasMaPel}>
-                          {mataPelajaranList.find((m) => m.id === kelas.mata_pelajaran_id)?.nama_mata_pelajaran ?? "-"}
-                      </div>
+                        {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "–"}
                       </div>
                       <div style={styles.kelasJam}>⏰ {kelas.jam}</div>
 
                       <div style={styles.kelasActions}>
                         <button
                           style={styles.btnDetail}
-                          onClick={(e) => { e.stopPropagation(); 
-                            onNavigate?.("detailKelas", { kelasId: kelas.id }); }}
+                          onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId: kelas.id }); }}
                         >
                           Detail
                         </button>

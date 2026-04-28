@@ -14,7 +14,7 @@ from app.services.auth_service import require_pengajar
 router = APIRouter(prefix="/diagnostic", tags=["Diagnostik"])
 
 # 1. CREATE
-@router.post("", response_model=DiagnosticResponse, status_code=201)
+@router.post("/", response_model=DiagnosticResponse, status_code=201)
 def simpan_diagnostic(
     data: DiagnosticCreate,
     current_user: Pengguna = Depends(require_pengajar),

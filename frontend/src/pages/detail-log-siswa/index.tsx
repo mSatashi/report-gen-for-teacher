@@ -17,7 +17,7 @@ interface DailyLogDetailSiswaProps {
 }
 
 const TABS = ["Semua", "Sangat Paham", "Paham", "Cukup", "Perlu Review"] as const;
-// type Tab = (typeof TABS)[number];
+type Tab = (typeof TABS)[number];
 
 let toastId = 0;
 
@@ -36,7 +36,7 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
     }, []);
 
 
-  const [activeTab, setActiveTab] = useState<typeof TABS[number]>("Semua");
+  const [activeTab, setActiveTab] = useState<Tab>("Semua");
 
   // const dataLogSiswa = dailyList.filter(
   //   (l) => l.murid_id === siswaId
@@ -194,6 +194,7 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
               <tbody>
                 {filtered.map((log, idx) => {
                   const badge = PENGUASAAN_BADGE[log.tingkat_pemahaman as TingkatPemahaman];
+                  // const badge = PENGUASAAN_BADGE["Sangat Paham"];
                   return (
                     <tr key={log.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "12px 14px", color: "#6b7280" }}>{idx + 1}</td>
@@ -317,3 +318,5 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
     </div>
   );
 };
+
+// export default DailyLogDetailSiswa;

@@ -21,7 +21,7 @@ from app.services.topik_service import (
 router = APIRouter(prefix="/topik", tags=["Topik"])
 
 # 1. CREATE TOPIK
-@router.post("", response_model=TopikResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=TopikResponse, status_code=status.HTTP_201_CREATED)
 def buat_topik(
     data: TopikCreate, 
     db: Session = Depends(get_db),

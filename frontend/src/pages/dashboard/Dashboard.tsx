@@ -23,6 +23,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash, namaLengkap }) => 
   const { loadDashboard } = useDashboard();
 
   useEffect(() => {
+    console.log("useEffect dipanggil");
     loadDashboard().then((data) => {
       if (!data) return;
         setDataDashboard({
