@@ -215,7 +215,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
         <div style={{ display: "flex", gap: 10 }}>
           <button 
-            onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId }) }}
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("masterKelas") }}
             style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>
             ← Kembali
           </button>
@@ -227,29 +227,40 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
       ) : !kelas ? (
         <div style={styles.loadingWrap}>Kelas tidak ditemukan.</div>
       ) : (
-        <div style={styles.layout}>
 
-          {/* Progress banner — hanya muncul jika ada yang sudah done */}
-          {doneCount > 0 && (
-            <div style={{
-              background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 10,
-              padding: "11px 16px", fontSize: 13, color: "#166534", fontWeight: 500,
-              flexShrink: 0, display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <span>✓</span>
-              <span>{doneCount} dari {totalCount} kelas sudah memiliki learning plan.</span>
-              <div style={{ flex: 1, background: "#bbf7d0", borderRadius: 99, height: 5, marginLeft: 4 }}>
-                <div style={{
-                  width: `${Math.round((doneCount / totalCount) * 100)}%`,
-                  background: "#16a34a", borderRadius: 99, height: "100%", transition: "width .4s",
-                }} />
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>
-                {Math.round((doneCount / totalCount) * 100)}%
-              </span>
+        <>
+        {doneCount > 0 && (
+          <div style={{
+            background: "#f0fdf4",
+            border: "1.5px solid #86efac",
+            borderRadius: 10,
+            padding: "11px 16px",
+            fontSize: 13,
+            color: "#166534",
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 16,   // <-- beri jarak ke card di bawahnya
+          }}>
+            <span>✓</span>
+            <span>{doneCount} dari {totalCount} kelas sudah memiliki learning plan.</span>
+            <div style={{ flex: 1, background: "#bbf7d0", borderRadius: 99, height: 5, marginLeft: 4 }}>
+              <div style={{
+                width: `${Math.round((doneCount / totalCount) * 100)}%`,
+                background: "#16a34a",
+                borderRadius: 99,
+                height: "100%",
+                transition: "width .4s",
+              }} />
             </div>
-          )}
+            <span style={{ fontSize: 12, fontWeight: 700 }}>
+              {Math.round((doneCount / totalCount) * 100)}%
+            </span>
+          </div>
+        )}
 
+        <div style={styles.layout}>
           {/* ── Left Panel ── */}
           <div style={styles.leftPanel}>
             {/* Info Kelas */}
@@ -355,7 +366,8 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
           {/* ── Right Panel — Mapel & Topik ── */}
           <div style={styles.rightPanel}>
-            <div style={styles.rightPanel}>
+            {/* Body */}
+            <div style={styles.rightPanelBody}>
               <div style={styles.mapelName}>
                 {mataPelajaranList.find((m) => m.id === kelas.mata_pelajaran_id)?.nama_mata_pelajaran ?? "-"}
               </div>
@@ -363,7 +375,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
               <hr style={styles.divider} />
 
-              <p style={{ ...styles.sectionTitle, fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
+              <p style={{ fontSize: "11px", color: "#64748B", marginBottom: "10px", letterSpacing: "0.04em", fontWeight: 600 }}>
                 LIST TOPIK
               </p>
 
@@ -392,46 +404,27 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                 ))
               )}
             </div>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+
+            {/* Footer tombol */}
+            <div style={styles.rightPanelFooter}>
               <button
                 type="button"
-                // onClick={() => openEditMapel(s)}
-                // style={styles.btnEdit}
-                // title="Edit mata pelajaran"
                 onClick={() => handleGenerate(kelas)}
-                // disabled={isLoading}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  // background: isLoading ? "#f3f4f6" : "#f59e0b",
-                  // color: isLoading ? "#9ca3af" : "#fff",
-                  border: "none", borderRadius: 8,
-                  padding: "8px 14px", fontSize: 12, fontWeight: 700,
-                  // cursor: isLoading ? "not-allowed" : "pointer",
-                  whiteSpace: "nowrap",
-                }}
-                // onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = "#d97706"; }}
-                // onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = "#f59e0b"; }}
+                style={styles.btnGenerate}
               >
-                {/* {isLoading
-                  ? <><Spinner color="#9ca3af" /> Generating…</>
-                  : isDone ? <>✦ Regenerate</> : <>✦ Generate Plan</>
-                } */}
-                {/* <IconEdit /> */}
                 Generate Plan
               </button>
-
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onNavigate?.("planDetail", { kelas }) }}
-                // onClick={() => setDeleteConfirm({ siswaId: s.id })}
-                style={styles.btnDanger}
+                onClick={(e) => { e.stopPropagation(); onNavigate?.("planDetail", { kelas }); }}
+                style={styles.btnDetailPlan}
               >
                 Detail Plan
               </button>
             </div>
           </div>
-          
         </div>
+        </>
       )}
 
       {/* ── Modal Kelas ── */}

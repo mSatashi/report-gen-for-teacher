@@ -98,8 +98,14 @@ export interface GenerateplanResponse {
   daftar_rekomendasi_materi: string[];
   estimasi_waktu_selesai: string;
   catatan_analisa: string;
-  jadwal_mingguan: Record<string, string[]>;
+  is_outdated: boolean;
+  jadwal_mingguan: JadwalMingguan[];
   version: number;
+}
+
+export interface JadwalMingguan {
+  minggu: string; 
+  topik: string[];
 }
 
 export interface ReportGeneratorResponse {
@@ -180,7 +186,7 @@ export interface TopikResponse {
 }
 
 export interface TopikPayload {
-  id: string | null;
+  id: string | null | undefined;
   nama: string;
   difficulty_index: number;
   prasyarat_ids: string[];

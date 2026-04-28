@@ -50,10 +50,31 @@ const App: React.FC = () => {
   const APP_NAME = import.meta.env.META_TITLE ?? "Report GenAI Otomatis";
 
   /** Derive the current page title from NAV_ITEMS */
+  const ROUTE_TITLES: Record<string, string> = {
+    home: "Dashboard",
+    learningPlan: "Learning Plan",
+    reportEditor: "Report Editor",
+    masterKelas: "Master Kelas",
+    masterSiswa: "Master Siswa",
+    masterMapel: "Master Mata Pelajaran",
+    detailKelas: "Detail Kelas",
+    logSiswa: "Log Siswa",
+    formDailyLog: "Form Daily Log",
+    planDetail: "Detail Plan",
+  };
+
   const pageTitle =
+    ROUTE_TITLES[activeRoute] ??
     (NAV_ITEMS.find(
       (n) => n.kind === "link" && (n as { route: string }).route === activeRoute
-    ) as { label?: string } | undefined)?.label ?? "Dashboard";
+    ) as { label?: string } | undefined)?.label ??
+    "Dashboard";
+
+  // const pageTitle =
+  //   (NAV_ITEMS.find(
+  //     (n) => n.kind === "link" && (n as { route: string }).route === activeRoute
+  //   ) as { label?: string } | undefined)?.label ?? "Dashboard";
+    
 
   /** Login handler — dipanggil dari LoginPage */
   const handleLogin = async (data: {
@@ -155,6 +176,8 @@ const App: React.FC = () => {
         );
     }
   };
+
+  console.log('page title', pageTitle)
 
   return (
     <div
