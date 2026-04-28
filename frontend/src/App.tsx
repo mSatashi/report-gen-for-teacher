@@ -68,13 +68,7 @@ const App: React.FC = () => {
     (NAV_ITEMS.find(
       (n) => n.kind === "link" && (n as { route: string }).route === activeRoute
     ) as { label?: string } | undefined)?.label ??
-    "Dashboard";
-
-  // const pageTitle =
-  //   (NAV_ITEMS.find(
-  //     (n) => n.kind === "link" && (n as { route: string }).route === activeRoute
-  //   ) as { label?: string } | undefined)?.label ?? "Dashboard";
-    
+    "Dashboard";    
 
   /** Login handler — dipanggil dari LoginPage */
   const handleLogin = async (data: {
@@ -126,7 +120,6 @@ const App: React.FC = () => {
     return <LoginPage onLogin={handleLogin} error={loginError} loading={loginLoading} />;
   }
 
-
   /** Render the active page */
   const renderPage = () => {
     switch (activeRoute) {
@@ -143,7 +136,10 @@ const App: React.FC = () => {
       case "masterMapel":
         return <MasterMapel />;
       case "detailKelas":
-        return <DetailKelas kelasId={routeParams.kelasId as string} onNavigate={handleNavigate} />;
+        return <DetailKelas 
+          kelasId={routeParams.kelasId as string} 
+          onNavigate={handleNavigate}
+          mapel={routeParams.mapel as MapelResponse} />;
       case "logSiswa":
         return <DetailLogSiswa 
           onNavigate={handleNavigate} 
@@ -162,11 +158,8 @@ const App: React.FC = () => {
       case "planDetail":
         return <PlanDetail 
           onNavigate={handleNavigate} 
-          // namaSiswa={routeParams.namaSiswa as string}
           kelas={routeParams.kelas as KelasResponse}
-          // siswa={routeParams.siswa as SiswaResponse}
-          // dataLog={routeParams.dataLog as DailyLogResponse | null}
-          // mapel={routeParams.mapel as MapelResponse}
+          mapel={routeParams.mapel as MapelResponse}
            />;
       default:
         return (
@@ -176,8 +169,6 @@ const App: React.FC = () => {
         );
     }
   };
-
-  console.log('page title', pageTitle)
 
   return (
     <div

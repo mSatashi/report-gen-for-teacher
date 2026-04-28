@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { GenerateplanResponse, KelasResponse } from "../../service/payload";
+import type { GenerateplanResponse, KelasResponse, MapelResponse } from "../../service/payload";
 import { useLearningPlan } from "./useLearningPlan";
 import { fonts } from "../../components/fontstyle";
 import { styles, topikColors } from "./styles";
@@ -7,9 +7,10 @@ import { styles, topikColors } from "./styles";
 interface Props {
   onNavigate?: (route: string, params?: Record<string, unknown>) => void;
   kelas: KelasResponse;
+  mapel: MapelResponse;
 }
 
-export default function PlanDetail({ onNavigate, kelas }: Props) {
+export default function PlanDetail({ onNavigate, kelas, mapel }: Props) {
   const [planList, setPlanList] = useState<GenerateplanResponse[]>([]);
   const { loadPlan } = useLearningPlan();
 
@@ -46,7 +47,7 @@ export default function PlanDetail({ onNavigate, kelas }: Props) {
         <div style={styles.infoGrid}>
           <div style={styles.infoCard}>
             <span style={styles.infoLabel}>Mata Pelajaran</span>
-            <span style={styles.infoValue}>{kelas?.mata_pelajaran_obj?.nama_mata_pelajaran ?? "-"}</span>
+            <span style={styles.infoValue}>{mapel?.nama_mata_pelajaran ?? "-"}</span>
           </div>
 
           <div style={styles.infoCard}>

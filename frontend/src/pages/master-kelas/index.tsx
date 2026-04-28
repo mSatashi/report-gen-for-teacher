@@ -3,6 +3,7 @@ import { IconClose, IconEdit, IconPlus, IconTrash } from "../../icons";
 import { useKelasApi } from "./useKelasApi";
 import type { KelasPayload, KelasResponse, MataPelajaranObj, Toast } from "../../service/payload";
 import { useMapelApi } from "../master-mapel/useMapelApi";
+import { colors } from "../../components/colorstyle";
 
 type ModalMode = "add-kelas" | "edit-kelas" | null;
 
@@ -35,10 +36,14 @@ let toastId = 0;
 const styles = {
   root: {
     fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-    background: "#F8FAFF",
+    background: colors.white,
     minHeight: "100vh",
     padding: "32px 28px",
     color: "#1E293B",
+    borderRadius: "14px",
+    boxShadow: "rgba(30, 42, 59, 0.07) 0px 1px 4px", 
+    overflow: "hidden",
+    border: "1.5px solid rgb(234, 236, 245)",
   } as React.CSSProperties,
 
   header: {

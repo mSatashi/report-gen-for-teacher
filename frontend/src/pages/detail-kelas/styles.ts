@@ -4,10 +4,15 @@ import { colors } from "../../components/colorstyle";
 export const styles: Record<string, CSSProperties> = {
   root: {
     fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-    background: "#F8FAFF",
+    background: colors.white,
     minHeight: "100vh",
     padding: "32px 28px",
     color: "#1E293B",
+
+    borderRadius: "14px",
+    boxShadow: "rgba(30, 42, 59, 0.07) 0px 1px 4px", 
+    overflow: "hidden",
+    border: "1.5px solid rgb(234, 236, 245)",
   },
 
   backBtn: {

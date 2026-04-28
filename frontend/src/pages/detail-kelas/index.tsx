@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import type { addSiswaPayload, GenerateplanResponse, KelasResponse, MataPelajaranObj, SiswaResponse } from "../../service/payload";
+import type { addSiswaPayload, GenerateplanResponse, KelasResponse, MapelResponse, MataPelajaranObj, SiswaResponse } from "../../service/payload";
 import { useKelasApi } from "../master-kelas/useKelasApi";
 import { styles } from "./styles";
 import { IconClose, IconPlus, IconTrash } from "../../icons";
 import type { Siswa, Toast } from "../../types";
 import { useSiswaApi } from "../master-siswa/useSiswaApi";
 import { addSiswaKelas, deleteSiswaKelas } from "../../service/kelasAPI";
-import { useLearningPlan } from "../learning-plan/useLearningPlan";
+// import { useLearningPlan } from "../learning-plan/useLearningPlan";
 import { useMapelApi } from "../master-mapel/useMapelApi";
 // import type { Toast } from "../../types";
 
 interface DetailKelasProps {
   kelasId: string;
   onNavigate?: (route: string, params?: Record<string, unknown>) => void;
+  mapel: MapelResponse,
 }
 
 type ModalMode = "add-siswa" | "edit-siswa" | null;
@@ -40,12 +41,12 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   const [modal, setModal] = useState<ModalMode>(null);
   const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ siswaId: string } | null>(null);
-  const [rows, setRows] = useState<Record<string, RowState>>({});
+  const [rows, ] = useState<Record<string, RowState>>({});
   const [mataPelajaranList, setMataPelajaranList] = useState<MataPelajaranObj[]>([]);
 
   const { loadSiswa } = useSiswaApi();
   const { errorMsg, loadKelas, loadSiswaKelas } = useKelasApi();
-  const { submitGeneratePlan } = useLearningPlan();
+  // const { submitGeneratePlan } = useLearningPlan();
   const { loadMapelList } = useMapelApi();
 
   const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
@@ -141,51 +142,31 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
   const totalCount = mataPelajaranList.find((m) => m.id === kelas?.mata_pelajaran_id)?.topik_list?.length ?? 0;
 
-  const handleGenerate = useCallback(async (kelas: KelasResponse) => {
-    setRows((prev) => ({
-      ...prev,
-      [kelas.id]: { status: "loading", result: null, errorMsg: null },
-    }));
+  const handleGenerate = useCallback(async () => {
+    // useCallback(async (kelas: KelasResponse) => {
+    onNavigate?.('ReportEditor')
+    // setRows((prev) => ({
+    //   ...prev,
+    //   [kelas.id]: { status: "loading", result: null, errorMsg: null },
+    // }));
     
-    console.log("Generate plan untuk kelas", kelas.id);
-    const result = await submitGeneratePlan(kelas.id);
+    // console.log("Generate plan untuk kelas", kelas.id);
+    // const result = await submitGeneratePlan(kelas.id);
   
-      if (result) {
-        setRows((prev) => ({
-          ...prev,
-          [kelas.id]: { status: "done", result, errorMsg: null },
-        }));
-      } else {
-        setRows((prev) => ({
-          ...prev,
-          [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
-        }));
-      }
+    //   if (result) {
+    //     setRows((prev) => ({
+    //       ...prev,
+    //       [kelas.id]: { status: "done", result, errorMsg: null },
+    //     }));
+    //   } else {
+    //     setRows((prev) => ({
+    //       ...prev,
+    //       [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
+    //     }));
+    //   }
     }, 
-  [submitGeneratePlan]);
-
-  // const handleGenerateReport = useCallback(async (kelas: ReportGeneratorResponse) => {
-  //   setRows((prev) => ({
-  //     ...prev,
-  //     [kelas.id]: { status: "loading", result: null, errorMsg: null },
-  //   }));
-    
-  //   console.log("Generate plan untuk kelas", kelas.id);
-  //   const result = await submitGeneratePlan(kelas.id);
-  
-  //     if (result) {
-  //       setRows((prev) => ({
-  //         ...prev,
-  //         [kelas.id]: { status: "done", result, errorMsg: null },
-  //       }));
-  //     } else {
-  //       setRows((prev) => ({
-  //         ...prev,
-  //         [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
-  //       }));
-  //     }
-  //   }, 
   // [submitGeneratePlan]);
+  []);
 
   return (
     <div style={styles.root}>
@@ -333,7 +314,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                         <div style={styles.kelasActions}>
                           <button
                             type="button"
-                            onClick={() => handleGenerate(kelas)}
+                            onClick={() => handleGenerate()}
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 6,
                               border: "none", borderRadius: 8,
@@ -409,14 +390,14 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
             <div style={styles.rightPanelFooter}>
               <button
                 type="button"
-                onClick={() => handleGenerate(kelas)}
+                onClick={() => handleGenerate()}
                 style={styles.btnGenerate}
               >
                 Generate Plan
               </button>
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onNavigate?.("planDetail", { kelas }); }}
+                onClick={(e) => { e.stopPropagation(); onNavigate?.("planDetail", { kelas,  mapel: mataPelajaranList.find((m) => m.id === kelas.mata_pelajaran_id) ?? "-"}); }}
                 style={styles.btnDetailPlan}
               >
                 Detail Plan
