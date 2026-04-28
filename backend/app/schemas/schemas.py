@@ -235,11 +235,17 @@ class LaporanCreate(BaseModel):
 class LaporanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    murid_id: str
+    kelas_id: str
     konten: str
+    tipe_laporan: str
     status: str
     pdf_path: Optional[str] = None
     tanggal: datetime
+    tanggal_kirim: Optional[datetime] = None
     is_ai_generated: bool
+    periode_mulai: Optional[date] = None
+    periode_selesai: Optional[date] = None
 
 class DiagnosticCreate(BaseModel):
     murid_id: str
