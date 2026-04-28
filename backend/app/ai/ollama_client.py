@@ -52,7 +52,7 @@ class OllamaClient:
             "format": "json", # Memaksa output JSON sesuai Modelfile Sania
             "options": {
                 "num_predict": num_predict,
-                "temperature": 0.7,
+                "temperature": 0.4,
                 "top_p": 0.9
             }
         }

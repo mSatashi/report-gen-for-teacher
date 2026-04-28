@@ -230,7 +230,7 @@ class LaporanCreate(BaseModel):
     kelas_id: Optional[str] = None
     periode_mulai: Optional[date] = None
     periode_selesai: Optional[date] = None
-    report_style: str = "Konstruktif dan Memotivasi"
+    tipe_laporan : str = "Konstruktif dan Memotivasi"
 
 class LaporanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

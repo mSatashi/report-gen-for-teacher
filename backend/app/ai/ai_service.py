@@ -41,57 +41,44 @@ class NarrativeEngine:
         pso_info = f"Rekomendasi PSO: {pso_recommended_route}" if pso_recommended_route else "Ikuti kurikulum standar."
 
         # 2. Prompt dengan "Trigger" eksplisit untuk panjang laporan
+        # Prompt sekarang hanya fokus pada DATA, karena ATURAN sudah ada di Modelfile
         prompt = f"""
-TULIS LAPORAN PERKEMBANGAN MURID SEKARANG.
-Gunakan identitas asisten 'Sania'.
-
-DATA INPUT:
-Nama Siswa: {nama_murid}
-Mata Pelajaran: {mata_pelajaran}
-Periode: {periode_mulai or 'N/A'} s/d {periode_selesai or 'N/A'}
-
-LOG AKTIVITAS:
-{log_summary}
-
-PENGUASAAN MATERI (BKT):
-{bkt_summary}
-
-{pso_info}
-
-INSTRUKSI KHUSUS:
-- Tulis minimal500 kata.
-- Format output HARUS JSON dengan field: "nama_siswa", "laporan_lengkap", "status".
-- Isi field "laporan_lengkap" dengan narasi laporan yang hangat dan mendetail.
-""".strip()
+        DATA MURID:
+        - Nama: {nama_murid}
+        - Mapel: {mata_pelajaran}
+        - Ringkasan Log: {log_summary}
+        - Status Penguasaan: {bkt_summary}
+        - Arah Belajar: {pso_info}
+        """.strip()
 
         try:
-            # 3. Panggil Ollama
-            raw_response = await narrative_client.generate(prompt=prompt, num_predict=2048)
+            raw_response = await narrative_client.generate(prompt=prompt, num_predict=1000)
             
-            if not raw_response:
-                raise ValueError("Model AI memberikan respons kosong.")
+            # CLEANER: Cari teks di antara kurung kurawal { ... }
+            # Ini untuk membuang "Thinking Process" yang mungkin bocor di luar JSON
+            match = re.search(r'\{.*\}', raw_response, re.DOTALL)
+            if match:
+                clean_json = match.group(0)
+            else:
+                clean_json = raw_response
 
-            # 4. Parsing JSON dari respons model
             try:
-                data_json = json.loads(raw_response)
-                # Ambil hanya isi laporannya saja untuk disimpan ke field 'konten' di DB
+                data_json = json.loads(clean_json)
                 return data_json.get("laporan_lengkap", raw_response)
             except json.JSONDecodeError:
-                # Jika model gagal memberikan JSON tapi memberikan teks biasa, tetap ambil teksnya
-                logger.warning("AI tidak memberikan format JSON yang valid, mengambil teks mentah.")
-                return raw_response
+                # Jika masih gagal JSON, bersihkan markdown code blocks jika ada
+                fallback_text = raw_response.replace("```json", "").replace("```", "").strip()
+                return fallback_text
 
         except Exception as e:
             logger.error(f"NarrativeEngine Error: {e}")
-            # Raise exception agar router 'laporan.py' menangkap ini sebagai error 500
-            # Bukan mengembalikan string yang malah disimpan sebagai laporan sukses
             raise RuntimeError(f"Gagal generate laporan: {str(e)}")
 
     def _format_log_summary(self, log_data: List[Dict]) -> str:
         if not log_data: return "Tidak ada aktivitas log."
         return "\n".join([
             f"- [{l.get('tanggal', '-')}] {l.get('topik', '-')} (Nilai: {l.get('nilai', '-')})"
-            for l in log_data[-20:]
+            for l in log_data[-10:]
         ])
 
     def _format_bkt_summary(self, knowledge_state: Dict[str, float]) -> str:
