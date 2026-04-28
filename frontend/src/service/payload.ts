@@ -93,7 +93,7 @@ export interface DailyLogResponse {
 export interface GenerateplanResponse {
   id: string;
   kelas_id: string;
-  murid_id?: string;
+  murid_id: string;
   waktu: string;
   daftar_rekomendasi_materi: string[];
   estimasi_waktu_selesai: string;
@@ -125,10 +125,10 @@ export interface ReportGeneratorResponse {
 
 export interface ReportGeneratorPayload {  
   murid_id: string;
-  kelas_id?: string;
-  periode_mulai?: string;
-  periode_selesai?: string;
-  tipe_laporan?: string;
+  kelas_id: string;
+  periode_mulai: string;
+  periode_selesai: string;
+  tipe_laporan: string;
 }
 
 export interface DashboardResponse {  

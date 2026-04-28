@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import type { addSiswaPayload, GenerateplanResponse, KelasResponse, MapelResponse, MataPelajaranObj, SiswaResponse } from "../../service/payload";
+import type { addSiswaPayload, DailyLogResponse, GenerateplanResponse, KelasResponse, MapelResponse, MataPelajaranObj, ReportGeneratorPayload, ReportGeneratorResponse, SiswaResponse } from "../../service/payload";
 import { useKelasApi } from "../master-kelas/useKelasApi";
 import { styles } from "./styles";
 import { IconClose, IconPlus, IconTrash } from "../../icons";
 import type { Siswa, Toast } from "../../types";
 import { useSiswaApi } from "../master-siswa/useSiswaApi";
 import { addSiswaKelas, deleteSiswaKelas } from "../../service/kelasAPI";
-// import { useLearningPlan } from "../learning-plan/useLearningPlan";
+import { useLearningPlan } from "../learning-plan/useLearningPlan";
 import { useMapelApi } from "../master-mapel/useMapelApi";
-// import type { Toast } from "../../types";
+import { useReport } from "../report-editor/useReport";
+import { useDailyLogSiswa } from "../detail-log-siswa/useDailyLogSiswa";
+import { fetchLogSiswa } from "../../service/dailyLogAPI";
 
 interface DetailKelasProps {
   kelasId: string;
@@ -31,7 +33,7 @@ interface RowState {
   errorMsg: string | null;
 }
 
-export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
+export default function DetailKelas({ kelasId, onNavigate, mapel }: DetailKelasProps) {
   const [kelas, setKelas] = useState<KelasResponse | null>(null);
   const [siswaList, setSiswaList] = useState<SiswaResponse[]>([]);
   const [siswaKelasList, setSiswaKelasList] = useState<SiswaResponse[]>([]);
@@ -41,13 +43,16 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   const [modal, setModal] = useState<ModalMode>(null);
   const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ siswaId: string } | null>(null);
-  const [rows, ] = useState<Record<string, RowState>>({});
+  const [rows, setRows] = useState<Record<string, RowState>>({});
   const [mataPelajaranList, setMataPelajaranList] = useState<MataPelajaranObj[]>([]);
+  const [logList, setLogList] = useState<DailyLogResponse[]>([]);
 
   const { loadSiswa } = useSiswaApi();
   const { errorMsg, loadKelas, loadSiswaKelas } = useKelasApi();
-  // const { submitGeneratePlan } = useLearningPlan();
+  const { submitGeneratePlan } = useLearningPlan();
+  const { submitReportGenerator } = useReport();
   const { loadMapelList } = useMapelApi();
+  const { loadLogSiswa } = useDailyLogSiswa
 
   const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
     id: data.id,
@@ -142,31 +147,65 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
   const totalCount = mataPelajaranList.find((m) => m.id === kelas?.mata_pelajaran_id)?.topik_list?.length ?? 0;
 
-  const handleGenerate = useCallback(async () => {
-    // useCallback(async (kelas: KelasResponse) => {
-    onNavigate?.('reportEditor')
-    // setRows((prev) => ({
-    //   ...prev,
-    //   [kelas.id]: { status: "loading", result: null, errorMsg: null },
-    // }));
+  const handleGenerate = useCallback(async (kelas: KelasResponse) => {
+    setRows((prev) => ({
+      ...prev,
+      [kelas.id]: { status: "loading", result: null, errorMsg: null },
+    }));
     
-    // console.log("Generate plan untuk kelas", kelas.id);
-    // const result = await submitGeneratePlan(kelas.id);
+    const result = await submitGeneratePlan(kelas.id);
   
-    //   if (result) {
-    //     setRows((prev) => ({
-    //       ...prev,
-    //       [kelas.id]: { status: "done", result, errorMsg: null },
-    //     }));
-    //   } else {
-    //     setRows((prev) => ({
-    //       ...prev,
-    //       [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
-    //     }));
-    //   }
+      if (result) {
+        setRows((prev) => ({
+          ...prev,
+          [kelas.id]: { status: "done", result, errorMsg: null },
+        }));
+      } else {
+        setRows((prev) => ({
+          ...prev,
+          [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
+        }));
+      }
     }, 
-  // [submitGeneratePlan]);
-  []);
+  [submitGeneratePlan]);
+
+  const handleGenerateReport = useCallback(async (siswaId: string) => {
+    const logSiswa = await fetchLogSiswa(siswaId);
+    console.log("log siswa id", siswaId);
+    const logTerbaru = logSiswa.length > 10
+      ? [...logSiswa]
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))
+          .slice(0, 10)
+      : logSiswa;
+
+    const createdAtPertama = logTerbaru.reduce((min, item) =>
+      item.created_at < min ? item.created_at : min, logTerbaru[0]?.created_at
+    );
+
+    const createdAtTerakhir = logTerbaru.reduce((max, item) =>
+      item.created_at > max ? item.created_at : max, logTerbaru[0]?.created_at
+    );
+
+    const today = new Date().toISOString().split("T")[0];
+    
+    const payload: ReportGeneratorPayload = {
+      murid_id: siswaId!,
+      kelas_id: kelasId!,
+      periode_mulai: createdAtPertama.split("T")[0] ?? today,
+      periode_selesai: createdAtTerakhir.split("T")[0] ?? today,
+      tipe_laporan: "Perkembangan",
+    };
+    
+    const result = await submitReportGenerator(payload);
+  
+      if (result) {
+        showToast(`Report berhasil digenerate`, "success");
+        onNavigate?.('reportEditor', { result: result});
+      } else {
+        showToast(errorMsg ?? "Gagal membuat siswa", "error");
+      }
+    }, 
+  [submitReportGenerator, onNavigate]);
 
   return (
     <div style={styles.root}>
@@ -314,7 +353,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                         <div style={styles.kelasActions}>
                           <button
                             type="button"
-                            onClick={() => handleGenerate()}
+                            onClick={() => handleGenerateReport(siswa.id)}
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 6,
                               border: "none", borderRadius: 8,
@@ -390,7 +429,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
             <div style={styles.rightPanelFooter}>
               <button
                 type="button"
-                onClick={() => handleGenerate()}
+                onClick={() => handleGenerate(kelas)}
                 style={styles.btnGenerate}
               >
                 Generate Plan
