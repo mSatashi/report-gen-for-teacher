@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { addSiswaPayload, DailyLogResponse, GenerateplanResponse, KelasResponse, MapelResponse, MataPelajaranObj, ReportGeneratorPayload, ReportGeneratorResponse, SiswaResponse } from "../../service/payload";
+import type { addSiswaPayload, GenerateplanResponse, KelasResponse, MataPelajaranObj, ReportGeneratorPayload, SiswaResponse } from "../../service/payload";
 import { useKelasApi } from "../master-kelas/useKelasApi";
 import { styles } from "./styles";
 import { IconClose, IconPlus, IconTrash } from "../../icons";
@@ -9,13 +9,12 @@ import { addSiswaKelas, deleteSiswaKelas } from "../../service/kelasAPI";
 import { useLearningPlan } from "../learning-plan/useLearningPlan";
 import { useMapelApi } from "../master-mapel/useMapelApi";
 import { useReport } from "../report-editor/useReport";
-import { useDailyLogSiswa } from "../detail-log-siswa/useDailyLogSiswa";
+// import { useDailyLogSiswa } from "../detail-log-siswa/useDailyLogSiswa";
 import { fetchLogSiswa } from "../../service/dailyLogAPI";
 
 interface DetailKelasProps {
   kelasId: string;
   onNavigate?: (route: string, params?: Record<string, unknown>) => void;
-  mapel: MapelResponse,
 }
 
 type ModalMode = "add-siswa" | "edit-siswa" | null;
@@ -33,7 +32,7 @@ interface RowState {
   errorMsg: string | null;
 }
 
-export default function DetailKelas({ kelasId, onNavigate, mapel }: DetailKelasProps) {
+export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   const [kelas, setKelas] = useState<KelasResponse | null>(null);
   const [siswaList, setSiswaList] = useState<SiswaResponse[]>([]);
   const [siswaKelasList, setSiswaKelasList] = useState<SiswaResponse[]>([]);
@@ -45,14 +44,15 @@ export default function DetailKelas({ kelasId, onNavigate, mapel }: DetailKelasP
   const [deleteConfirm, setDeleteConfirm] = useState<{ siswaId: string } | null>(null);
   const [rows, setRows] = useState<Record<string, RowState>>({});
   const [mataPelajaranList, setMataPelajaranList] = useState<MataPelajaranObj[]>([]);
-  const [logList, setLogList] = useState<DailyLogResponse[]>([]);
+  const [loadingReportId, setLoadingReportId] = useState<string | null>(null);
+  // const [logList, setLogList] = useState<DailyLogResponse[]>([]);
 
   const { loadSiswa } = useSiswaApi();
   const { errorMsg, loadKelas, loadSiswaKelas } = useKelasApi();
   const { submitGeneratePlan } = useLearningPlan();
   const { submitReportGenerator } = useReport();
   const { loadMapelList } = useMapelApi();
-  const { loadLogSiswa } = useDailyLogSiswa
+  // const { loadLogSiswa } = useDailyLogSiswa
 
   const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
     id: data.id,
@@ -170,39 +170,44 @@ export default function DetailKelas({ kelasId, onNavigate, mapel }: DetailKelasP
   [submitGeneratePlan]);
 
   const handleGenerateReport = useCallback(async (siswaId: string) => {
-    const logSiswa = await fetchLogSiswa(siswaId);
-    console.log("log siswa id", siswaId);
-    const logTerbaru = logSiswa.length > 10
-      ? [...logSiswa]
-          .sort((a, b) => b.created_at.localeCompare(a.created_at))
-          .slice(0, 10)
-      : logSiswa;
+    setLoadingReportId(siswaId);
+    try {
+      const logSiswa = await fetchLogSiswa(siswaId);
+      console.log("log siswa id", siswaId);
+      const logTerbaru = logSiswa.length > 10
+        ? [...logSiswa]
+            .sort((a, b) => b.created_at.localeCompare(a.created_at))
+            .slice(0, 10)
+        : logSiswa;
 
-    const createdAtPertama = logTerbaru.reduce((min, item) =>
-      item.created_at < min ? item.created_at : min, logTerbaru[0]?.created_at
-    );
+      const createdAtPertama = logTerbaru.reduce((min, item) =>
+        item.created_at < min ? item.created_at : min, logTerbaru[0]?.created_at
+      );
 
-    const createdAtTerakhir = logTerbaru.reduce((max, item) =>
-      item.created_at > max ? item.created_at : max, logTerbaru[0]?.created_at
-    );
+      const createdAtTerakhir = logTerbaru.reduce((max, item) =>
+        item.created_at > max ? item.created_at : max, logTerbaru[0]?.created_at
+      );
 
-    const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toISOString().split("T")[0];
+      
+      const payload: ReportGeneratorPayload = {
+        murid_id: siswaId!,
+        kelas_id: kelasId!,
+        periode_mulai: createdAtPertama.split("T")[0] ?? today,
+        periode_selesai: createdAtTerakhir.split("T")[0] ?? today,
+        tipe_laporan: "Perkembangan",
+      };
+      
+      const result = await submitReportGenerator(payload);
     
-    const payload: ReportGeneratorPayload = {
-      murid_id: siswaId!,
-      kelas_id: kelasId!,
-      periode_mulai: createdAtPertama.split("T")[0] ?? today,
-      periode_selesai: createdAtTerakhir.split("T")[0] ?? today,
-      tipe_laporan: "Perkembangan",
-    };
-    
-    const result = await submitReportGenerator(payload);
-  
-      if (result) {
-        showToast(`Report berhasil digenerate`, "success");
-        onNavigate?.('reportEditor', { result: result});
-      } else {
-        showToast(errorMsg ?? "Gagal membuat siswa", "error");
+        if (result) {
+          showToast(`Report berhasil digenerate`, "success");
+          onNavigate?.('reportEditor', { reportData: result});
+        } else {
+          showToast(errorMsg ?? "Gagal membuat siswa", "error");
+        }
+      } finally {
+        setLoadingReportId(null); // selesai loading
       }
     }, 
   [submitReportGenerator, onNavigate]);
@@ -361,8 +366,21 @@ export default function DetailKelas({ kelasId, onNavigate, mapel }: DetailKelasP
                               whiteSpace: "nowrap",
                             }}
                           >
-                            Generate Report
+                            {loadingReportId === siswa.id ? (
+                              <>
+                                <span style={{
+                                  width: 12, height: 12, border: "2px solid #9ca3af",
+                                  borderTopColor: "transparent", borderRadius: "50%",
+                                  display: "inline-block",
+                                  animation: "spin 0.7s linear infinite",
+                                }} />
+                                Generating...
+                              </>
+                            ) : (
+                              "Generate Report"
+                            )}
                           </button>
+
                           <button
                             style={styles.btnDetail}
                             onClick={() => onNavigate?.("logSiswa", { siswaId: siswa.id, siswa: siswa, mapel: mataPelajaran, kelasId: kelas.id })}

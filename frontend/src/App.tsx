@@ -17,8 +17,10 @@ import MasterMapel from "./pages/master-mapel";
 import DetailKelas from "./pages/detail-kelas";
 import DetailLogSiswa from "./pages/detail-log-siswa";
 import DailyLogFormLog from "./pages/form-daily-log";
-import type { DailyLogResponse, KelasResponse, MapelResponse, SiswaResponse } from "./service/payload";
+import type { DailyLogResponse, KelasResponse, MapelResponse, ReportGeneratorResponse, SiswaResponse } from "./service/payload";
 import PlanDetail from "./pages/plan-detail";
+import ListReportGenerator from "./pages/list-report";
+import DetailReport from "./pages/detail-report";
 
 // Helper token
 const TOKEN_KEY = "auth_token";
@@ -128,7 +130,9 @@ const App: React.FC = () => {
       case "learningPlan":
         return <LearningPlan />;
       case "reportEditor":
-        return <ReportEditor />;
+        return <ReportEditor 
+          reportData={routeParams.reportData as ReportGeneratorResponse} 
+          siswaId={routeParams.siswaId as string}  />;
       case "masterKelas":
         return <MasterKelas onNavigate={handleNavigate} />;
       case "masterSiswa":
@@ -138,8 +142,7 @@ const App: React.FC = () => {
       case "detailKelas":
         return <DetailKelas 
           kelasId={routeParams.kelasId as string} 
-          onNavigate={handleNavigate}
-          mapel={routeParams.mapel as MapelResponse} />;
+          onNavigate={handleNavigate}/>;
       case "logSiswa":
         return <DetailLogSiswa 
           onNavigate={handleNavigate} 
@@ -161,6 +164,10 @@ const App: React.FC = () => {
           kelas={routeParams.kelas as KelasResponse}
           mapel={routeParams.mapel as MapelResponse}
            />;
+      case "listReportGen":
+        return <ListReportGenerator onNavigate={handleNavigate}  />;
+      case "detailReport":
+        return <DetailReport onNavigate={handleNavigate} siswaId={routeParams.siswaId as string} />;
       default:
         return (
           <div style={styles.pageNotFound}>

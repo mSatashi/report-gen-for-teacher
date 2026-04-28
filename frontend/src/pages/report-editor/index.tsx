@@ -1,9 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { INITIAL_SECTIONS } from "./constants";
 import type { ReportSection } from "./types";
 import * as S from "./styles";
+import type { ReportGeneratorResponse, SiswaResponse } from "../../service/payload";
+import { useSiswaApi } from "../master-siswa/useSiswaApi";
+import type { Toast } from "../../types";
+import { useReport } from "./useReport";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { generateReportPdf } from "./generatePdf";
+
 
 export interface ReportData {
   id: string;
@@ -24,24 +29,9 @@ export interface ReportData {
 }
 
 interface ReportEditorProps {
-  reportData?: ReportData | null;
+  reportData: ReportGeneratorResponse;
+  siswaId: string;
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const formatDate = (iso: string) => {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("id-ID", {
-    day: "numeric", month: "long", year: "numeric",
-  });
-};
-
-// const formatPeriode = (mulai: string, selesai: string) => {
-//   if (!mulai || !selesai) return "—";
-//   const fmt = (s: string) =>
-//     new Date(s).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-//   return `${fmt(mulai)} – ${fmt(selesai)}`;
-// };
 
 const capitalize = (s: string) =>
   s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
@@ -59,80 +49,17 @@ const parseKonten = (konten: string): ReportSection[] => {
   }];
 };
 
-// ─── Info card ────────────────────────────────────────────────────────────────
-
-const StudentInfoCard: React.FC<{ r: ReportData; status: string }> = ({ r, status }) => {
-  const row1 = [
-    { label: "Nama Siswa",   value: r.nama_siswa ?? "—" },
-    { label: "Tanggal",      value: formatDate(r.tanggal) },
-    { label: "Tipe Laporan", value: capitalize(r.tipe_laporan) },
-    ...(r.nama_kelas ? [{ label: "Kelas", value: r.nama_kelas }] : []),
-  ];
-
-  // const row2: { label: string; value: string }[] = [
-  //   ...(r.nama_mapel ? [{ label: "Mata Pelajaran", value: r.nama_mapel }] : []),
-  //   { label: "Periode", value: formatPeriode(r.periode_mulai, r.periode_selesai) },
-  // ];
-
-  return (
-    <div style={S.infoCard}>
-      <div style={S.infoCardHeader}>
-        <span style={{ fontSize: 14 }}>🗂️</span>
-        <span style={S.infoCardHeaderTitle}>Detail Peserta</span>
-        <span style={S.infoCardStatusBadge}>
-          {isSelesai(status) ? "✅ Selesai" : "⏳ " + capitalize(status)}
-        </span>
-      </div>
-
-      <div style={S.infoCardBodyRow}>
-        {row1.map((f) => (
-          <div key={f.label} style={S.infoGroup}>
-            <span style={S.infoLabel}>{f.label}</span>
-            <span style={S.infoValue}>{f.value}</span>
-          </div>
-        ))}
-      </div>
-
-      <div style={S.infoCardDivider} />
-
-      {/* <div style={S.infoCardBodyRow}>
-        {row2.map((f) => (
-          <div key={f.label} style={S.infoGroup}>
-            <span style={S.infoLabel}>{f.label}</span>
-            <span style={S.infoValue}>{f.value}</span>
-          </div>
-        ))}
-
-        {r.is_ai_generated && (
-          <div style={S.infoGroup}>
-            <span style={S.infoLabel}>Sumber</span>
-            <span style={S.badgeAI}>✦ AI Generated</span>
-          </div>
-        )}
-
-        <div style={S.infoGroup}>
-          <span style={S.infoLabel}>Status</span>
-          <span style={S.badgeStatus(status)}>
-            {isSelesai(status) ? "Selesai" : capitalize(status)}
-          </span>
-        </div>
-      </div> */}
-    </div>
-  );
-};
-
-// ─── Editable section card ────────────────────────────────────────────────────
-
 interface SectionCardProps {
   section: ReportSection;
   onChange: (id: string, value: string) => void;
   onSave: (id: string, value: string) => void;
+  done: boolean;
 }
 
-const SectionCard: React.FC<SectionCardProps> = ({ section: s, onChange, onSave }) => {
+const SectionCard: React.FC<SectionCardProps> = ({ section: s, onChange, onSave, done }) => {
   const [focused, setFocused] = useState(false);
   const [localValue, setLocalValue] = useState(s.content);
-
+  
   return (
     <div style={S.sectionCard(s.accentColor, focused)}>
       <div style={S.sectionLabelRow}>
@@ -156,16 +83,17 @@ const SectionCard: React.FC<SectionCardProps> = ({ section: s, onChange, onSave 
         {s.content}
       </div>
 
-      <div style={S.sectionFooter}>
-        <button style={S.btnSave} onClick={() => onSave(s.id, localValue)}>
-          💾 Simpan
-        </button>
-      </div>
+
+      {!done && (
+        <div style={S.sectionFooter}>
+          <button style={S.btnSave} onClick={() => onSave(s.id, localValue)}>
+            💾 Simpan
+          </button>
+        </div>
+      )}
     </div>
   );
 };
-
-// ─── Finalize modal ───────────────────────────────────────────────────────────
 
 const FinalizeModal: React.FC<{ onConfirm: () => void; onCancel: () => void }> = ({
   onConfirm, onCancel,
@@ -186,27 +114,27 @@ const FinalizeModal: React.FC<{ onConfirm: () => void; onCancel: () => void }> =
   </div>
 );
 
-// ─── Placeholder saat reportData null ─────────────────────────────────────────
-
-const EMPTY_DATA: ReportData = {
-  id: "", murid_id: "", kelas_id: "", konten: "",
-  tipe_laporan: "", status: "draft",
-  pdf_path: null, tanggal: "", tanggal_dikirim: null,
-  is_ai_generated: false, periode_mulai: "", periode_selesai: "",
-};
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
+let toastId = 0;
 
 const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
-  // Selalu ada data untuk info card — gunakan reportData jika tersedia
-  const activeData: ReportData = reportData ?? EMPTY_DATA;
-
   const [sections, setSections] = useState<ReportSection[]>(() =>
     reportData ? parseKonten(reportData.konten) : INITIAL_SECTIONS
   );
   const [showModal, setShowModal] = useState(false);
   const [status, setStatus] = useState(reportData?.status ?? "draft");
   const [sending, setSending] = useState(false);
+  const [siswaList, setSiswaList] = useState<SiswaResponse[]>([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+
+  const { loadSiswa } = useSiswaApi();
+  const { errorMsg, submitUpdateReportSiswa, submitUpdateStatusReport } = useReport();
+
+  const showToast = (message: string, type: "success" | "error") => {
+    const id = ++toastId;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
+  };
 
   const done = isSelesai(status);
 
@@ -214,17 +142,49 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
     setSections((prev) => prev.map((s) => (s.id === id ? { ...s, content: value } : s)));
   };
 
-  const handleSave = () => {
-    // TODO: call API to persist section
+  const handleSave = async (value: string) => {
+    try {
+      await submitUpdateReportSiswa(reportData?.id, value);
+      showToast("Report berhasil diperbarui", "success");
+    } catch {
+      showToast(errorMsg ?? "Gagal memperbarui report", "error");
+    }
   };
+  
+  useEffect(() => {
+    loadSiswa().then((data) => {
+      if (data.length) setSiswaList(data);
+    });
+  }, []);
 
-  const handleFinalize = () => {
-    setSending(true);
-    setTimeout(() => {
+  const siswa = siswaList.find((m) => m.id === reportData?.murid_id) ?? null;
+
+  const handleFinalize = async () => {
+    try {
+      const status = await submitUpdateStatusReport(reportData?.id); // ✅ pakai value dari section
+      console.log('status edit: ', status);
+      showToast("Report berhasil diperbarui", "success");
+      setShowModal(false);
       setSending(false);
       setStatus("selesai");
+    } catch {
+      showToast(errorMsg ?? "Gagal memperbarui report", "error");
       setShowModal(false);
-    }, 1500);
+    }
+  };
+
+  const getCurrentKonten = () =>
+    sections.find((s) => s.id === "konten")?.content ?? reportData?.konten ?? "";
+
+  const handleDownloadPdf = () => {
+    const doc = generateReportPdf(reportData, siswa?.nama ?? "-", getCurrentKonten());
+    doc.save(`laporan-${siswa?.nama ?? "siswa"}-${reportData?.tanggal?.split("T")[0]}.pdf`);
+  };
+
+  const handlePreviewPdf = () => {
+    const doc = generateReportPdf(reportData, siswa?.nama ?? "-", getCurrentKonten());
+    const url = doc.output("bloburl") as unknown as string;
+    setPdfPreviewUrl(url);
   };
 
   return (
@@ -244,8 +204,8 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
               {/* Preview PDF + Download PDF + badge — hanya jika selesai */}
               {done && (
                 <>
-                  <button style={S.btnOutline}>👁 Preview PDF</button>
-                  <button style={S.btnOutline}>⬇ Download PDF</button>
+                  <button style={S.btnOutline} onClick={handlePreviewPdf}>👁 Preview PDF</button>
+                  <button style={S.btnOutline} onClick={handleDownloadPdf}>⬇ Download PDF</button>
                   <span style={S.badgeSelesaiHeader}>✅ Laporan Selesai</span>
                 </>
               )}
@@ -264,7 +224,41 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
           </div>
 
           {/* ── Info card — selalu tampil menggunakan activeData ── */}
-          <StudentInfoCard r={activeData} status={status} />
+          {/* <StudentInfoCard r={activeData} status={status} /> */}
+          <div style={S.infoCard}>
+      <div style={S.infoCardHeader}>
+        <span style={{ fontSize: 14 }}>🗂️</span>
+        <span style={S.infoCardHeaderTitle}>Detail Peserta</span>
+        <span style={S.infoCardStatusBadge}>
+          {isSelesai(status) ? "✅ Final" : "⏳ " + capitalize(status)}
+        </span>
+      </div>
+
+      <div style={S.infoCardDivider} />
+        <div style={S.infoCardBodyRow}>
+          <div style={S.infoGroup}>
+            <span style={S.infoLabel}>Nama Siswa</span>
+            <span style={S.infoValue}>{siswa?.nama ?? '-'}</span>
+          </div>
+
+          <div style={S.infoGroup}>
+            <span style={S.infoLabel}>Tanggal</span>
+            <span style={S.infoValue}>{reportData?.tanggal ?? '-'}</span>
+          </div>
+
+          <div style={S.infoGroup}>
+            <span style={S.infoLabel}>Type Laporan</span>
+            <span style={S.infoValue}>{reportData?.tipe_laporan ?? '-'}</span>
+          </div>
+
+          <div style={S.infoGroup}>
+            <span style={S.infoLabel}>Status</span>
+            <span style={S.badgeStatus(status)}>
+              {isSelesai(status) ? "Selesai" : capitalize(status)}
+            </span>
+          </div>
+        </div>
+      </div>
 
           {/* ── Banner ── */}
           {!done && (
@@ -286,6 +280,7 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
                 section={s}
                 onChange={handleChange}
                 onSave={handleSave}
+                done={done} 
               />
             ))}
           </div>
@@ -294,6 +289,74 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
       </div>
 
       <style>{S.globalStyles}</style>
+
+      <div
+        style={{
+          position: "fixed",
+          right: 24,
+          bottom: 24,
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          zIndex: 1200,
+        }}
+      >
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            style={{
+              minWidth: 240,
+              maxWidth: 320,
+              padding: "12px 14px",
+              borderRadius: "12px",
+              color: "#fff",
+              fontSize: "13px",
+              fontWeight: 600,
+              boxShadow: "0 10px 30px rgba(15,22,36,0.18)",
+              background: toast.type === "success" ? "#22C55E" : "#EF4444",
+            }}
+          >
+            {toast.message}
+          </div>
+        ))}
+      </div>
+
+      {pdfPreviewUrl && (
+        <div
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+            zIndex: 200, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: 12,
+          }}
+          onClick={() => setPdfPreviewUrl(null)}
+        >
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setPdfPreviewUrl(null); }}
+              style={{ ...S.btnOutline, background: "#fff" }}
+            >
+              ✕ Tutup
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDownloadPdf(); }}
+              style={{ ...S.btnPrimary }}
+            >
+              ⬇ Download
+            </button>
+          </div>
+          <iframe
+            src={pdfPreviewUrl}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(900px, 95vw)",
+              height: "85vh",
+              border: "none",
+              borderRadius: 10,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+            }}
+          />
+        </div>
+      )}
     </>
   );
 };
