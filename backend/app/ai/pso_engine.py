@@ -51,9 +51,19 @@ def run_pso_algorithm(
     # Jika semua sudah dikuasai → tidak perlu rekomendasi
     is_review_mode = False
     if not unmastered_skills:
-        # Jika semua sudah dikuasai, gunakan semua topik yang ada untuk review
+        # Jika semua sudah dikuasai, gunakan semua topik yang ada untuk pengulangan
         unmastered_skills = heuristic_sequence
         is_review_mode = True
+
+    # Jika benar-benar tidak ada topik sama sekali di kurikulum (Sequence Kosong)
+    if not unmastered_skills:
+        return {
+            "rekomendasi_materi": [],
+            "jadwal_mingguan": [],
+            "catatan_analisa": "Tidak ada topik yang ditemukan dalam mata pelajaran ini.",
+            "estimasi_selesai_minggu": 0,
+            "prioritas_perhatian": []
+        }
 
     # Asumsi: skill di luar daftar ini dianggap sudah dikuasai (ghost prerequisite)
     mastered_so_far_baseline = set(skill_graph_dict.keys()) - set(unmastered_skills)
