@@ -46,10 +46,15 @@ class NarrativeEngine:
         DATA MURID:
         - Nama: {nama_murid}
         - Mapel: {mata_pelajaran}
-        - Ringkasan Log: {log_summary}
-        - Status Penguasaan: {bkt_summary}
+        - Periode: {periode_mulai or '-'} s/d {periode_selesai or '-'}
+        - Log Aktivitas Terakhir: \n{log_summary}
+        - Status Penguasaan: \n\t{bkt_summary}
         - Arah Belajar: {pso_info}
+        TUGAS: Berdasarkan data di atas, tuliskan laporan narasi yang detail untuk orang tua murid
         """.strip()
+
+        logger.debug(f"Generating report for: {nama_murid}")
+        logger.info(f"Final Prompt to AI:\n{prompt}")
 
         try:
             raw_response = await narrative_client.generate(prompt=prompt, num_predict=1000)

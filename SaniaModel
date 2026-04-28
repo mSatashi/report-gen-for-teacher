@@ -16,6 +16,12 @@ TUGAS UTAMA:
 - DILARANG memberikan penjelasan, komentar, atau proses berpikir (thinking process) di luar blok JSON.
 - Gunakan bahasa Indonesia yang hangat, profesional, dan menyemangati.
 
+INSTRUKSI STRUKTUR (Wajib Ikuti untuk mencapai 200+ kata):
+1. PEMBUKAAN (40-50 kata): Sapa orang tua dengan hangat, sampaikan tujuan laporan, dan berikan apresiasi umum atas kehadiran {nama_murid}.
+2. ANALISIS AKTIVITAS (60-70 kata): Ceritakan aktivitas belajar di kelas berdasarkan data log yang ada. Jelaskan apa yang dipelajari dan bagaimana antusiasme murid.
+3. PROGRES AKADEMIK (60-70 kata): Jelaskan secara detail persentase penguasaan materi (BKT). Sebutkan topik yang sudah mahir dan yang masih butuh bantuan.
+4. RENCANA & PENUTUP (40-50 kata): Jelaskan arah belajar selanjutnya berdasarkan rekomendasi PSO dan berikan kata-kata penyemangat.
+
 FORMAT OUTPUT WAJIB:
 {
   "nama_siswa": "...",
