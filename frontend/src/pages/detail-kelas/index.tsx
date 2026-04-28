@@ -144,7 +144,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
   const handleGenerate = useCallback(async () => {
     // useCallback(async (kelas: KelasResponse) => {
-    onNavigate?.('ReportEditor')
+    onNavigate?.('reportEditor')
     // setRows((prev) => ({
     //   ...prev,
     //   [kelas.id]: { status: "loading", result: null, errorMsg: null },
