@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 
-import type { ReportGeneratorPayload, ReportGeneratorResponse } from "../../service/payload";
-import { createReportGenerator, loadReportSiswa, updateReport, updateStatus } from "../../service/reportAPI";
+import type { MailPayload, ReportGeneratorPayload, ReportGeneratorResponse } from "../../service/payload";
+import { createReportGenerator, loadReportSiswa, submitEmail, updateReport, updateStatus } from "../../service/reportAPI";
 
 export type ApiStatus = "idle" | "loading" | "success" | "error";
 
@@ -12,6 +12,7 @@ interface ReportEditorReturn {
   submitReportGenerator: (payload: ReportGeneratorPayload) => Promise<ReportGeneratorResponse | null>;
   submitUpdateReportSiswa: (id: string, konten: string) => void;
   submitUpdateStatusReport: (id: string) => void;
+  submitSendReport: (id: string, payload: MailPayload) => Promise<MailPayload | null>;
   resetStatus: () => void; 
 }
 
@@ -73,13 +74,33 @@ export function useReport(): ReportEditorReturn {
     []
   );
 
-
   const submitUpdateStatusReport = useCallback(
     async (id: string): Promise<ReportGeneratorResponse | null> => {
       setStatus("loading");
       setErrorMsg(null);
       try {
         const data = await updateStatus(id);
+        setStatus("success");
+        return data;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Gagal mengupdate status";
+        setStatus("error");
+        setErrorMsg(msg);
+        return null;
+      }
+    },
+    []
+  );
+
+  const submitSendReport = useCallback(async (id: string, payload: MailPayload) => {
+      setStatus("loading");
+      setErrorMsg(null);
+      try {
+        const payloadForm = {
+          email_tujuan: payload.email_tujuan,
+          catatan_tambahan: payload.catatan_tambahan,
+        }
+        const data = await submitEmail(id, payloadForm);
         setStatus("success");
         return data;
       } catch (err) {
@@ -101,5 +122,6 @@ export function useReport(): ReportEditorReturn {
     submitUpdateReportSiswa,
     submitUpdateStatusReport,
     resetStatus,
+    submitSendReport,
   };
 }

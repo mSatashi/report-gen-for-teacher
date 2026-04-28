@@ -254,9 +254,9 @@ export default function MasterMapel() {
             <table style={styles.siswaTable}>
               <thead>
                 <tr>
-                  <th style={styles.th}>#</th>
-                  <th style={styles.th}>Nama Mata Pelajaran</th>
-                  <th style={styles.th}>Actions</th>
+                  <th style={{ ...styles.th, width: "50px"}}>#</th>
+                  <th style={{ ...styles.th, width: "750px"}}>Nama Mata Pelajaran</th>
+                  <th style={{ ...styles.th, width: "200px"}}>Actions</th>
                 </tr>
               </thead>
               <tbody>

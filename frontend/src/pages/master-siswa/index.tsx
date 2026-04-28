@@ -233,11 +233,11 @@ export default function MasterSiswa({ initialData = [] }: Props) {
             <table style={styles.mapelTable}>
               <thead>
                 <tr>
-                  <th style={styles.th}>#</th>
-                  <th style={styles.th}>Nama Siswa</th>
-                  <th style={styles.th}>Email Address</th>
-                  <th style={styles.th}>Jenis Kelamin</th>
-                  <th style={styles.th}>Level</th>
+                  <th style={{ ...styles.th, width:"50px"}}>#</th>
+                  <th style={{ ...styles.th, width:"200px"}}>Nama Siswa</th>
+                  <th style={{ ...styles.th, width:"300px"}}>Email Address</th>
+                  <th style={{ ...styles.th, width:"250px"}}>Jenis Kelamin</th>
+                  <th style={{ ...styles.th, width:"200px"}}>Level</th>
                 </tr>
               </thead>
               <tbody>
