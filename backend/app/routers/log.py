@@ -72,7 +72,7 @@ def get_log(
 
 # ── POST ──────────────────────────────────────────────────────────────────────
 
-@router.post("/", response_model=LogPertemuanResponse, status_code=201)
+@router.post("", response_model=LogPertemuanResponse, status_code=201)
 def tambah_log(
     data: LogPertemuanCreate,
     current_user: Pengguna = Depends(require_pengajar),

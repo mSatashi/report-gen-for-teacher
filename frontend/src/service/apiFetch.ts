@@ -1,4 +1,4 @@
-import { API_BASE } from "./apiUrl";
+import { API_URL } from "./apiUrl";
 
 let onUnauthorized: (() => void) | null = null;
 
@@ -9,7 +9,7 @@ export function setUnauthorizedHandler(fn: () => void) {
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = localStorage.getItem("auth_token");
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",

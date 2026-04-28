@@ -32,7 +32,7 @@ from app.services.mata_pelajaran_service import (
 router = APIRouter(prefix="/mata-pelajaran", tags=["Mata Pelajaran"])
  
  
-@router.post("/", response_model=MataPelajaranResponse, status_code=201)
+@router.post("", response_model=MataPelajaranResponse, status_code=201)
 def buat_mata_pelajaran(
     data: MataPelajaranCreate,
     db: Session = Depends(get_db),
@@ -44,7 +44,7 @@ def buat_mata_pelajaran(
     return create_mata_pelajaran(db, data)
  
  
-@router.get("/", response_model=List[MataPelajaranResponse])
+@router.get("", response_model=List[MataPelajaranResponse])
 def list_mata_pelajaran(
     skip:   int           = Query(0, ge=0),
     limit:  int           = Query(100, ge=1, le=500),

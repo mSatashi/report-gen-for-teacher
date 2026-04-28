@@ -1,5 +1,5 @@
 import { apiFetch } from "./apiFetch";
-import type { MapelPayload, MapelResponse } from "./payload";
+import type { MapelPayload, MapelResponse, MapelUpdatePayload } from "./payload";
 
 /** GET /mata-pelajaran — ambil semua mata pelajaran */
 export async function fetchMapelList(): Promise<MapelResponse[]> {
@@ -14,7 +14,9 @@ export async function createMapel(payload: MapelPayload): Promise<MapelResponse>
     method: "POST",
     body: JSON.stringify({
       nama_mata_pelajaran: payload.nama_mata_pelajaran,
-      topik: payload.topik,
+      topik_list: [
+        ...(payload.topik_awal?.map((t) => t.nama) ?? []),
+      ],
     }),
   });
   if (!res.ok) {
@@ -26,13 +28,18 @@ export async function createMapel(payload: MapelPayload): Promise<MapelResponse>
 
 
 /** PUT /mata-pelajaran — perbarui mata pelajaran */
-export async function updateMapel(payload: MapelPayload, idMapel: string): Promise<MapelResponse> {
+export async function updateMapel(payload: MapelUpdatePayload, idMapel: string): Promise<MapelResponse> {
   const res = await apiFetch(`/mata-pelajaran/${idMapel}`, {
     method: "PUT",
     body: JSON.stringify({
       nama_mata_pelajaran: payload.nama_mata_pelajaran,
-      topik: payload.topik,
-    }),
+      topik_list: payload.topik_list?.map((t) => ({
+        ...(t.id !== null && { id: t.id }),
+        nama: t.nama,
+        difficulty_index: t.difficulty_index,
+        prasyarat_ids: t.prasyarat_ids ?? [],
+      })) ?? [],
+      }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

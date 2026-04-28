@@ -1,7 +1,7 @@
 import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
  
 from sqlalchemy.orm import Session
 import asyncio
@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 from app.models.models import (
     KnowledgeState, LogPertemuan, RencanaStudi, Kelas, KelasMurid,
-    TopikPrasyarat, Topik
+    TopikPrasyarat, Topik, DiagnosticResult
 )
 from app.ai.bkt_engine import bkt_engine, PRIOR_KNOWLEDGE
 from app.ai.pso_engine import run_pso_algorithm
@@ -39,7 +39,7 @@ def update_knowledge_states(db: Session, murid_id: str, kelas_id: Optional[str] 
         topik = log.topik.strip()
         topik_scores.setdefault(topik,[]).append(float(log.nilai))
  
-    from app.models.models import DiagnosticResult
+    
     diag_rows = db.query(DiagnosticResult).filter(
         DiagnosticResult.murid_id == murid_id
     ).all()
@@ -57,11 +57,11 @@ def update_knowledge_states(db: Session, murid_id: str, kelas_id: Optional[str] 
         sp = bkt_engine._get_params(db, topik)  
  
         if ks:
-            ks.p_knowledge = p_final
-            ks.p_learn = sp.learn
-            ks.p_guess = sp.guess
-            ks.p_slip = sp.slip
-            ks.updated_at = datetime.utcnow()
+            setattr(ks, "p_knowledge", p_final)
+            setattr(ks, "p_learn", sp.learn)
+            setattr(ks, "p_guess", sp.guess)
+            setattr(ks, "p_slip", sp.slip)
+            ks.updated_at = cast(datetime, datetime.utcnow())
         else:
             ks = KnowledgeState(
                 id=str(uuid.uuid4()),
@@ -82,7 +82,7 @@ def get_knowledge_state(db: Session, murid_id: str) -> Dict[str, float]:
     """Mengambil pemahaman BKT satu murid dengan mempertimbangkan efek lupa (decay)."""
     rows = db.query(KnowledgeState).filter(KnowledgeState.murid_id == murid_id).all()
     result = {}
-    now = datetime.utcnow()
+    now = cast(datetime, datetime.utcnow())
     
     for ks in rows:
         p_known = float(ks.p_knowledge)
@@ -117,7 +117,7 @@ def get_class_knowledge_state(db: Session, kelas_id: str) -> Dict[str, float]:
     # 3. Proses di memori (Sangat Cepat)
     topic_sums = {}
     topic_counts = {}
-    now = datetime.utcnow()
+    now = cast(datetime, datetime.utcnow())
     
     for ks in ks_rows:
         p_known = float(ks.p_knowledge)
@@ -181,7 +181,7 @@ async def generate_rencana_studi_kelas(
     
     skill_graph_dict = {t.nama: [] for t in topik_list}
     heuristic_sequence =[t.nama for t in topik_list]
-    skill_params_dict = {t.nama: bkt_engine._get_params(db, t.nama).learn for t in topik_list}
+    skill_params_dict = {t.nama: bkt_engine._get_params(db, str(t.nama)).learn for t in topik_list}
     
     # Ambil semua relasi tanpa loop N+1
     semua_relasi = db.query(TopikPrasyarat).all()
@@ -202,7 +202,7 @@ async def generate_rencana_studi_kelas(
         skill_graph_dict,
         skill_params_dict,
         heuristic_sequence,
-        sisa_sesi
+        int(sisa_sesi)
     )
 
     # 5. Penentuan Versi 
@@ -217,7 +217,6 @@ async def generate_rencana_studi_kelas(
     rencana = RencanaStudi(
         id=str(uuid.uuid4()),
         kelas_id=kelas_id,
-        murid_id=None,
         daftar_rekomendasi_materi=rencana_data.get("rekomendasi_materi",[]),
         jadwal_mingguan=rencana_data.get("jadwal_mingguan",[]), 
         catatan_analisa=rencana_data.get("catatan_analisa", "Rencana kelas berhasil dibuat."), 

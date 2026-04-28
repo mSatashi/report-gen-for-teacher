@@ -9,7 +9,7 @@ from typing import Annotated
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
-@router.get("/", response_model=DashboardSummary)
+@router.get("", response_model=DashboardSummary)
 async def dashboard(
     current_user: Annotated[Pengguna, Depends(require_pengajar)],
     db: Annotated[Session, Depends(get_db)],

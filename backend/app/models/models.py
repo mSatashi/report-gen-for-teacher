@@ -64,8 +64,6 @@ class MataPelajaran(Base):
     __tablename__ = "mata_pelajaran"
     id                  = Column(String(50), primary_key=True, default=_uuid)
     nama_mata_pelajaran = Column(String(150), nullable=False)
-    hari                = Column(String(10))
-    jam                 = Column(String(5))
     created_at          = Column(DateTime, default=datetime.utcnow)
     updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

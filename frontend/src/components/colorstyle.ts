@@ -7,4 +7,8 @@ export const colors = {
   coolGrey: "#9ca3af",
   darkSlateGray: "#374151",
   slateGray: "#6b7280",
+  flashWhite: "#f3f4f6",
+  offWhite: "#f9fafb",
+  green: "#22c55e",
+  aliceBlue: "#eff6ff",
 } as const;

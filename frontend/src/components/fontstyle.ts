@@ -15,6 +15,12 @@ export const fonts: Record<string, CSSProperties> = {
     color: colors.darkNavy, 
     margin: "0 0 4px"
   },
+  h3: { 
+    fontSize: 15, 
+    fontWeight: 700, 
+    color: colors.darkNavy, 
+    margin: "0 0 20px" 
+  },
 
   normal700: {
     fontSize: "16px", 
@@ -25,4 +31,5 @@ export const fonts: Record<string, CSSProperties> = {
     color: colors.coolGrey, 
     fontSize: 13,  
   },
+  
 };

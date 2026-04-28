@@ -1,12 +1,18 @@
 import type { CSSProperties } from "react";
+import { colors } from "../../components/colorstyle";
 
 export const styles: Record<string, CSSProperties> = {
   root: {
     fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-    background: "#F8FAFF",
+    background: colors.white,
     minHeight: "100vh",
     padding: "32px 28px",
     color: "#1E293B",
+
+    borderRadius: "14px",
+    boxShadow: "rgba(30, 42, 59, 0.07) 0px 1px 4px", 
+    overflow: "hidden",
+    border: "1.5px solid rgb(234, 236, 245)",
   },
 
   backBtn: {
@@ -47,13 +53,53 @@ export const styles: Record<string, CSSProperties> = {
   },
 
   rightPanel: {
-    width: "260px",
+    width: "280px",
     flexShrink: 0,
-    background: "#fff",
+    background: colors.white,
     border: "1px solid #E2E8F0",
     borderRadius: "14px",
-    padding: "20px",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
     boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    alignSelf: "flex-start",
+  },
+
+  rightPanelBody: {
+    padding: "20px",
+    flex: 1,
+  },
+
+  rightPanelFooter: {
+    padding: "12px 20px",
+    borderTop: "1px solid #E2E8F0",
+    background: "#fff",
+    display: "flex",
+    gap: "8px",
+  },
+
+  btnGenerate: {
+    background: "#7C3AED",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    padding: "7px 14px",
+    fontSize: "12px",
+    fontWeight: 700,
+    cursor: "pointer",
+    whiteSpace: "nowrap" as const,
+  },
+
+  btnDetailPlan: {
+    background: "#fff",
+    color: "#7C3AED",
+    border: "1.5px solid #7C3AED",
+    borderRadius: "8px",
+    padding: "7px 14px",
+    fontSize: "12px",
+    fontWeight: 700,
+    cursor: "pointer",
+    whiteSpace: "nowrap" as const,
   },
 
   infoCard: {

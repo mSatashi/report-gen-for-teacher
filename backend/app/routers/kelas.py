@@ -40,7 +40,7 @@ def _cek_mata_pelajaran(db: Session, mata_pelajaran_id: str) -> MataPelajaran:
 
 # ── Kelas CRUD ────────────────────────────────────────────────────────────────
 
-@router.get("/", response_model=List[KelasResponse], status_code=status.HTTP_200_OK)
+@router.get("", response_model=List[KelasResponse], status_code=status.HTTP_200_OK)
 def list_kelas(
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
@@ -60,7 +60,7 @@ def get_kelas(
     return k
 
 
-@router.post("/", response_model=KelasResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=KelasResponse, status_code=status.HTTP_201_CREATED)
 def buat_kelas(
     data: KelasCreate,
     current_user: Pengguna = Depends(require_pengajar),
@@ -103,16 +103,6 @@ def update_kelas(
         raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
 
     update_data = data.model_dump(exclude_none=True)
-
-    if "mata_pelajaran_id" in update_data:
-        _cek_mata_pelajaran(db, update_data["mata_pelajaran_id"])
-
-    if "nama" in update_data and update_data["nama"] != k.nama:
-        if db.query(Kelas).filter(Kelas.nama == update_data["nama"]).first():
-            raise HTTPException(
-                status_code=400,
-                detail=f"Kelas dengan nama '{update_data['nama']}' sudah ada",
-            )
 
     for field, val in update_data.items():
         setattr(k, field, val)

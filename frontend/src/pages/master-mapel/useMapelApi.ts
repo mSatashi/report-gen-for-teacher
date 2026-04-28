@@ -62,6 +62,7 @@ export function useMapelApi(): UseMapelApiReturn {
       setErrorMsg(null);
       try {
         const data = await updateMapel(payload, idMapel);
+        // console.log("Mapel updated:", data);
         setStatus("success");
         return data;
       } catch (err) {

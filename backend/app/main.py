@@ -67,6 +67,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    redirect_slashes=True,
 )
  
 app.add_middleware(
@@ -76,6 +77,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
  
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
  
@@ -92,8 +94,6 @@ app.include_router(murid.router,       prefix=PREFIX)
 app.include_router(bkt.router,         prefix=PREFIX)
 app.include_router(mata_pelajaran.router, prefix=PREFIX)
 app.include_router(topik.router, prefix=PREFIX)
-# app.include_router(ks.router,          prefix=PREFIX)
-# app.include_router(ai.router,          prefix=PREFIX)
  
  
 @app.get("/", tags=["Root"])

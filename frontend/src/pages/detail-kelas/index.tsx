@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { addSiswaPayload, GenerateplanResponse, KelasResponse, SiswaResponse } from "../../service/payload";
+import type { addSiswaPayload, GenerateplanResponse, KelasResponse, MataPelajaranObj, ReportGeneratorPayload, SiswaResponse } from "../../service/payload";
 import { useKelasApi } from "../master-kelas/useKelasApi";
 import { styles } from "./styles";
 import { IconClose, IconPlus, IconTrash } from "../../icons";
@@ -7,7 +7,10 @@ import type { Siswa, Toast } from "../../types";
 import { useSiswaApi } from "../master-siswa/useSiswaApi";
 import { addSiswaKelas, deleteSiswaKelas } from "../../service/kelasAPI";
 import { useLearningPlan } from "../learning-plan/useLearningPlan";
-// import type { Toast } from "../../types";
+import { useMapelApi } from "../master-mapel/useMapelApi";
+import { useReport } from "../report-editor/useReport";
+// import { useDailyLogSiswa } from "../detail-log-siswa/useDailyLogSiswa";
+import { fetchLogSiswa } from "../../service/dailyLogAPI";
 
 interface DetailKelasProps {
   kelasId: string;
@@ -40,10 +43,16 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<{ siswaId: string } | null>(null);
   const [rows, setRows] = useState<Record<string, RowState>>({});
+  const [mataPelajaranList, setMataPelajaranList] = useState<MataPelajaranObj[]>([]);
+  const [loadingReportId, setLoadingReportId] = useState<string | null>(null);
+  // const [logList, setLogList] = useState<DailyLogResponse[]>([]);
 
   const { loadSiswa } = useSiswaApi();
   const { errorMsg, loadKelas, loadSiswaKelas } = useKelasApi();
   const { submitGeneratePlan } = useLearningPlan();
+  const { submitReportGenerator } = useReport();
+  const { loadMapelList } = useMapelApi();
+  // const { loadLogSiswa } = useDailyLogSiswa
 
   const mapApiToSiswa = (data: SiswaResponse): Siswa => ({
     id: data.id,
@@ -73,9 +82,14 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
       if (data?.length) setSiswaKelasList(data.map(mapApiToSiswa));
     });
 
+    loadMapelList().then((data) => {
+      if (data?.length) setMataPelajaranList(data);
+    });
+
   }, [kelasId]);
 
-  const topikList = kelas?.mata_pelajaran_obj?.topik ?? [];
+  const topikList = mataPelajaranList.find((m) => m.id === kelas?.mata_pelajaran_id)?.topik_list ?? [];
+  const mataPelajaran = mataPelajaranList.find((m) => m.id === kelas?.mata_pelajaran_id) ?? null;
 
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
@@ -130,8 +144,8 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
   };
 
   const doneCount = Object.values(rows).filter((r) => r.status === "done").length;
-  // const totalCount = kelas.length;
-  const totalCount = kelas?.mata_pelajaran_obj?.topik?.length ?? 0;
+
+  const totalCount = mataPelajaranList.find((m) => m.id === kelas?.mata_pelajaran_id)?.topik_list?.length ?? 0;
 
   const handleGenerate = useCallback(async (kelas: KelasResponse) => {
     setRows((prev) => ({
@@ -139,7 +153,6 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
       [kelas.id]: { status: "loading", result: null, errorMsg: null },
     }));
     
-    console.log("Generate plan untuk kelas", kelas.id);
     const result = await submitGeneratePlan(kelas.id);
   
       if (result) {
@@ -156,67 +169,123 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
     }, 
   [submitGeneratePlan]);
 
-  // const handleGenerateReport = useCallback(async (kelas: ReportGeneratorResponse) => {
-  //   setRows((prev) => ({
-  //     ...prev,
-  //     [kelas.id]: { status: "loading", result: null, errorMsg: null },
-  //   }));
+  const handleGenerateReport = useCallback(async (siswaId: string) => {
+    setLoadingReportId(siswaId);
+    try {
+      const logSiswa = await fetchLogSiswa(siswaId);
+      console.log("log siswa id", siswaId);
+      const logTerbaru = logSiswa.length > 10
+        ? [...logSiswa]
+            .sort((a, b) => b.created_at.localeCompare(a.created_at))
+            .slice(0, 10)
+        : logSiswa;
+
+      const createdAtPertama = logTerbaru.reduce((min, item) =>
+        item.created_at < min ? item.created_at : min, logTerbaru[0]?.created_at
+      );
+
+      const createdAtTerakhir = logTerbaru.reduce((max, item) =>
+        item.created_at > max ? item.created_at : max, logTerbaru[0]?.created_at
+      );
+
+      const today = new Date().toISOString().split("T")[0];
+      
+      const payload: ReportGeneratorPayload = {
+        murid_id: siswaId!,
+        kelas_id: kelasId!,
+        periode_mulai: createdAtPertama.split("T")[0] ?? today,
+        periode_selesai: createdAtTerakhir.split("T")[0] ?? today,
+        tipe_laporan: "Perkembangan",
+      };
+      
+      const result = await submitReportGenerator(payload);
     
-  //   console.log("Generate plan untuk kelas", kelas.id);
-  //   const result = await submitGeneratePlan(kelas.id);
-  
-  //     if (result) {
-  //       setRows((prev) => ({
-  //         ...prev,
-  //         [kelas.id]: { status: "done", result, errorMsg: null },
-  //       }));
-  //     } else {
-  //       setRows((prev) => ({
-  //         ...prev,
-  //         [kelas.id]: { status: "error", result: null, errorMsg: "Gagal generate plan. Coba lagi." },
-  //       }));
-  //     }
-  //   }, 
-  // [submitGeneratePlan]);
+        if (result) {
+          showToast(`Report berhasil digenerate`, "success");
+          onNavigate?.('reportEditor', { reportData: result});
+        } else {
+          showToast(errorMsg ?? "Gagal membuat siswa", "error");
+        }
+      } finally {
+        setLoadingReportId(null); // selesai loading
+      }
+    }, 
+  [submitReportGenerator, onNavigate]);
 
   return (
     <div style={styles.root}>
-      {/* Back button */}
-      <button style={styles.backBtn} onClick={() => onNavigate?.("masterKelas")}>
-        ← Kembali ke Master Kelas
-      </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexShrink: 0, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          {/* Siswa info row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: "0 0 2px" }}>
+                Detail Kelas
+              </h2>
+            </div>
+          </div>
+          {/* Breadcrumb: Daily Log › Matematika › Aisya Putri */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} 
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog"); }}
+            >
+              Detail Kelas
+            </span>
+            <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
+            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onNavigate?.("listSiswa"); }}>
+              Informasi lengkap kelas dan daftar siswa
+            </span>
+          </div>
+        </div>
 
-      <h2 style={styles.pageTitle}>Detail Kelas</h2>
-      <p style={styles.pageSubtitle}>Informasi lengkap kelas dan daftar siswa</p>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("masterKelas") }}
+            style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>
+            ← Kembali
+          </button>
+        </div>
+      </div>
 
       {loading ? (
         <div style={styles.loadingWrap}>Memuat data...</div>
       ) : !kelas ? (
         <div style={styles.loadingWrap}>Kelas tidak ditemukan.</div>
       ) : (
-        <div style={styles.layout}>
 
-          {/* Progress banner — hanya muncul jika ada yang sudah done */}
-          {doneCount > 0 && (
-            <div style={{
-              background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 10,
-              padding: "11px 16px", fontSize: 13, color: "#166534", fontWeight: 500,
-              flexShrink: 0, display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <span>✓</span>
-              <span>{doneCount} dari {totalCount} kelas sudah memiliki learning plan.</span>
-              <div style={{ flex: 1, background: "#bbf7d0", borderRadius: 99, height: 5, marginLeft: 4 }}>
-                <div style={{
-                  width: `${Math.round((doneCount / totalCount) * 100)}%`,
-                  background: "#16a34a", borderRadius: 99, height: "100%", transition: "width .4s",
-                }} />
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 700 }}>
-                {Math.round((doneCount / totalCount) * 100)}%
-              </span>
+        <>
+        {doneCount > 0 && (
+          <div style={{
+            background: "#f0fdf4",
+            border: "1.5px solid #86efac",
+            borderRadius: 10,
+            padding: "11px 16px",
+            fontSize: 13,
+            color: "#166534",
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 16,   // <-- beri jarak ke card di bawahnya
+          }}>
+            <span>✓</span>
+            <span>{doneCount} dari {totalCount} kelas sudah memiliki learning plan.</span>
+            <div style={{ flex: 1, background: "#bbf7d0", borderRadius: 99, height: 5, marginLeft: 4 }}>
+              <div style={{
+                width: `${Math.round((doneCount / totalCount) * 100)}%`,
+                background: "#16a34a",
+                borderRadius: 99,
+                height: "100%",
+                transition: "width .4s",
+              }} />
             </div>
-          )}
+            <span style={{ fontSize: 12, fontWeight: 700 }}>
+              {Math.round((doneCount / totalCount) * 100)}%
+            </span>
+          </div>
+        )}
 
+        <div style={styles.layout}>
           {/* ── Left Panel ── */}
           <div style={styles.leftPanel}>
             {/* Info Kelas */}
@@ -229,7 +298,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                 <div style={styles.infoItem}>
                   <span style={styles.infoLabel}>Mata Pelajaran</span>
                   <span style={styles.infoValue}>
-                    {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "-"}
+                    {mataPelajaranList.find((m) => m.id === kelas.mata_pelajaran_id)?.nama_mata_pelajaran ?? "-"}
                   </span>
                 </div>
                 <div style={styles.infoItem}>
@@ -289,7 +358,7 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                         <div style={styles.kelasActions}>
                           <button
                             type="button"
-                            onClick={() => handleGenerate(kelas)}
+                            onClick={() => handleGenerateReport(siswa.id)}
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 6,
                               border: "none", borderRadius: 8,
@@ -297,11 +366,24 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                               whiteSpace: "nowrap",
                             }}
                           >
-                            Generate Report
+                            {loadingReportId === siswa.id ? (
+                              <>
+                                <span style={{
+                                  width: 12, height: 12, border: "2px solid #9ca3af",
+                                  borderTopColor: "transparent", borderRadius: "50%",
+                                  display: "inline-block",
+                                  animation: "spin 0.7s linear infinite",
+                                }} />
+                                Generating...
+                              </>
+                            ) : (
+                              "Generate Report"
+                            )}
                           </button>
+
                           <button
                             style={styles.btnDetail}
-                            onClick={() => onNavigate?.("logSiswa", { siswaId: siswa.id, siswa: siswa, mapel: kelas.mata_pelajaran_obj, kelasId: kelas.id })}
+                            onClick={() => onNavigate?.("logSiswa", { siswaId: siswa.id, siswa: siswa, mapel: mataPelajaran, kelasId: kelas.id })}
                           >
                             Detail
                           </button>
@@ -322,15 +404,16 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
 
           {/* ── Right Panel — Mapel & Topik ── */}
           <div style={styles.rightPanel}>
-            <div style={styles.rightPanel}>
+            {/* Body */}
+            <div style={styles.rightPanelBody}>
               <div style={styles.mapelName}>
-                {kelas.mata_pelajaran_obj?.nama_mata_pelajaran ?? "-"}
+                {mataPelajaranList.find((m) => m.id === kelas.mata_pelajaran_id)?.nama_mata_pelajaran ?? "-"}
               </div>
               <span style={styles.badge}>Mata Pelajaran</span>
 
               <hr style={styles.divider} />
 
-              <p style={{ ...styles.sectionTitle, fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
+              <p style={{ fontSize: "11px", color: "#64748B", marginBottom: "10px", letterSpacing: "0.04em", fontWeight: 600 }}>
                 LIST TOPIK
               </p>
 
@@ -354,51 +437,32 @@ export default function DetailKelas({ kelasId, onNavigate }: DetailKelasProps) {
                     }}>
                       {i + 1}
                     </span>
-                    {topik}
+                    {topik.nama}
                   </div>
                 ))
               )}
             </div>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+
+            {/* Footer tombol */}
+            <div style={styles.rightPanelFooter}>
               <button
                 type="button"
-                // onClick={() => openEditMapel(s)}
-                // style={styles.btnEdit}
-                // title="Edit mata pelajaran"
                 onClick={() => handleGenerate(kelas)}
-                // disabled={isLoading}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  // background: isLoading ? "#f3f4f6" : "#f59e0b",
-                  // color: isLoading ? "#9ca3af" : "#fff",
-                  border: "none", borderRadius: 8,
-                  padding: "8px 14px", fontSize: 12, fontWeight: 700,
-                  // cursor: isLoading ? "not-allowed" : "pointer",
-                  whiteSpace: "nowrap",
-                }}
-                // onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = "#d97706"; }}
-                // onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = "#f59e0b"; }}
+                style={styles.btnGenerate}
               >
-                {/* {isLoading
-                  ? <><Spinner color="#9ca3af" /> Generating…</>
-                  : isDone ? <>✦ Regenerate</> : <>✦ Generate Plan</>
-                } */}
-                {/* <IconEdit /> */}
                 Generate Plan
               </button>
-
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onNavigate?.("planDetail", { kelas }) }}
-                // onClick={() => setDeleteConfirm({ siswaId: s.id })}
-                style={styles.btnDanger}
+                onClick={(e) => { e.stopPropagation(); onNavigate?.("planDetail", { kelas,  mapel: mataPelajaranList.find((m) => m.id === kelas.mata_pelajaran_id) ?? "-"}); }}
+                style={styles.btnDetailPlan}
               >
                 Detail Plan
               </button>
             </div>
           </div>
-          
         </div>
+        </>
       )}
 
       {/* ── Modal Kelas ── */}
