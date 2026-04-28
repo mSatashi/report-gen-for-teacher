@@ -19,7 +19,8 @@ export const NAV_ITEMS: NavItem[] = [
   { kind: "link", label: "Mata Pelajaran", route: "masterMapel", icon: <IconKelas /> },
   { kind: "link", label: "Siswa", route: "masterSiswa", icon: <IconStudents /> },
   { kind: "section", label: "Report" },
-  { kind: "link", label: "Report Editor", route: "reportEditor", icon: <IconReport /> },
+  { kind: "link", label: "List Report", route: "listReportGen", icon: <IconReport /> },
+  // { kind: "link", label: "Report Editor", route: "reportEditor", icon: <IconReport /> },
   { kind: "section", label: "IF5200 - PPT" },
 ];
 

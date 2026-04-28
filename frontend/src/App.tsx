@@ -17,8 +17,10 @@ import MasterMapel from "./pages/master-mapel";
 import DetailKelas from "./pages/detail-kelas";
 import DetailLogSiswa from "./pages/detail-log-siswa";
 import DailyLogFormLog from "./pages/form-daily-log";
-import type { DailyLogResponse, KelasResponse, MapelResponse, SiswaResponse } from "./service/payload";
+import type { DailyLogResponse, KelasResponse, MapelResponse, ReportGeneratorResponse, SiswaResponse } from "./service/payload";
 import PlanDetail from "./pages/plan-detail";
+import ListReportGenerator from "./pages/list-report";
+import DetailReport from "./pages/detail-report";
 
 // Helper token
 const TOKEN_KEY = "auth_token";
@@ -50,10 +52,25 @@ const App: React.FC = () => {
   const APP_NAME = import.meta.env.META_TITLE ?? "Report GenAI Otomatis";
 
   /** Derive the current page title from NAV_ITEMS */
+  const ROUTE_TITLES: Record<string, string> = {
+    home: "Dashboard",
+    learningPlan: "Learning Plan",
+    reportEditor: "Report Editor",
+    masterKelas: "Master Kelas",
+    masterSiswa: "Master Siswa",
+    masterMapel: "Master Mata Pelajaran",
+    detailKelas: "Detail Kelas",
+    logSiswa: "Log Siswa",
+    formDailyLog: "Form Daily Log",
+    planDetail: "Detail Plan",
+  };
+
   const pageTitle =
+    ROUTE_TITLES[activeRoute] ??
     (NAV_ITEMS.find(
       (n) => n.kind === "link" && (n as { route: string }).route === activeRoute
-    ) as { label?: string } | undefined)?.label ?? "Dashboard";
+    ) as { label?: string } | undefined)?.label ??
+    "Dashboard";    
 
   /** Login handler — dipanggil dari LoginPage */
   const handleLogin = async (data: {
@@ -105,7 +122,6 @@ const App: React.FC = () => {
     return <LoginPage onLogin={handleLogin} error={loginError} loading={loginLoading} />;
   }
 
-
   /** Render the active page */
   const renderPage = () => {
     switch (activeRoute) {
@@ -114,7 +130,9 @@ const App: React.FC = () => {
       case "learningPlan":
         return <LearningPlan />;
       case "reportEditor":
-        return <ReportEditor />;
+        return <ReportEditor 
+          reportData={routeParams.reportData as ReportGeneratorResponse} 
+          siswaId={routeParams.siswaId as string}  />;
       case "masterKelas":
         return <MasterKelas onNavigate={handleNavigate} />;
       case "masterSiswa":
@@ -122,7 +140,9 @@ const App: React.FC = () => {
       case "masterMapel":
         return <MasterMapel />;
       case "detailKelas":
-        return <DetailKelas kelasId={routeParams.kelasId as string} onNavigate={handleNavigate} />;
+        return <DetailKelas 
+          kelasId={routeParams.kelasId as string} 
+          onNavigate={handleNavigate}/>;
       case "logSiswa":
         return <DetailLogSiswa 
           onNavigate={handleNavigate} 
@@ -141,12 +161,13 @@ const App: React.FC = () => {
       case "planDetail":
         return <PlanDetail 
           onNavigate={handleNavigate} 
-          // namaSiswa={routeParams.namaSiswa as string}
           kelas={routeParams.kelas as KelasResponse}
-          // siswa={routeParams.siswa as SiswaResponse}
-          // dataLog={routeParams.dataLog as DailyLogResponse | null}
-          // mapel={routeParams.mapel as MapelResponse}
+          mapel={routeParams.mapel as MapelResponse}
            />;
+      case "listReportGen":
+        return <ListReportGenerator onNavigate={handleNavigate}  />;
+      case "detailReport":
+        return <DetailReport onNavigate={handleNavigate} siswaId={routeParams.siswaId as string} />;
       default:
         return (
           <div style={styles.pageNotFound}>
