@@ -1,7 +1,8 @@
 """
 laporan.py — Router untuk Laporan Perkembangan (Versi Lengkap dengan Delete)
 """
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, status
+import os
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, logger, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -129,8 +130,18 @@ def finalisasi(
 ):
     """Set status laporan menjadi 'final' — siap dikirim."""
     lap = finalize_laporan(db, laporan_id)
-    if not lap:
-        raise HTTPException(status_code=404, detail="Laporan tidak ditemukan")
+    
+    try:
+        path_pdf = generate_pdf(lap)
+        if path_pdf:
+            lap.pdf_path = path_pdf
+            db.commit()  # Simpan path PDF ke database
+            db.refresh(lap)
+    except Exception as e:
+        # Kita log error-nya tapi tetap mengembalikan data laporan 
+        # agar user tahu statusnya sudah final meski PDF gagal dibuat
+        logger.error(f"Gagal generate PDF saat finalisasi: {e}")
+
     return lap
 
 
@@ -157,25 +168,35 @@ async def kirim_laporan(
     current_user: Pengguna = Depends(require_pengajar),
     db: Session = Depends(get_db),
 ):
-    """F006 — Kirim laporan ke orang tua via email."""
+    """F006 — Kirim laporan ke orang tua via email menggunakan path yang sudah ada."""
     lap = get_laporan_by_id(db, laporan_id)
     if not lap:
         raise HTTPException(status_code=404, detail="Laporan tidak ditemukan")
+    
+    # 1. Validasi Status dan Keberadaan File
     if lap.status == "draft":
         raise HTTPException(status_code=400, detail="Laporan harus difinalisasi dahulu sebelum dikirim")
+    
+    if not lap.pdf_path or not os.path.exists(lap.pdf_path):
+        # Opsi: Jika file hilang secara tidak sengaja, kita bisa trigger generate sekali lagi sebagai fallback
+        pdf_path = generate_pdf(lap)
+        lap.pdf_path = pdf_path
+        db.commit()
+    else:
+        pdf_path = lap.pdf_path
 
+    # 2. Ambil data murid untuk identitas email
     murid = db.query(Murid).filter(Murid.id == lap.murid_id).first()
     nama_murid = murid.nama if murid else "Siswa"
 
-    pdf_path = generate_pdf(lap)
-
+    # 3. Jalankan Task Pengiriman Email
     background_tasks.add_task(
         kirim_laporan_email,
         laporan=lap,
         email_tujuan=req.email_tujuan,
         nama_murid=nama_murid,
         catatan=req.catatan_tambahan,
-        pdf_path=pdf_path,
+        pdf_path=pdf_path, # Menggunakan path yang sudah pasti ada
         db=db,
     )
 
