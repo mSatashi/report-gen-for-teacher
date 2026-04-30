@@ -1,5 +1,5 @@
 import { apiFetch } from "./apiFetch";
-import type { ReportGeneratorPayload, ReportGeneratorResponse } from "./payload";
+import type { MailPayload, ReportGeneratorPayload, ReportGeneratorResponse } from "./payload";
 
 /** generate report */
 export async function createReportGenerator(payload: ReportGeneratorPayload): Promise<ReportGeneratorResponse> {
@@ -50,4 +50,28 @@ export async function updateStatus(id: string): Promise<ReportGeneratorResponse>
     throw new Error(err?.message ?? `Gagal mengupdate status (${res.status})`);
   }
   return res.json();
+}
+
+
+export async function submitEmail(id: string, payload: MailPayload): Promise<MailPayload> {
+  const res = await apiFetch(`/laporan/${id}/kirim`, {
+    method: "POST",
+    body: JSON.stringify({
+      email_tujuan: payload.email_tujuan,
+      catatan_tambahan: payload.catatan_tambahan,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message ?? `Gagal mengupdate status (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteReport(id: string): Promise<void> {
+  const res = await apiFetch(`/laporan/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message ?? `Gagal menghapus report (${res.status})`);
+  }
 }
