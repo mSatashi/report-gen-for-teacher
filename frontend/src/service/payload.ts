@@ -191,3 +191,13 @@ export interface TopikPayload {
   difficulty_index: number;
   prasyarat_ids: string[];
 }
+
+export interface MailPayload {
+  email_tujuan: string;
+  catatan_tambahan: string;
+}
+
+export interface MailResponse {
+  message: string;
+  laporan_id: string;
+}

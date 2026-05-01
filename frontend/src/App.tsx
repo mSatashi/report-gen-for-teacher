@@ -63,6 +63,8 @@ const App: React.FC = () => {
     logSiswa: "Log Siswa",
     formDailyLog: "Form Daily Log",
     planDetail: "Detail Plan",
+    detailReport: 'Detail Report',
+    listReportGen: 'List Report Generate'
   };
 
   const pageTitle =
