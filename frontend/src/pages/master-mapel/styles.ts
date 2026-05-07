@@ -333,6 +333,7 @@ export const styles: Record<string, CSSProperties> = {
   tableWrapper: {
     padding: "0 22px 18px",
     borderTop: "1px solid #F0F2FA",
+    overflowY: "auto",
   },
   th: {
     textAlign: "left" as const,

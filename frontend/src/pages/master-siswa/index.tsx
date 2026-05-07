@@ -281,7 +281,7 @@ export default function MasterSiswa({ initialData = [] }: Props) {
       </div>
 
       {isModalSiswa && (
-        <div style={styles.overlay} onClick={() => setModal(null)}>
+        <div style={styles.overlay}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => setModal(null)} style={styles.closeBtn}>
               <IconClose />
@@ -365,7 +365,7 @@ export default function MasterSiswa({ initialData = [] }: Props) {
       )}
 
       {deleteConfirm && (
-        <div style={styles.overlay} onClick={() => setDeleteConfirm(null)}>
+        <div style={styles.overlay}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => setDeleteConfirm(null)} style={styles.closeBtn}>
               <IconClose />

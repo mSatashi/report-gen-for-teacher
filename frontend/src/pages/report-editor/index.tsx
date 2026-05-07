@@ -31,6 +31,7 @@ export interface ReportData {
 interface ReportEditorProps {
   reportData: ReportGeneratorResponse;
   siswaId: string;
+  onNavigate?: (route: string, params?: Record<string, unknown>) => void;
 }
 
 const capitalize = (s: string) =>
@@ -54,9 +55,10 @@ interface SectionCardProps {
   onChange: (id: string, value: string) => void;
   onSave: (id: string, value: string) => void;
   done: boolean;
+  reportData: ReportGeneratorResponse;
 }
 
-const SectionCard: React.FC<SectionCardProps> = ({ section: s, onChange, onSave, done }) => {
+const SectionCard: React.FC<SectionCardProps> = ({ section: s, onChange, onSave, done, reportData }) => {
   const [focused, setFocused] = useState(false);
   const [localValue, setLocalValue] = useState(s.content);
   
@@ -67,24 +69,40 @@ const SectionCard: React.FC<SectionCardProps> = ({ section: s, onChange, onSave,
         <span style={S.sectionLabel(s.accentColor)}>{s.label}</span>
       </div>
 
-      <div
-        contentEditable
-        suppressContentEditableWarning
-        onFocus={() => setFocused(true)}
-        onBlur={(e) => {
-          setFocused(false);
-          const v = e.currentTarget.innerText;
-          setLocalValue(v);
-          onChange(s.id, v);
-        }}
-        onInput={(e) => setLocalValue(e.currentTarget.textContent ?? "")}
-        style={S.editableContent(s.accentColor, focused)}
-      >
-        {s.content}
-      </div>
+      {reportData?.status === 'final' ? (
+        <div
+          onFocus={() => setFocused(true)}
+          onBlur={(e) => {
+            setFocused(false);
+            const v = e.currentTarget.innerText;
+            setLocalValue(v);
+            onChange(s.id, v);
+          }}
+          onInput={(e) => setLocalValue(e.currentTarget.textContent ?? "")}
+          style={S.editableContent(s.accentColor, focused)}
+        >
+          {s.content}
+        </div>
+      ): (
+        <div
+          contentEditable
+          suppressContentEditableWarning
+          onFocus={() => setFocused(true)}
+          onBlur={(e) => {
+            setFocused(false);
+            const v = e.currentTarget.innerText;
+            setLocalValue(v);
+            onChange(s.id, v);
+          }}
+          onInput={(e) => setLocalValue(e.currentTarget.textContent ?? "")}
+          style={S.editableContent(s.accentColor, focused)}
+        >
+          {s.content}
+        </div>
+      )}
 
 
-      {!done && (
+      {!done && reportData?.status !== 'final' && (
         <div style={S.sectionFooter}>
           <button style={S.btnSave} onClick={() => onSave(s.id, localValue)}>
             💾 Simpan
@@ -116,7 +134,7 @@ const FinalizeModal: React.FC<{ onConfirm: () => void; onCancel: () => void }> =
 
 let toastId = 0;
 
-const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
+const ReportEditor: React.FC<ReportEditorProps> = ({ reportData, onNavigate }) => {
   const [sections, setSections] = useState<ReportSection[]>(() =>
     reportData ? parseKonten(reportData.konten) : INITIAL_SECTIONS
   );
@@ -210,8 +228,15 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
                 </>
               )}
 
+              {reportData?.status === 'final' && (
+                <>
+                  <button style={S.btnOutline} onClick={handlePreviewPdf}>👁 Preview PDF</button>
+                  <button style={S.btnOutline} onClick={handleDownloadPdf}>⬇ Download PDF</button>
+                </>
+              )}
+
               {/* Finalisasi — hanya jika belum selesai */}
-              {!done && (
+              {!done && reportData?.status !== 'final' && (
                 <button
                   disabled={sending}
                   onClick={() => setShowModal(true)}
@@ -220,6 +245,13 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
                   {sending ? <><span style={S.spinner} /> Mengirim...</> : "Finalisasi"}
                 </button>
               )}
+
+              <button
+                onClick={() => onNavigate?.("detailReport", { siswaId:reportData.murid_id })}
+                style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}
+              >
+                ← Kembali
+              </button>
             </div>
           </div>
 
@@ -261,9 +293,14 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
       </div>
 
           {/* ── Banner ── */}
-          {!done && (
+          {!done && reportData?.status !== 'final' && (
             <div style={S.aiBanner}>
               ✦ Draft ini digenerate AI dari log belajar siswa. Edit konten lalu klik <strong>Simpan</strong> sebelum finalisasi.
+            </div>
+          )}
+          {reportData?.status === 'final' && (
+            <div style={S.aiBanner}>
+              ✦ Draft ini digenerate AI dari log belajar siswa.
             </div>
           )}
           {done && (
@@ -281,6 +318,7 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ reportData }) => {
                 onChange={handleChange}
                 onSave={handleSave}
                 done={done} 
+                reportData={reportData}
               />
             ))}
           </div>

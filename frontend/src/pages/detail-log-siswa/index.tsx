@@ -202,7 +202,7 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
                       <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.durasi_menit ? `${log.durasi_menit} mnt` : "—"}</td>
                       <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.metode_belajar ?? "—"}</td>
                       <td style={{ padding: "12px 14px" }}>
-                        <span style={{ background: badge.bg, color: badge.color, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>
+                        <span style={{ background: badge?.bg, color: badge?.color, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>
                           {log.tingkat_pemahaman}
                         </span>
                       </td>

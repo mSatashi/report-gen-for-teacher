@@ -190,7 +190,18 @@ export default function DetailReport({ onNavigate, siswaId }: DailyLogDetailSisw
                           </button>
                         )}
 
+                        {/* detail */}
+                        {log.status === "final" && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onNavigate?.("reportEditor", { reportData: log }); }}
+                            style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: sendingId === log.id ? 0.6 : 1 }}
+                          >
+                            View
+                          </button>
+                        )}
+
                         {/* Hapus */}
+                        {log.status === "draft" && (
                         <button
                           style={{ ...styles.btnDanger, opacity: deletingId === log.id ? 0.6 : 1 }}
                           disabled={deletingId === log.id}
@@ -198,6 +209,7 @@ export default function DetailReport({ onNavigate, siswaId }: DailyLogDetailSisw
                         >
                           <IconTrash />
                         </button>
+                        )}
                       </div>
                     </td>
                   </tr>

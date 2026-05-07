@@ -133,6 +133,7 @@ const App: React.FC = () => {
         return <LearningPlan />;
       case "reportEditor":
         return <ReportEditor 
+          onNavigate={handleNavigate}
           reportData={routeParams.reportData as ReportGeneratorResponse} 
           siswaId={routeParams.siswaId as string}  />;
       case "masterKelas":
