@@ -3,8 +3,7 @@ import Sidebar from "./components/sidebar";
 import Header from "./components/header";
 import Footer from "./components/footer";
 import DashboardPage from "./pages/dashboard/Dashboard";
-import { NAV_ITEMS } from "./data"; 
-import LearningPlan from "./pages/learning-plan";
+import { NAV_ITEMS } from "./data";
 import ReportEditor from "./pages/report-editor";
 import { sidebarStyles, styles } from "./styles";
 import { fonts } from "./components/fontstyle";
@@ -129,8 +128,6 @@ const App: React.FC = () => {
     switch (activeRoute) {
       case "home":
         return <DashboardPage namaLengkap={user?.username ?? "Pengguna"} />;
-      case "learningPlan":
-        return <LearningPlan />;
       case "reportEditor":
         return <ReportEditor 
           onNavigate={handleNavigate}
@@ -206,7 +203,7 @@ const App: React.FC = () => {
             setActiveRoute(route);
             setMobileSidebarOpen(false);
           }}
-          onToggleCollapse={() => {}}
+          onToggleCollapse={() => setMobileSidebarOpen(false)}
         />
       </div>
 

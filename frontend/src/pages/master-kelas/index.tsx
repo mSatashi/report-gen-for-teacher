@@ -56,7 +56,7 @@ export default function MasterKelas({ onNavigate }: { onNavigate?: (route: strin
   const [mataPelajaranList, setMataPelajaranList] = useState<MataPelajaranObj[]>([]);
 
   const { errorMsg, loadKelas, submitCreateKelas, submitUpdateKelas, submitDeleteKelas } = useKelasApi();
-    const { loadMapelList } = useMapelApi();
+  const { loadMapelList } = useMapelApi();
 
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
@@ -113,7 +113,6 @@ export default function MasterKelas({ onNavigate }: { onNavigate?: (route: strin
       }
     } else {
       const result = await submitCreateKelas(kelasForm);
-      console.log(result);
       if (result) {
         setKelasList((prev) => [...prev, result]);
         showToast(`Kelas ${result.nama} berhasil ditambahkan`, "success");

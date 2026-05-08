@@ -56,30 +56,16 @@ export default function ListReportGenerator({ onNavigate, initialData = [] }: Pr
       </div>
 
       <div
-        style={{
-          background: "#fff",
-          borderRadius: "14px",
-          boxShadow: "0 1px 4px rgba(30,42,59,0.07)",
-          overflow: "hidden",
-          border: "1.5px solid #EAECF5",
-        }}
+        style={styles.wrapperCard}
       >
           <div
-            style={{
-              padding: "18px 22px",
-              borderBottom: "1px solid #F0F2FA",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "12px",
-              flexWrap: "wrap",
-            }}
+            style={styles.toolbar}
           >
             <div>
-              <div style={{ fontSize: "16px", fontWeight: 700, color: "#1E2A3B" }}>
+              <div style={styles.labelCard}>
                 Daftar Siswa
               </div>
-              <div style={{ fontSize: "13px", color: "#8A9BB0", marginTop: "4px" }}>
+              <div style={styles.subLabelCard}>
                 {filteredSiswa.length} siswa ditemukan
               </div>
             </div>
@@ -115,7 +101,7 @@ export default function ListReportGenerator({ onNavigate, initialData = [] }: Pr
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); onNavigate?.('detailReport', { reportData: s, siswaId: s.id}); }}
-                          style={styles.btnEdit}
+                          style={styles.btnLihat}
                           title="Detail"
                         >
                           <IconReport />

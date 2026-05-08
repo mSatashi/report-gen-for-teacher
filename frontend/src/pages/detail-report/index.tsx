@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import type { MailPayload, ReportGeneratorResponse, SiswaResponse } from "../../service/payload";
-import { styles } from "./styles";
+import type { KelasResponse, MailPayload, MapelResponse, ReportGeneratorResponse, SiswaResponse } from "../../service/payload";
+import { styles, statusBadgeStyle, toastItemStyle } from "./styles";
 import type { Toast } from "../../types";
 import { IconTrash } from "../../icons";
 import { useReport } from "../report-editor/useReport";
 import { useSiswaApi } from "../master-siswa/useSiswaApi";
 import { deleteReport } from "../../service/reportAPI";
+import { useKelasApi } from "../master-kelas/useKelasApi";
+import { useMapelApi } from "../master-mapel/useMapelApi";
 
 interface DailyLogDetailSiswaProps {
   siswaId: string;
@@ -23,6 +25,8 @@ export default function DetailReport({ onNavigate, siswaId }: DailyLogDetailSisw
   const [siswaList, setSiswaList] = useState<SiswaResponse[]>([]);
   const [reportList, setReportList] = useState<ReportGeneratorResponse[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [kelasList, setKelasList] = useState<KelasResponse[]>([]);
+  const [mataPelajaranList, setMataPelajaranList] = useState<MapelResponse[]>([]);
 
   // ── Modal state ──────────────────────────────────────────────────────────
   const [kirimModal, setKirimModal] = useState<{ reportId: string } | null>(null);
@@ -33,7 +37,9 @@ export default function DetailReport({ onNavigate, siswaId }: DailyLogDetailSisw
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { errorMsg, loadReportBySiswa, submitSendReport } = useReport();
+  const { loadKelas } = useKelasApi();
   const { loadSiswa } = useSiswaApi();
+  const { loadMapelList } = useMapelApi();
 
   useEffect(() => {
     loadReportBySiswa(siswaId).then((data) => {
@@ -42,10 +48,16 @@ export default function DetailReport({ onNavigate, siswaId }: DailyLogDetailSisw
     loadSiswa().then((data) => {
       if (data.length) setSiswaList(data);
     });
+    loadKelas().then((data) => {
+      if (data?.length) setKelasList(data);
+    });
+    loadMapelList().then((data) => {
+      if (data?.length) setMataPelajaranList(data);
+    });
   }, []);
 
   const siswa = siswaList.find((m) => m.id === siswaId) ?? null;
-
+  
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -98,126 +110,105 @@ export default function DetailReport({ onNavigate, siswaId }: DailyLogDetailSisw
   const count = reportList.length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
+    <div style={styles.pageWrapper}>
 
       {/* ── Header ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexShrink: 0, flexWrap: "wrap", gap: 12 }}>
+      <div style={styles.header}>
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: "0 0 2px" }}>
-            Detail Report
-          </h2>
-          <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
-            Detail report siswa
-          </p>
+          <h2 style={styles.pageTitle}>Detail Report</h2>
+          <p style={styles.pageSubtitle}>Detail report siswa</p>
         </div>
-        <button
-          onClick={() => onNavigate?.("listReportGen")}
-          style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}
-        >
+        <button onClick={() => onNavigate?.("listReportGen")} style={styles.btnBack}>
           ← Kembali
         </button>
       </div>
 
       {/* ── Body ── */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 18 }}>
-        <div style={{ background: "#fff", borderRadius: 14, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <div style={styles.scrollBody}>
+        <div style={styles.tableCard}>
 
           {/* Filter bar */}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20, flexShrink: 0 }}>
-            <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, color: "#3b82f6", background: "#eff6ff" }}>
-              All Report {count}
-            </div>
+          <div style={styles.filterBar}>
+            <div style={styles.filterBadge}>All Report ({count})</div>
           </div>
 
           {/* Table */}
-          <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <div style={styles.tableWrapper}>
+            <table style={styles.table}>
               <thead>
-                <tr style={{ background: "rgba(228,230,239,0.85)" }}>
-                  {["No", "Tanggal", "Nama Siswa", "Tipe Laporan", "Status", "Actions"].map((h) => (
-                    <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, color: "#374151", whiteSpace: "nowrap" }}>
-                      {h}
-                    </th>
+                <tr style={styles.tableHeadRow}>
+                  {["No", "Tanggal", "Nama Siswa", "Mata Pelajaran", "Tipe Laporan", "Status", "Actions"].map((h) => (
+                    <th key={h} style={styles.th}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {reportList.map((log, idx) => (
-                  <tr key={log.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                    <td style={{ padding: "12px 14px", color: "#6b7280" }}>{idx + 1}</td>
-                    <td style={{ padding: "12px 14px", color: "#6b7280" }}>
-                      {log.tanggal?.split("T")[0] ?? "—"}
-                    </td>
-                    <td style={{ padding: "12px 14px", color: "#6b7280", whiteSpace: "nowrap" }}>
-                      {siswa?.nama ?? "—"}
-                    </td>
-                    <td style={{ padding: "12px 14px", fontWeight: 500, color: "#111827" }}>
-                      {log.tipe_laporan ?? "—"}
-                    </td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <span style={{
-                        display: "inline-block",
-                        padding: "3px 10px",
-                        borderRadius: 20,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        background: log.status === "draft" ? "#FEF3C7" : log.status === "final" ? "#F0FDF4" : "#F3F4F6",
-                        color: log.status === "draft" ? "#92400E" : log.status === "final" ? "#15803D" : "#6B7280",
-                      }}>
-                        {log.status ?? "—"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        {/* Edit — hanya saat draft */}
-                        {log.status === "draft" && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onNavigate?.("reportEditor", { reportData: log }); }}
-                            style={{ background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-                          >
-                            Edit
-                          </button>
-                        )}
+                {reportList.map((log, idx) => {
+                  const kelas = kelasList.find((m) => m.id === log.kelas_id) ?? null;
+                  const mapel = mataPelajaranList.find((m) => m.id === kelas?.mata_pelajaran_id) ?? null;
 
-                        {/* Kirim — hanya saat final */}
-                        {log.status === "final" && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); openKirim(log.id); }}
-                            disabled={sendingId === log.id}
-                            style={{ background: "#22c55e", color: "#fff", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: sendingId === log.id ? 0.6 : 1 }}
-                          >
-                            {sendingId === log.id ? "Mengirim..." : "Kirim"}
-                          </button>
-                        )}
+                  return (
+                    <tr key={log.id} style={styles.tableBodyRow}>
+                      <td style={styles.tdDefault}>{idx + 1}</td>
+                      <td style={styles.tdDefault}>{log.tanggal?.split("T")[0] ?? "—"}</td>
+                      <td style={styles.tdNoWrap}>{siswa?.nama ?? "—"}</td>
+                      <td style={styles.tdNoWrap}>{mapel?.nama_mata_pelajaran ?? "—"}</td>
+                      <td style={styles.tdBold}>{log.tipe_laporan ?? "—"}</td>
+                      <td style={styles.tdBadge}>
+                        <span style={statusBadgeStyle(log.status)}>{log.status ?? "—"}</span>
+                      </td>
+                      <td style={styles.tdActions}>
+                        <div style={styles.actionGroup}>
+                          {/* Edit — hanya saat draft */}
+                          {log.status === "draft" && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onNavigate?.("reportEditor", { reportData: log }); }}
+                              style={styles.btnEdit}
+                            >
+                              Edit
+                            </button>
+                          )}
 
-                        {/* detail */}
-                        {log.status === "final" && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onNavigate?.("reportEditor", { reportData: log }); }}
-                            style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: sendingId === log.id ? 0.6 : 1 }}
-                          >
-                            View
-                          </button>
-                        )}
+                          {/* Kirim — hanya saat final */}
+                          {log.status === "final" && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); openKirim(log.id); }}
+                              disabled={sendingId === log.id}
+                              style={{ ...styles.btnKirim, opacity: sendingId === log.id ? 0.6 : 1 }}
+                            >
+                              {sendingId === log.id ? "Mengirim..." : "Kirim"}
+                            </button>
+                          )}
 
-                        {/* Hapus */}
-                        {log.status === "draft" && (
-                        <button
-                          style={{ ...styles.btnDanger, opacity: deletingId === log.id ? 0.6 : 1 }}
-                          disabled={deletingId === log.id}
-                          onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ reportId: log.id }); }}
-                        >
-                          <IconTrash />
-                        </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {/* View — hanya saat final */}
+                          {log.status === "final" && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onNavigate?.("reportEditor", { reportData: log }); }}
+                              style={{ ...styles.btnView, opacity: sendingId === log.id ? 0.6 : 1 }}
+                            >
+                              View
+                            </button>
+                          )}
+
+                          {/* Hapus — hanya saat draft */}
+                          {log.status === "draft" && (
+                            <button
+                              style={{ ...styles.btnDanger, opacity: deletingId === log.id ? 0.6 : 1 }}
+                              disabled={deletingId === log.id}
+                              onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ reportId: log.id }); }}
+                            >
+                              <IconTrash />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                )}
 
                 {reportList.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ padding: "40px 14px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
+                    <td colSpan={6} style={styles.emptyCell}>
                       Belum ada report untuk siswa ini.
                     </td>
                   </tr>
@@ -255,7 +246,7 @@ export default function DetailReport({ onNavigate, siswaId }: DailyLogDetailSisw
                 placeholder="Tulis catatan opsional..."
                 rows={3}
                 onChange={(e) => setMailForm((f) => ({ ...f, catatan_tambahan: e.target.value }))}
-                style={{ ...styles.input, resize: "vertical" as const, fontFamily: "inherit" }}
+                style={{ ...styles.input, resize: "vertical", fontFamily: "inherit" }}
               />
             </div>
 
@@ -302,21 +293,14 @@ export default function DetailReport({ onNavigate, siswaId }: DailyLogDetailSisw
       )}
 
       {/* ── Toast ── */}
-      <div style={{ position: "fixed", bottom: 24, right: 24, display: "flex", flexDirection: "column", gap: 10, zIndex: 2000 }}>
+      <div style={styles.toastContainer}>
         {toasts.map((t) => (
-          <div key={t.id} style={{
-            display: "flex", alignItems: "center", gap: 10,
-            background: t.type === "success" ? "#F0FDF4" : "#FFF1F2",
-            border: `1.5px solid ${t.type === "success" ? "#4ADE80" : "#FDA4AF"}`,
-            color: t.type === "success" ? "#15803D" : "#9F1239",
-            borderRadius: 10, padding: "12px 16px", fontSize: 13, fontWeight: 600,
-            boxShadow: "0 4px 16px rgba(0,0,0,0.10)", minWidth: 260, maxWidth: 360,
-          }}>
+          <div key={t.id} style={{ ...toastItemStyle(t.type), color: t.type === "success" ? "#15803D" : "#9F1239" }}>
             <span style={{ fontSize: 16 }}>{t.type === "success" ? "✅" : "❌"}</span>
             <span style={{ flex: 1 }}>{t.message}</span>
             <button
               onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", opacity: 0.6, fontSize: 14 }}
+              style={{ ...styles.toastCloseBtn, color: "inherit" }}
             >✕</button>
           </div>
         ))}

@@ -6,7 +6,7 @@ import { IconClose, IconPlus, IconTrash } from "../../icons";
 import type { Siswa, Toast } from "../../types";
 import { useSiswaApi } from "../master-siswa/useSiswaApi";
 import { addSiswaKelas, deleteSiswaKelas } from "../../service/kelasAPI";
-import { useLearningPlan } from "../learning-plan/useLearningPlan";
+import { useLearningPlan } from "../plan-detail/useLearningPlan";
 import { useMapelApi } from "../master-mapel/useMapelApi";
 import { useReport } from "../report-editor/useReport";
 import { fetchLogSiswa } from "../../service/dailyLogAPI";

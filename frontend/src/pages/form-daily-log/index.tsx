@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { DailyLogPayload, DailyLogResponse, MapelResponse, SiswaResponse } from "../../service/payload";
-import { cardStyle, inputStyle, KETERLIBATAN_OPTIONS, METODE_OPTIONS, PEMAHAMAN_OPTIONS, textareaStyle } from "../daily-log/components/constants";
-import { styles } from "./styles";
+import { inputStyle, KETERLIBATAN_OPTIONS, METODE_OPTIONS, PEMAHAMAN_OPTIONS, textareaStyle } from "../daily-log/components/constants";
+import { styles, toggleBtnStyle, toastItemStyle } from "./styles";
 import { useDailyLog } from "./useDailyLog";
 import type { Toast } from "../../types";
 import { fonts } from "../../components/fontstyle";
@@ -217,21 +217,14 @@ export default function DailyLogFormLog({
             </h3>
 
             <Label text="Tingkat Pemahaman Siswa" />
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+            <div style={styles.inputTingkatPemahamanWrapper}>
               {PEMAHAMAN_OPTIONS.map((opt) => {
                 const active = logForm.tingkat_pemahaman === opt.value;
                 return (
                   <button
                     key={opt.value}
                     onClick={() => setLogForm((f) => ({ ...f, tingkat_pemahaman: opt.value }))}
-                    style={{
-                      border: active ? "none" : "1px solid #e5e7eb",
-                      borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600,
-                      cursor: "pointer",
-                      background: active ? opt.activeBg : "#fff",
-                      color: active ? "#fff" : "#374151",
-                      transition: "all .15s",
-                    }}
+                    style={toggleBtnStyle(active, opt.activeBg)}
                   >
                     {opt.emoji} {opt.value}
                   </button>
@@ -240,21 +233,14 @@ export default function DailyLogFormLog({
             </div>
 
             <Label text="Tingkat Keterlibatan" />
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+            <div style={styles.inputTingkatPemahamanWrapper}>
               {KETERLIBATAN_OPTIONS.map((opt) => {
                 const active = logForm.tingkat_keterlibatan === opt.value;
                 return (
                   <button
                     key={opt.value}
                     onClick={() => setLogForm((f) => ({ ...f, tingkat_keterlibatan: opt.value }))}
-                    style={{
-                      border: active ? "none" : "1px solid #e5e7eb",
-                      borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600,
-                      cursor: "pointer",
-                      background: active ? opt.activeBg : "#fff",
-                      color: active ? "#fff" : "#374151",
-                      transition: "all .15s",
-                    }}
+                    style={toggleBtnStyle(active, opt.activeBg)}
                   >
                     {opt.emoji} {opt.value}
                   </button>
@@ -272,17 +258,13 @@ export default function DailyLogFormLog({
         </div>
 
         {/* Row 2: Capaian & Kompetensi */}
-        <div style={{ ...cardStyle, flexShrink: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0 }}>
-              Capaian &amp; Kompetensi
-            </h3>
-            <span style={{ fontSize: 12, color: "#3b82f6", fontWeight: 600, background: "#eff6ff", borderRadius: 6, padding: "4px 10px" }}>
-              📋 Sesuai kurikulum
-            </span>
+        <div style={{ ...styles.capaianCard }}>
+          <div style={styles.capaianHeader}>
+            <h3 style={styles.capaianTitle}>Capaian &amp; Kompetensi</h3>
+            <span style={styles.capaianBadge}>📋 Sesuai kurikulum</span>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={styles.capaianGrid}>
 
             <div>
               <Label text="Target Materi Berikutnya" />
@@ -323,13 +305,10 @@ export default function DailyLogFormLog({
         </div>
 
         {/* Bottom action bar */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "4px 0 8px", flexShrink: 0 }}>
+        <div style={styles.bottomBar}>
           <button
             onClick={(e) => { e.stopPropagation(); onNavigate?.("logSiswa", { siswaId: siswa.id, kelasId, mapel, siswa }) }}
-            style={{
-              background: "none", border: "1px solid #e5e7eb", borderRadius: 8,
-              padding: "9px 20px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer",
-            }}
+            style={styles.btnBatal}
           >
             Batal
           </button>
@@ -337,47 +316,16 @@ export default function DailyLogFormLog({
         </div>
 
         {/* ── Toast Notifications ── */}
-        <div style={{
-          position: "fixed",
-          bottom: "24px",
-          right: "24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          zIndex: 2000,
-        }}>
+        <div style={styles.toastContainer}>
           {toasts.map((t) => (
-            <div key={t.id} style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              background: t.type === "success" ? "#F0FDF4" : "#FFF1F2",
-              border: `1.5px solid ${t.type === "success" ? "#4ADE80" : "#FDA4AF"}`,
-              color: t.type === "success" ? "#15803D" : "#9F1239",
-              borderRadius: "10px",
-              padding: "12px 16px",
-              fontSize: "13px",
-              fontWeight: 600,
-              boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
-              minWidth: "260px",
-              maxWidth: "360px",
-              animation: "slideIn 0.2s ease",
-            }}>
+            <div key={t.id} style={{ ...toastItemStyle(t.type), color: t.type === "success" ? "#15803D" : "#9F1239" }}>
               <span style={{ fontSize: "16px" }}>
                 {t.type === "success" ? "✅" : "❌"}
               </span>
               <span style={{ flex: 1 }}>{t.message}</span>
               <button
                 onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "inherit",
-                  opacity: 0.6,
-                  fontSize: "14px",
-                  padding: "0 2px",
-                }}
+                style={styles.toastCloseBtn}
               >✕</button>
             </div>
           ))}
