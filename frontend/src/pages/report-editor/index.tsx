@@ -275,7 +275,15 @@ const ReportEditor: React.FC<ReportEditorProps> = ({ reportData, onNavigate }) =
 
           <div style={S.infoGroup}>
             <span style={S.infoLabel}>Tanggal</span>
-            <span style={S.infoValue}>{reportData?.tanggal ?? '-'}</span>
+            <span style={S.infoValue}>
+                {reportData?.tanggal
+                ? new Date(reportData.tanggal).toLocaleDateString("id-ID", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  })
+                : "-"}
+              </span>
           </div>
 
           <div style={S.infoGroup}>
