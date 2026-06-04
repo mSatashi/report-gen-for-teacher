@@ -3,7 +3,7 @@ import type { PenggunaPayload, PenggunaResponse } from "./payload";
 
 /** GET /admin/list-pengajar — ambil semua data pengguna */
 export async function fetchPenggunaList(): Promise<PenggunaResponse[]> {
-  const res = await apiFetch(`admin/list-pengajar`);
+  const res = await apiFetch(`/admin/list-pengajar`);
   if (!res.ok) throw new Error(`Gagal memuat data pengguna (${res.status})`);
   return res.json();
 }
@@ -24,4 +24,12 @@ export async function createPengguna(payload: PenggunaPayload): Promise<Pengguna
     throw new Error(err?.message ?? `Gagal membuat pengguna (${res.status})`);
   }
   return res.json();
+}
+
+/** DELETE /admin/hapus-pengajar/:id — hapus pengguna */
+export async function deletePenggunaApi(id: string): Promise<void> {
+  const res = await apiFetch(`/admin/hapus-pengajar/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`Gagal menghapus pengguna (${res.status})`);
 }

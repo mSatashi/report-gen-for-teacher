@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { IconClose, IconEdit, IconPlus, IconTrash, IconUsers } from "../../../icons";
+import { useEffect, useMemo, useState } from "react";
+import { IconClose, IconPlus, IconTrash, IconUsers } from "../../../icons";
 import { styles } from "./styles";
-import type { PenggunaPayload } from "../../../service/payload";
-import type { ModalMode } from "../../../types";
+import type { PenggunaPayload, PenggunaResponse } from "../../../service/payload";
+import type { ModalMode, Toast, ToastType } from "../../../types";
+import { usePenggunaApi } from "./usePenggunaApi";
 
-const emptyPengguna = (): Omit<PenggunaPayload, "id"> => ({
+const emptyPengguna = (): PenggunaPayload => ({
   email_address: "",
   username: "",
   password: "",
@@ -12,101 +13,98 @@ const emptyPengguna = (): Omit<PenggunaPayload, "id"> => ({
   confirmPassword: "",
 });
 
-// let toastId = 0;
+let toastId = 0;
 
-// type Props = {
-//   initialData?: PenggunaResponse[];
-// };
+type Props = {
+  initialData?: PenggunaResponse[];
+};
 
-export default function ListAkun() {
+export default function ListAkun({ initialData = [] }: Props) {
   const [keyword, setKeyword] = useState("");
   const [modal, setModal] = useState<ModalMode>(null);
   const [penggunaForm, setPenggunaForm] = useState(emptyPengguna());
-  const [, setEditingPenggunaId] = useState<string | null>(null);
-  // const [, setToasts] = useState<Toast[]>([]);
-  // const [, setSiswaList] = useState<PenggunaResponse[]>(initialData);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [penggunaList, setPenggunaList] = useState<PenggunaResponse[]>(initialData);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string } | null>(null);
 
-  // const { errorMsg, loadPengguna, submitAccount, submitUpdateSiswa, submitDeleteSiswa} = useSiswaApi();
+  const { errorMsg, loadPengguna, submitPengguna, sumbitDeletePengguna } = usePenggunaApi();
 
-  // const showToast = (message: string, type: ToastType) => {
-  //   const id = ++toastId;
-  //   setToasts((prev) => [...prev, { id, message, type }]);
-  //   setTimeout(() => {
-  //     setToasts((prev) => prev.filter((t) => t.id !== id));
-  //   }, 3500);
-  // };
-  
-
-  const filteredPengguna = [
-    {
-      id: "1",
-      username: "ahmadfauzi",
-      email_address: "ahmad.fauzi@example.com"
-    },
-    {
-      id: "2",
-      username: "sitinurhaliza",
-      email_address: "siti.nurhaliza@example.com"
-    }
-  ];
+  const showToast = (message: string, type: ToastType) => {
+    const id = ++toastId;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
+  };
 
   const openAddPengguna = () => {
     setPenggunaForm(emptyPengguna());
-    setEditingPenggunaId(null);
     setModal("add-pengguna");
   };
 
-  // const savePengguna = async () => {
-  //   if (!penggunaForm.username.trim()) {
-  //     showToast("Username wajib diisi", "error");
-  //     return;
-  //   }
+  const savePengguna = async () => {
+    if (!penggunaForm.username.trim()) {
+      showToast("Username wajib diisi", "error");
+      return;
+    }
 
-  //   if (!penggunaForm.email_address.trim()) {
-  //     showToast("Email wajib diisi", "error");
-  //     return;
-  //   }
+    if (!penggunaForm.email_address.trim()) {
+      showToast("Email wajib diisi", "error");
+      return;
+    }
 
-  //   if (!penggunaForm.password.trim()) {
-  //     showToast("Password wajib diisi", "error");
-  //     return;
-  //   }
+    if (!penggunaForm.password.trim()) {
+      showToast("Password wajib diisi", "error");
+      return;
+    }
 
-  //   if (penggunaForm.password !== penggunaForm.confirmPassword) {
-  //     showToast("Password dan konfirmasi password tidak cocok", "error");
-  //     return;
-  //   }
+    if (penggunaForm.password !== penggunaForm.confirmPassword) {
+      showToast("Password dan konfirmasi password tidak cocok", "error");
+      return;
+    }
 
-  //   if (editingPenggunaId) {
-  //     /** update */
-  //     // const result = await submitUpdateSiswa(editingPenggunaId, siswaForm);
-  //     // if (result) {
-  //     //   setSiswaList((prev) =>
-  //     //     prev.map((k) =>
-  //     //       k.id === editingPenggunaId ? { ...k, ...mapApiToSiswa(result) } : k
-  //     //     )
-  //     //   );
-  //     //   showToast("Siswa berhasil diperbarui ✓", "success");
-  //     //   setModal(null);
-  //     // } else {
-  //     //   showToast(errorMsg ?? "Gagal memperbarui siswa", "error");
-  //     // }
-  //   } else {
-  //     /** create */
-  //     const result = await submitCreateSiswa(siswaForm);
-  //     if (result) {
-  //       const newSiswa = mapApiToSiswa(result);
-  //       setSiswaList((prev) => [...prev, newSiswa]);
-  //       setExpanded((prev) => ({ ...prev, [newSiswa.id]: true }));
-  //       showToast(`Siswa ${newSiswa.nama} berhasil ditambahkan ✓`, "success");
-  //       setModal(null);
-  //     } else {
-  //       showToast(errorMsg ?? "Gagal membuat siswa", "error");
-  //     }
-  //   }
+    /** create */
+    const result = await submitPengguna(penggunaForm);
+    if (result) {
+      const freshData = await loadPengguna();
+      if (freshData?.length) setPenggunaList(freshData);
+      
+      showToast(`Pengguna berhasil ditambahkan ✓`, "success");
+      setModal(null);
+    } else {
+      showToast(errorMsg ?? "Gagal membuat pengguna", "error");
+    }
+  };
 
-  //   setModal(null);
-  // };
+  const deleteAkun = async (id: string) => {
+    const ok = await sumbitDeletePengguna(id);
+    if (ok) {
+      setPenggunaList((prev) => prev.filter((k) => k.id !== id));
+      showToast("Pengguna berhasil dihapus", "success");
+    } else {
+      showToast(errorMsg ?? "Gagal menghapus pengguna", "error");
+    }
+    setDeleteConfirm(null);
+  };
+
+  useEffect(() => {
+    loadPengguna().then((data) => {
+      if (data?.length) setPenggunaList(data);
+    });
+  }, []);
+
+  const filteredPengguna = useMemo(() => {
+    const q = keyword.trim().toLowerCase();
+
+    return penggunaList.filter((p) => {
+      if (!q) return true;
+
+      return (
+        p.email_address.toLowerCase().includes(q) ||
+        p.username.toLowerCase().includes(q)
+      );
+    });
+  }, [penggunaList, keyword]);
 
   return (
       <div style={styles.root}>
@@ -122,7 +120,7 @@ export default function ListAkun() {
             </div>
             <div>
               <div style={styles.statLabel}>Total Pengajar</div>
-              <div style={styles.statValue}>{'totalSiswa'}</div>
+              <div style={styles.statValue}>{penggunaList.length}</div>
             </div>
           </div>
         </div>
@@ -187,7 +185,7 @@ export default function ListAkun() {
                   <th style={{ ...styles.th, width:"50px"}}>#</th>
                   <th style={{ ...styles.th, width:"200px"}}>Nama Pengguna</th>
                   <th style={{ ...styles.th, width:"300px"}}>Email Address</th>
-                  <th style={{ ...styles.th, width:"200px"}}>Aksi</th>
+                  <th style={{ ...styles.th, width:"50px"}}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -200,17 +198,7 @@ export default function ListAkun() {
                       <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                         <button
                           type="button"
-                          // onClick={() => openEditPengguna(p.id)}
-                          style={styles.btnEdit}
-                          title="Edit pengguna"
-                        >
-                          <IconEdit />
-                          Edit
-                        </button>
-
-                        <button
-                          type="button"
-                          // onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ penggunaId: s.id }); }}
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: p.id }); }}
                           style={styles.btnDanger}
                           title="Hapus pengguna"
                         >
@@ -225,6 +213,7 @@ export default function ListAkun() {
             </table>
           </div>
         )}
+      </div>
 
       {/* ── Modal Kelas ── */}
       {modal && (
@@ -300,7 +289,7 @@ export default function ListAkun() {
                 Batal
               </button>
               <button type="button" 
-                // onClick={saveSiswa} 
+                onClick={savePengguna} 
                 style={styles.btnSave}>
                 {modal === "add-pengguna" ? "Simpan" : "Simpan Perubahan"}
               </button>
@@ -310,30 +299,31 @@ export default function ListAkun() {
       )}
 
       {/* ── Delete Confirm ── */}
-      {/* {deleteConfirm && (
+      {deleteConfirm && (
         <div style={styles.overlay}>
           <div style={{ ...styles.modal, maxWidth: "360px" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: "32px", textAlign: "center", marginBottom: "10px" }}>⚠️</div>
             <div style={{ ...styles.modalTitle, textAlign: "center" }}>Konfirmasi Hapus</div>
             <div style={{ ...styles.modalSubtitle, textAlign: "center" }}>
-              Hapus kelas "
-              {kelasList.find((k) => k.id === deleteConfirm.kelasId)?.nama}"?
+              Hapus pengguna "
+              {penggunaList.find((p) => p.id === deleteConfirm.id)?.username}"?
             </div>
             <div style={{ ...styles.modalFooter, justifyContent: "center" }}>
               <button style={styles.btnCancel} onClick={() => setDeleteConfirm(null)}>Batal</button>
               <button
                 style={{ ...styles.btnSave, background: "#E11D48" }}
-                onClick={() => deleteKelas(deleteConfirm.kelasId)}
+                onClick={() => deleteAkun(deleteConfirm.id)}
               >
                 Ya, Hapus
               </button>
             </div>
           </div>
         </div>
-      )} */}
+      )}
+      
 
       {/* ── Toast Notifications ── */}
-      {/* <div style={styles.toastNotif}>
+      <div style={styles.toastNotif}>
         {toasts.map((t) => (
           <div key={t.id} style={{
             background: t.type === "success" ? "#F0FDF4" : "#FFF1F2",
@@ -351,8 +341,7 @@ export default function ListAkun() {
             >✕</button>
           </div>
         ))}
-      </div> */}
-    </div>
+      </div>
     </div>
   );
 }

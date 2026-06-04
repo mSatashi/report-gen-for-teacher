@@ -203,7 +203,6 @@ export interface MailResponse {
 }
 
 export interface PenggunaPayload {
-  id: string;
   email_address: string;
   username: string;
   password: string;
@@ -212,7 +211,9 @@ export interface PenggunaPayload {
 }
 
 export interface PenggunaResponse {
-  iuser_d: string;
-  message: string;
-  tipe: string;
+  id: string;
+  username: string;
+  email_address: string;
+  tipe_pengguna: string;
+  is_active: boolean;
 }

@@ -102,7 +102,22 @@ export const styles: Record<string, CSSProperties> = {
   },
   dataTable: {
     width: "100%",
-    borderCollapse: "collapse" as const,
+  },
+  th: {
+    textAlign: "left" as const,
+    fontSize: "11px",
+    fontWeight: 700,
+    color: "#8A9BB0",
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.06em",
+    padding: "12px 10px",
+    borderBottom: "1px solid #F0F2FA",
+  },
+  td: {
+    padding: "11px 10px",
+    fontSize: "13px",
+    color: "#1E2A3B",
+    borderBottom: "1px solid #F8F9FD",
   },
   btnDanger: {
     background: "#FEF2F2",
@@ -233,4 +248,37 @@ export const styles: Record<string, CSSProperties> = {
   },
 
 
+  toastNotif: {
+    position: "fixed",
+    bottom: "24px",
+    right: "24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    zIndex: 2000,
+  },
+
+  bodyToastNotif: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    borderRadius: "10px",
+    padding: "12px 16px",
+    fontSize: "13px",
+    fontWeight: 600,
+    boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+    minWidth: "260px",
+    maxWidth: "360px",
+    animation: "slideIn 0.2s ease",
+  },
+
+  btnToast: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "inherit",
+    opacity: 0.6,
+    fontSize: "14px",
+    padding: "0 2px",
+  }
 };
