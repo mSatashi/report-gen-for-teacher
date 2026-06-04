@@ -63,7 +63,7 @@ export interface Siswa {
   is_active: boolean;
 }
 
-export type ModalMode = "add-siswa" | "edit-siswa" | null;
+export type ModalMode = "add-siswa" | "edit-siswa" | "add-pengguna" | "edit-pengguna" | null;
 export type ToastType = "success" | "error";
 
 export type Toast = {

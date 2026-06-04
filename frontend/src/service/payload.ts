@@ -201,3 +201,12 @@ export interface MailResponse {
   message: string;
   laporan_id: string;
 }
+
+export interface PenggunaPayload {
+  id: string;
+  email_address: string;
+  username: string;
+  password: string;
+  tipe_pengguna: string;
+  confirmPassword?: string;
+}

@@ -1,6 +1,6 @@
 import React from "react";
 import { IconChevronLeft, IconChevronRight, LogoBadge } from "../icons";
-import { NAV_ITEMS } from "../data";
+import { NAV_ITEMS, NAV_ITEMS_ADMIN } from "../data";
 import { styles } from "./styles";
 
 interface SidebarProps {
@@ -8,6 +8,7 @@ interface SidebarProps {
   collapsed: boolean;
   onNavigate: (route: string) => void;
   onToggleCollapse: () => void;
+  role?: string;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -15,7 +16,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   collapsed,
   onNavigate,
   onToggleCollapse,
+  role,
 }) => {
+
+  const navItems = role === "admin" ? NAV_ITEMS_ADMIN : NAV_ITEMS;
+
   return (
     <aside
       style={{ width: collapsed ? 72 : 240, ...styles.asside}}
@@ -65,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* ── Nav menu ── */}
       <nav style={styles.navStyle}>
-        {NAV_ITEMS.map((item, i) => {
+        {navItems.map((item, i) => {
           if (item.kind === "section") {
             if (collapsed) return null;
             return (

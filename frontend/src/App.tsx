@@ -20,6 +20,8 @@ import type { DailyLogResponse, KelasResponse, MapelResponse, ReportGeneratorRes
 import PlanDetail from "./pages/plan-detail";
 import ListReportGenerator from "./pages/list-report";
 import DetailReport from "./pages/detail-report";
+import AdminDashboard from "./pages/admin/dashboard";
+import ListAkun from "./pages/admin/list-account";
 
 // Helper token
 const TOKEN_KEY = "auth_token";
@@ -34,7 +36,7 @@ const App: React.FC = () => {
   });
   const [loginError, setLoginError] = useState<string>("");
   const [loginLoading, setLoginLoading] = useState(false);
-  const [activeRoute, setActiveRoute] = useState<string>("home");
+  const [activeRoute, setActiveRoute] = useState<string>(user?.tipe_pengguna === "admin" ? "homeAdmin" : "home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
@@ -63,7 +65,8 @@ const App: React.FC = () => {
     formDailyLog: "Form Daily Log",
     planDetail: "Detail Plan",
     detailReport: 'Detail Report',
-    listReportGen: 'List Report Generate'
+    listReportGen: 'List Report Generate',
+    homeAdmin: "Dashboard Admin",
   };
 
   const pageTitle =
@@ -90,7 +93,13 @@ const App: React.FC = () => {
       localStorage.setItem(USER_KEY, JSON.stringify(authUser));
 
       setUser(authUser);
-      setActiveRoute("home");
+
+      if (authUser.tipe_pengguna === "admin") {
+        setActiveRoute("homeAdmin");
+      } else {
+        setActiveRoute("home"); // pengajar
+      }
+      
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Terjadi kesalahan.";
       setLoginError(message);
@@ -123,11 +132,25 @@ const App: React.FC = () => {
     return <LoginPage onLogin={handleLogin} error={loginError} loading={loginLoading} />;
   }
 
+  /** Jika admin → render AdminDashboard langsung, tanpa layout pengajar */
+  // if (user?.tipe_pengguna === "admin") {
+  //   return (
+  //     <AdminDashboard
+  //       namaLengkap={user?.username ?? "Admin"}
+  //       email={user?.email_address ?? ""}
+  //       onNavigate={handleNavigate}
+  //       onSignOut={handleLogout}
+  //     />
+  //   );
+  // }
+
   /** Render the active page */
   const renderPage = () => {
     switch (activeRoute) {
       case "home":
         return <DashboardPage namaLengkap={user?.username ?? "Pengguna"} />;
+      case "homeAdmin":
+        return <AdminDashboard namaLengkap={user?.username ?? "Admin"} />;
       case "reportEditor":
         return <ReportEditor 
           onNavigate={handleNavigate}
@@ -168,6 +191,8 @@ const App: React.FC = () => {
         return <ListReportGenerator onNavigate={handleNavigate}  />;
       case "detailReport":
         return <DetailReport onNavigate={handleNavigate} siswaId={routeParams.siswaId as string} />;
+      case "listAkun":
+        return <ListAkun />;
       default:
         return (
           <div style={styles.pageNotFound}>
@@ -204,6 +229,7 @@ const App: React.FC = () => {
             setMobileSidebarOpen(false);
           }}
           onToggleCollapse={() => setMobileSidebarOpen(false)}
+          role={user?.tipe_pengguna === "admin" ? "admin" : "pengajar"}
         />
       </div>
 
@@ -214,6 +240,7 @@ const App: React.FC = () => {
           collapsed={sidebarCollapsed}
           onNavigate={setActiveRoute}
           onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+          role={user?.tipe_pengguna === "admin" ? "admin" : "pengajar"}
         />
       </div>
 
