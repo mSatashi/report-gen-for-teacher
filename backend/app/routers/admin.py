@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.schemas.schemas import RegisterRequest, PenggunaResponse
 
-from app.models.models import Pengguna
+from app.models.models import Pengajar, Pengguna
 from typing import List, Annotated, Optional
 
 from app.services.admin_service import create_pengajar, get_all_pengajar, require_admin
@@ -27,3 +27,16 @@ def list_all_pengajar(
     current_user: Pengguna = Depends(require_admin)
 ):
     return get_all_pengajar(db, skip=skip, limit=limit, search=search)
+
+
+@router.delete("/hapus-pengajar/{pengajar_id}", status_code=status.HTTP_204_NO_CONTENT)
+def hapus_pengajar(pengajar_id: str, db: Annotated[Session, Depends(get_db)], current_user: Annotated[Pengguna, Depends(require_admin)]):
+    """Hapus pengajar berdasarkan ID."""
+    pengajar = db.query(Pengajar).filter(Pengajar.id == pengajar_id).first()
+    if not pengajar:
+        return {"message": "Pengajar tidak ditemukan"}
+    
+    db.delete(pengajar)
+    db.delete(db.query(Pengguna).filter(Pengguna.id == pengajar_id).first())
+    db.commit()
+    return {"message": "Pengajar berhasil dihapus"}
