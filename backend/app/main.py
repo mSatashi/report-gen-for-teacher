@@ -24,6 +24,7 @@ from app.routers import (
     bkt, 
     mata_pelajaran,
     topik,
+    admin,
     # ks,
     # ai,
 )
@@ -94,6 +95,7 @@ app.include_router(murid.router,       prefix=PREFIX)
 app.include_router(bkt.router,         prefix=PREFIX)
 app.include_router(mata_pelajaran.router, prefix=PREFIX)
 app.include_router(topik.router, prefix=PREFIX)
+app.include_router(admin.router, prefix=PREFIX)
  
  
 @app.get("/", tags=["Root"])
