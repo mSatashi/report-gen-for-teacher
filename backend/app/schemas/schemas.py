@@ -35,6 +35,13 @@ class TokenResponse(BaseModel):
     username: str
     email_address: EmailStr
 
+class PenggunaResponse(BaseModel):
+    id: str
+    username: str
+    email_address: EmailStr
+    tipe_pengguna: str
+    is_active: bool
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MURID
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -52,6 +59,7 @@ class MuridUpdate(BaseModel):
     jenis_kelamin: Optional[JenisKelamin] = None
     education_level: Optional[EducationLevel] = None
     is_active: Optional[bool] = None
+
 
 class MuridResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

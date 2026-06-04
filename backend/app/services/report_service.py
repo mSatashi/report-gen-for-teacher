@@ -4,6 +4,7 @@ Service layer untuk Laporan Perkembangan Siswa.
 F003, F005, F006, F007 — buat, edit, kirim, lihat laporan.
 Termasuk: generate PDF, kirim email.
 """
+from http.client import HTTPException
 import logging
 import os
 import uuid
@@ -15,6 +16,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
  
 from app.core.config import settings
@@ -57,6 +59,13 @@ def update_laporan(db: Session, laporan_id: str, data: LaporanUpdate) -> Optiona
     lap = get_laporan_by_id(db, laporan_id)
     if not lap:
         return None
+    
+    if lap.status == "final":
+        raise HTTPException(
+            status_code=400, 
+            detail="tidak dapat update laporan karena sudah bersifat final"
+        )
+    
     for field, val in data.model_dump(exclude_none=True).items():
         setattr(lap, field, val)
     db.commit()
