@@ -63,6 +63,17 @@ def get_all_pengajar(
         )
     return result
 
+def get_pengajar_by_id(db: Session, pengajar_id: str) -> Optional[Pengguna]:
+    return db.query(Pengguna).filter(Pengguna.id == pengajar_id, Pengguna.tipe_pengguna == "pengajar").first()
+
+def delete_pengajar(db: Session, pengajar_id: str) -> bool:
+    pengajar = get_pengajar_by_id(db, pengajar_id)
+    if not pengajar:
+        return False
+    db.delete(pengajar)
+    db.commit()
+    return True
+
 def require_admin(current_user: Pengguna = Depends(get_current_user)) -> Pengguna:
     """Dependency: hanya admin yang boleh akses endpoint ini."""
     if str(current_user.tipe_pengguna) != "admin":
