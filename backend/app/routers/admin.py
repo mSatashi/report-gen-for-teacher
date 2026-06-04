@@ -27,3 +27,15 @@ def list_all_pengajar(
     current_user: Pengguna = Depends(require_admin)
 ):
     return get_all_pengajar(db, skip=skip, limit=limit, search=search)
+
+
+@router.delete("/hapus-pengajar/{pengajar_id}", status_code=status.HTTP_204_NO_CONTENT)
+def hapus_pengajar(pengajar_id: int, db: Annotated[Session, Depends(get_db)], current_user: Annotated[Pengguna, Depends(require_admin)]):
+    """Hapus pengajar berdasarkan ID."""
+    pengajar = db.query(Pengguna).filter(Pengguna.id == pengajar_id, Pengguna.tipe_pengguna == "pengajar").first()
+    if not pengajar:
+        return {"message": "Pengajar tidak ditemukan"}
+    
+    db.delete(pengajar)
+    db.commit()
+    return {"message": "Pengajar berhasil dihapus"}
