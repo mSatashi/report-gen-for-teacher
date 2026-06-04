@@ -210,3 +210,9 @@ export interface PenggunaPayload {
   tipe_pengguna: string;
   confirmPassword?: string;
 }
+
+export interface PenggunaResponse {
+  iuser_d: string;
+  message: string;
+  tipe: string;
+}

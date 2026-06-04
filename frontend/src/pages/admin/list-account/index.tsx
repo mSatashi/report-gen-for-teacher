@@ -12,11 +12,30 @@ const emptyPengguna = (): Omit<PenggunaPayload, "id"> => ({
   confirmPassword: "",
 });
 
+// let toastId = 0;
+
+// type Props = {
+//   initialData?: PenggunaResponse[];
+// };
+
 export default function ListAkun() {
   const [keyword, setKeyword] = useState("");
   const [modal, setModal] = useState<ModalMode>(null);
   const [penggunaForm, setPenggunaForm] = useState(emptyPengguna());
-  const [editingPenggunaId, setEditingPenggunaId] = useState<string | null>(null);
+  const [, setEditingPenggunaId] = useState<string | null>(null);
+  // const [, setToasts] = useState<Toast[]>([]);
+  // const [, setSiswaList] = useState<PenggunaResponse[]>(initialData);
+
+  // const { errorMsg, loadPengguna, submitAccount, submitUpdateSiswa, submitDeleteSiswa} = useSiswaApi();
+
+  // const showToast = (message: string, type: ToastType) => {
+  //   const id = ++toastId;
+  //   setToasts((prev) => [...prev, { id, message, type }]);
+  //   setTimeout(() => {
+  //     setToasts((prev) => prev.filter((t) => t.id !== id));
+  //   }, 3500);
+  // };
+  
 
   const filteredPengguna = [
     {
@@ -36,6 +55,58 @@ export default function ListAkun() {
     setEditingPenggunaId(null);
     setModal("add-pengguna");
   };
+
+  // const savePengguna = async () => {
+  //   if (!penggunaForm.username.trim()) {
+  //     showToast("Username wajib diisi", "error");
+  //     return;
+  //   }
+
+  //   if (!penggunaForm.email_address.trim()) {
+  //     showToast("Email wajib diisi", "error");
+  //     return;
+  //   }
+
+  //   if (!penggunaForm.password.trim()) {
+  //     showToast("Password wajib diisi", "error");
+  //     return;
+  //   }
+
+  //   if (penggunaForm.password !== penggunaForm.confirmPassword) {
+  //     showToast("Password dan konfirmasi password tidak cocok", "error");
+  //     return;
+  //   }
+
+  //   if (editingPenggunaId) {
+  //     /** update */
+  //     // const result = await submitUpdateSiswa(editingPenggunaId, siswaForm);
+  //     // if (result) {
+  //     //   setSiswaList((prev) =>
+  //     //     prev.map((k) =>
+  //     //       k.id === editingPenggunaId ? { ...k, ...mapApiToSiswa(result) } : k
+  //     //     )
+  //     //   );
+  //     //   showToast("Siswa berhasil diperbarui ✓", "success");
+  //     //   setModal(null);
+  //     // } else {
+  //     //   showToast(errorMsg ?? "Gagal memperbarui siswa", "error");
+  //     // }
+  //   } else {
+  //     /** create */
+  //     const result = await submitCreateSiswa(siswaForm);
+  //     if (result) {
+  //       const newSiswa = mapApiToSiswa(result);
+  //       setSiswaList((prev) => [...prev, newSiswa]);
+  //       setExpanded((prev) => ({ ...prev, [newSiswa.id]: true }));
+  //       showToast(`Siswa ${newSiswa.nama} berhasil ditambahkan ✓`, "success");
+  //       setModal(null);
+  //     } else {
+  //       showToast(errorMsg ?? "Gagal membuat siswa", "error");
+  //     }
+  //   }
+
+  //   setModal(null);
+  // };
 
   return (
       <div style={styles.root}>

@@ -150,7 +150,7 @@ const App: React.FC = () => {
       case "home":
         return <DashboardPage namaLengkap={user?.username ?? "Pengguna"} />;
       case "homeAdmin":
-        return <AdminDashboard namaLengkap={user?.username ?? "Admin"} />;
+        return <AdminDashboard namaLengkap={user?.username ?? "Admin"} onNavigate={handleNavigate} />;
       case "reportEditor":
         return <ReportEditor 
           onNavigate={handleNavigate}
