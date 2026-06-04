@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.schemas.schemas import RegisterRequest, LoginRequest, TokenResponse
 from app.services.auth_service import register_user, login_user, logout_user

@@ -107,3 +107,5 @@ def require_pengajar(current_user: Pengguna = Depends(get_current_user)) -> Peng
     if str(current_user.tipe_pengguna) != "pengajar":
         raise HTTPException(status_code=403, detail="Hanya pengajar yang dapat mengakses fitur ini")
     return current_user
+
+
