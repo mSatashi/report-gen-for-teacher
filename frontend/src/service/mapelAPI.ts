@@ -14,9 +14,11 @@ export async function createMapel(payload: MapelPayload): Promise<MapelResponse>
     method: "POST",
     body: JSON.stringify({
       nama_mata_pelajaran: payload.nama_mata_pelajaran,
-      topik_list: [
-        ...(payload.topik_awal?.map((t) => t.nama) ?? []),
-      ],
+      topik_awal: payload.topik_awal?.map((t) => ({
+        nama: t.nama,
+        difficulty_index: t.difficulty_index,
+        prasyarat_ids: t.prasyarat_ids ?? [],
+      })),
     }),
   });
   if (!res.ok) {

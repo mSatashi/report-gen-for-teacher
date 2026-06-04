@@ -176,7 +176,7 @@ export interface MapelPayload {
 
 export interface MapelUpdatePayload { 
   nama_mata_pelajaran: string;
-  topik_list?: TopikPayload[];
+  topik_list?: TopikUpdatePayload[];
 }
 
 export interface TopikResponse {
@@ -186,6 +186,13 @@ export interface TopikResponse {
 }
 
 export interface TopikPayload {
+  id?: string | null | undefined;
+  nama: string;
+  difficulty_index: number;
+  prasyarat_ids?: string[];
+}
+
+export interface TopikUpdatePayload {
   id: string | null | undefined;
   nama: string;
   difficulty_index: number;

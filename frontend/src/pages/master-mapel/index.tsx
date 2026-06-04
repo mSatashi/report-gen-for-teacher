@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { styles } from "./styles";
 import { IconClose, IconEdit, IconPlus, IconTrash } from "../../icons";
 import { useMapelApi } from "./useMapelApi";
-import type { MapelPayload, MapelResponse, MapelUpdatePayload, Toast, TopikPayload } from "../../service/payload";
+import type { MapelPayload, MapelResponse, MapelUpdatePayload, Toast, TopikPayload, TopikUpdatePayload } from "../../service/payload";
 
 type ModalMode = "add-mapel" | "edit-mapel" | null;
 
@@ -66,7 +66,7 @@ export default function MasterMapel() {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
   };
 
-  const updateTopik = (idx: number, patch: Partial<TopikPayload>) => {
+  const updateTopik = (idx: number, patch: Partial<TopikUpdatePayload>) => {
     setTopikForm((prev) => prev.map((t, i) => (i === idx ? { ...t, ...patch } : t)));
   };
 
@@ -129,37 +129,6 @@ export default function MasterMapel() {
     setModal("edit-mapel");
   };
 
-  // const openEditMapel = (k: MapelResponse) => {
-  // setMapelForm({ nama_mata_pelajaran: k.nama_mata_pelajaran });
-
-//   type TopikFromApi = {
-//     id?: string | null;
-//     nama?: string;
-//     difficulty_index?: number;
-//     prasyarat_ids?: string[];
-//   };
-  
-
-//   const parsed: TopikPayload[] =
-//     !k.topik_list || k.topik_list.length === 0
-//       ? [emptyTopik()]
-//       : (k.topik_list as unknown as TopikFromApi[]).map((t) => {
-//           if (typeof t === "string") {
-//             return { id: null, nama: t as string, difficulty_index: 0.1, prasyarat_ids: [] };
-//           }
-//           return {
-//             id: t.id ?? null,
-//             nama: t.nama ?? "",
-//             difficulty_index: t.difficulty_index ?? 0.1,
-//             prasyarat_ids: t.prasyarat_ids ?? [],
-//           };
-//         });
-
-//   setTopikForm(parsed);
-//   setEditingMapelId(k.id);
-//   setModal("edit-mapel");
-// };
-
 
   const saveMapel = async () => {
     if (!mapelForm.nama_mata_pelajaran.trim()) return;
@@ -171,10 +140,10 @@ export default function MasterMapel() {
       const updatePayload: MapelUpdatePayload = {
         nama_mata_pelajaran: mapelForm.nama_mata_pelajaran,
         topik_list: filteredTopik.map((t) => ({
-          id: t.id ?? null,  
+          id: t.id || null,
           nama: t.nama,
           difficulty_index: t.difficulty_index,
-          prasyarat_ids: t.prasyarat_ids ?? [],
+          prasyarat_ids: t.prasyarat_ids || [],
         })),
       };
 
@@ -189,10 +158,14 @@ export default function MasterMapel() {
         showToast(errorMsg ?? "Gagal memperbarui mata pelajaran", "error");
       }
     } else {
-      const payload: Omit<MapelPayload, "id"> = {
+      const payload: MapelPayload = {
         nama_mata_pelajaran: mapelForm.nama_mata_pelajaran,
-        topik_awal: topikForm.filter((t) => t.nama.trim()),
-      };
+        topik_awal: filteredTopik.map((t) => ({
+          nama: t.nama,
+          difficulty_index: t.difficulty_index,
+          prasyarat_ids: t.prasyarat_ids || [],
+        })),
+      }
       
       const result = await submitCreateMapel(payload);
       if (result) {
@@ -464,6 +437,7 @@ export default function MasterMapel() {
                   );
                 })}
               </div>
+              
             </div>
 
             <div style={styles.modalFooter}>

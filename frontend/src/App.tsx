@@ -132,25 +132,13 @@ const App: React.FC = () => {
     return <LoginPage onLogin={handleLogin} error={loginError} loading={loginLoading} />;
   }
 
-  /** Jika admin → render AdminDashboard langsung, tanpa layout pengajar */
-  // if (user?.tipe_pengguna === "admin") {
-  //   return (
-  //     <AdminDashboard
-  //       namaLengkap={user?.username ?? "Admin"}
-  //       email={user?.email_address ?? ""}
-  //       onNavigate={handleNavigate}
-  //       onSignOut={handleLogout}
-  //     />
-  //   );
-  // }
-
   /** Render the active page */
   const renderPage = () => {
     switch (activeRoute) {
       case "home":
         return <DashboardPage namaLengkap={user?.username ?? "Pengguna"} />;
       case "homeAdmin":
-        return <AdminDashboard namaLengkap={user?.username ?? "Admin"} onNavigate={handleNavigate} />;
+        return <AdminDashboard namaLengkap={user?.username ?? "Admin"} />;
       case "reportEditor":
         return <ReportEditor 
           onNavigate={handleNavigate}

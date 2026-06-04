@@ -28,7 +28,7 @@ const Footer: React.FC = () => {
       </span>
 
       <span style={{ fontSize: 12, color: "#9ca3af" }}>
-        Version <strong style={{ color: "#374151" }}>0.1.0</strong>
+        Version <strong style={{ color: "#374151" }}>1.0.0</strong>
       </span>
     </footer>
   );

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { MapelPayload, MapelResponse } from "../../service/payload";
+import type { MapelPayload, MapelResponse, MapelUpdatePayload } from "../../service/payload";
 import { createMapel, deleteMapelApi, fetchMapelList, updateMapel } from "../../service/mapelAPI";
 
 export type ApiStatus = "idle" | "loading" | "success" | "error";
@@ -57,7 +57,7 @@ export function useMapelApi(): UseMapelApiReturn {
   );
 
   const submitUpdateMapel = useCallback(
-    async (payload: MapelPayload, idMapel: string): Promise<MapelResponse | null> => {
+    async (payload: MapelUpdatePayload, idMapel: string): Promise<MapelResponse | null> => {
       setStatus("loading");
       setErrorMsg(null);
       try {
