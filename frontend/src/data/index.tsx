@@ -7,20 +7,17 @@ import {
   IconPending,
   IconKelas,
 } from "../icons";
-import type { NavItem, StatCard, Student, Activity } from "../types";
+import type { NavItem, StatCard } from "../types";
 
 export const NAV_ITEMS: NavItem[] = [
   { kind: "section", label: "Main Menu" },
   { kind: "link", label: "Dashboards",    route: "home",         icon: <IconDashboard /> },
-  // { kind: "link", label: "Daily Log",     route: "dailyLog",     icon: <IconDailyLog /> },
-  // { kind: "link", label: "Learning Plan", route: "learningPlan", icon: <IconCalendar /> },
   { kind: "section", label: "Master Data" },
   { kind: "link", label: "Kelas", route: "masterKelas", icon: <IconKelas /> },
   { kind: "link", label: "Mata Pelajaran", route: "masterMapel", icon: <IconKelas /> },
   { kind: "link", label: "Siswa", route: "masterSiswa", icon: <IconStudents /> },
   { kind: "section", label: "Report" },
   { kind: "link", label: "List Report", route: "listReportGen", icon: <IconReport /> },
-  // { kind: "link", label: "Report Editor", route: "reportEditor", icon: <IconReport /> },
   { kind: "section", label: "IF5200 - PPT" },
 ];
 
@@ -59,57 +56,57 @@ export const STAT_CARDS: StatCard[] = [
   },
 ];
 
-export const STUDENTS: Student[] = [
-  {
-    name: "Aisya Putri",
-    subject: "Matematika",
-    subtopic: "Aljabar Dasar",
-    progress: 78,
-    status: "On Track",
-    note: "78% target terpenuhi",
-    avatarColor: "#dbeafe",
-  },
-  {
-    name: "Rafi Santoso",
-    subject: "Bahasa Inggris",
-    subtopic: "Reading Comp.",
-    progress: 52,
-    status: "Perlu Perhatian",
-    note: "52% · Plan diadaptasi AI hari ini",
-    avatarColor: "#fef3c7",
-  },
-  {
-    name: "Nadia Fajar",
-    subject: "IPA",
-    subtopic: "Ekosistem",
-    progress: 85,
-    status: "On Track",
-    note: "85% target terpenuhi",
-    avatarColor: "#dcfce7",
-  },
-];
+// export const STUDENTS: Student[] = [
+//   {
+//     name: "Aisya Putri",
+//     subject: "Matematika",
+//     subtopic: "Aljabar Dasar",
+//     progress: 78,
+//     status: "On Track",
+//     note: "78% target terpenuhi",
+//     avatarColor: "#dbeafe",
+//   },
+//   {
+//     name: "Rafi Santoso",
+//     subject: "Bahasa Inggris",
+//     subtopic: "Reading Comp.",
+//     progress: 52,
+//     status: "Perlu Perhatian",
+//     note: "52% · Plan diadaptasi AI hari ini",
+//     avatarColor: "#fef3c7",
+//   },
+//   {
+//     name: "Nadia Fajar",
+//     subject: "IPA",
+//     subtopic: "Ekosistem",
+//     progress: 85,
+//     status: "On Track",
+//     note: "85% target terpenuhi",
+//     avatarColor: "#dcfce7",
+//   },
+// ];
 
-export const ACTIVITIES: Activity[] = [
-  {
-    date: "10 MAR",
-    title: "Log Aisya · Matematika",
-    subtitle: "Aljabar: persamaan linear · 90 menit",
-    tags: [
-      { label: "Paham",  color: "#dcfce7" },
-      { label: "Aktif",  color: "#dbeafe" },
-    ],
-  },
-  {
-    date: "10 MAR",
-    title: "Log Nadia · IPA",
-    subtitle: "Ekosistem laut · Praktik observasi",
-    tags: [{ label: "Sangat Baik", color: "#dcfce7" }],
-  },
-  {
-    date: "9 MAR",
-    title: "Log Rafi · Bahasa Inggris",
-    subtitle: "Reading Comp. · 60 menit",
-    tags: [{ label: "Perlu Ulang", color: "#fee2e2" }],
-  },
-];
+// export const ACTIVITIES: Activity[] = [
+//   {
+//     date: "10 MAR",
+//     title: "Log Aisya · Matematika",
+//     subtitle: "Aljabar: persamaan linear · 90 menit",
+//     tags: [
+//       { label: "Paham",  color: "#dcfce7" },
+//       { label: "Aktif",  color: "#dbeafe" },
+//     ],
+//   },
+//   {
+//     date: "10 MAR",
+//     title: "Log Nadia · IPA",
+//     subtitle: "Ekosistem laut · Praktik observasi",
+//     tags: [{ label: "Sangat Baik", color: "#dcfce7" }],
+//   },
+//   {
+//     date: "9 MAR",
+//     title: "Log Rafi · Bahasa Inggris",
+//     subtitle: "Reading Comp. · 60 menit",
+//     tags: [{ label: "Perlu Ulang", color: "#fee2e2" }],
+//   },
+// ];
 

@@ -3,7 +3,7 @@ import { useDailyLogSiswa } from "./useDailyLogSiswa";
 import type { DailyLogResponse, MapelResponse, SiswaResponse } from "../../service/payload";
 import type { TingkatPemahaman } from "../daily-log/components/types";
 import { btnAddStyle, PENGUASAAN_BADGE } from "../daily-log/components/constants";
-import { styles } from "./styles";
+import { styles, statCardStyle, tabBtnStyle, thStyle, toastItemStyle } from "./styles";
 import { deleteDailyLogApi } from "../../service/dailyLogAPI";
 import type { Toast } from "../../types";
 import { IconTrash } from "../../icons";
@@ -17,7 +17,6 @@ interface DailyLogDetailSiswaProps {
 }
 
 const TABS = ["Semua", "Sangat Paham", "Paham", "Cukup", "Perlu Review"] as const;
-// type Tab = (typeof TABS)[number];
 
 let toastId = 0;
 
@@ -28,19 +27,13 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
 
   const { errorMsg, loadLogSiswa } = useDailyLogSiswa();
 
-  useEffect(() => {  
-      loadLogSiswa(siswaId).then((data) => {
-        if (data?.length) setDailyList(data);
-      });
-  
-    }, []);
-
+  useEffect(() => {
+    loadLogSiswa(siswaId).then((data) => {
+      if (data?.length) setDailyList(data);
+    });
+  }, []);
 
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>("Semua");
-
-  // const dataLogSiswa = dailyList.filter(
-  //   (l) => l.murid_id === siswaId
-  // );
 
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
@@ -71,70 +64,71 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
+    <div style={styles.pageWrapper}>
 
       {/* ── Header ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexShrink: 0, flexWrap: "wrap", gap: 12 }}>
+      <div style={styles.header}>
         <div>
-          {/* Breadcrumb: Daily Log › Matematika › Aisya Putri */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} 
-            onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog"); }}
+          {/* Breadcrumb */}
+          <div style={styles.breadcrumbRow}>
+            <span
+              style={styles.breadcrumbLink}
+              onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog"); }}
             >
               Daily Log
             </span>
-            <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
-            <span style={{ fontSize: 13, color: "#9ca3af", cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); onNavigate?.("listSiswa"); }}>
+            <span style={styles.breadcrumbSeparator}>›</span>
+            <span
+              style={styles.breadcrumbLink}
+              onClick={(e) => { e.stopPropagation(); onNavigate?.("listSiswa"); }}
+            >
               {mapel.nama_mata_pelajaran}
             </span>
-            <span style={{ fontSize: 13, color: "#d1d5db" }}>›</span>
-            <span style={{ fontSize: 13, color: "#111827", fontWeight: 600 }}>{siswa.nama}</span>
+            <span style={styles.breadcrumbSeparator}>›</span>
+            <span style={styles.breadcrumbCurrent}>{siswa.nama}</span>
           </div>
 
           {/* Siswa info row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
-              {initials}
-            </div>
+          <div style={styles.siswaInfoRow}>
+            <div style={styles.avatar}>{initials}</div>
             <div>
-              <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", margin: "0 0 2px" }}>
-                {siswa.nama}
-              </h2>
-              <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
+              <h2 style={styles.siswaName}>{siswa.nama}</h2>
+              <p style={styles.siswaMeta}>
                 {siswa.education_level} · {mapel.nama_mata_pelajaran}
               </p>
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <button 
-            onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId }) }}
-            style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500, color: "#374151", cursor: "pointer" }}>
+        <div style={styles.headerBtnGroup}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("detailKelas", { kelasId }); }}
+            style={styles.btnBack}
+          >
             ← Kembali
           </button>
-          <button 
-            onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog", { namaSiswa: siswa.nama, mapel: mapel, kelasId, siswa }) }}
+          <button
+            onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog", { namaSiswa: siswa.nama, mapel, kelasId, siswa }); }}
             style={btnAddStyle}
-            >
+          >
             + Tambah Log
           </button>
         </div>
       </div>
 
       {/* ── Scrollable body ── */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 18 }}>
+      <div style={styles.scrollBody}>
 
         {/* Stat cards */}
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", flexShrink: 0 }}>
+        <div style={styles.statCardRow}>
           {[
-            { label: "Total Log",    value: dailyList.length,          bg: "#eff6ff", color: "#3b82f6" },
+            { label: "Total Log",    value: dailyList.length,             bg: "#eff6ff", color: "#3b82f6" },
             { label: "Sangat Paham", value: countByLevel("Sangat Paham"), bg: "#dcfce7", color: "#15803d" },
             { label: "Paham",        value: countByLevel("Paham"),        bg: "#dbeafe", color: "#1d4ed8" },
             { label: "Cukup",        value: countByLevel("Cukup"),        bg: "#fef9c3", color: "#ca8a04" },
             { label: "Perlu Review", value: countByLevel("Perlu Review"), bg: "#fee2e2", color: "#dc2626" },
           ].map((s) => (
-            <div key={s.label} style={{ background: s.bg, borderRadius: 12, padding: "14px 20px", minWidth: 90, flex: "1 1 90px" }}>
+            <div key={s.label} style={statCardStyle(s.bg)}>
               <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</div>
               <div style={{ fontSize: 12, color: s.color, fontWeight: 500, marginTop: 2 }}>{s.label}</div>
             </div>
@@ -142,10 +136,10 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
         </div>
 
         {/* Table card */}
-        <div style={{ background: "#fff", borderRadius: 14, padding: "24px 28px", boxShadow: "0 1px 4px rgba(0,0,0,.06)", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        <div style={styles.tableCard}>
 
           {/* Tab filter */}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20, flexShrink: 0 }}>
+          <div style={styles.tabRow}>
             {TABS.map((tab) => {
               const active = activeTab === tab;
               const count  = tab === "Semua" ? dailyList.length : countByLevel(tab as TingkatPemahaman);
@@ -154,14 +148,7 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  style={{
-                    border: active ? "none" : "1px solid #e5e7eb",
-                    borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600,
-                    cursor: "pointer",
-                    background: active ? (badge ? badge.bg : "#eff6ff") : "#fff",
-                    color:      active ? (badge ? badge.color : "#3b82f6") : "#6b7280",
-                    transition: "all .15s",
-                  }}
+                  style={tabBtnStyle(active, badge?.bg, badge?.color)}
                 >
                   {tab} ({count})
                 </button>
@@ -170,10 +157,10 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
           </div>
 
           {/* Table */}
-          <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <div style={styles.tableWrapper}>
+            <table style={styles.table}>
               <thead>
-                <tr style={{ background: "rgba(228,230,239,0.85)" }}>
+                <tr style={styles.tableHeadRow}>
                   {[
                     { label: "No",           width: 50     },
                     { label: "Tanggal",      width: 110    },
@@ -185,7 +172,7 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
                     { label: "Catatan",      width: "auto" },
                     { label: "Actions",      width: 100    },
                   ].map((h) => (
-                    <th key={h.label} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, color: "#374151", width: h.width, whiteSpace: "nowrap" }}>
+                    <th key={h.label} style={thStyle(h.width)}>
                       {h.label}
                     </th>
                   ))}
@@ -195,27 +182,25 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
                 {filtered.map((log, idx) => {
                   const badge = PENGUASAAN_BADGE[log.tingkat_pemahaman as TingkatPemahaman];
                   return (
-                    <tr key={log.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>{idx + 1}</td>
-                      <td style={{ padding: "12px 14px", color: "#6b7280", whiteSpace: "nowrap" }}>{log.tanggal ?? "—"}</td>
-                      <td style={{ padding: "12px 14px", fontWeight: 500, color: "#111827" }}>{log.topik ?? "—"}</td>
-                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.durasi_menit ? `${log.durasi_menit} mnt` : "—"}</td>
-                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.metode_belajar ?? "—"}</td>
-                      <td style={{ padding: "12px 14px" }}>
-                        <span style={{ background: badge.bg, color: badge.color, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>
+                    <tr key={log.id} style={styles.tableBodyRow}>
+                      <td style={styles.tdDefault}>{idx + 1}</td>
+                      <td style={styles.tdNoWrap}>{log.tanggal ?? "—"}</td>
+                      <td style={styles.tdBold}>{log.topik ?? "—"}</td>
+                      <td style={styles.tdDefault}>{log.durasi_menit ? `${log.durasi_menit} mnt` : "—"}</td>
+                      <td style={styles.tdDefault}>{log.metode_belajar ?? "—"}</td>
+                      <td style={styles.tdBadge}>
+                        <span style={{ background: badge?.bg, color: badge?.color, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>
                           {log.tingkat_pemahaman}
                         </span>
                       </td>
-                      <td style={{ padding: "12px 14px", color: "#6b7280" }}>{log.tingkat_keterlibatan ?? "—"}</td>
-                      <td style={{ padding: "12px 14px", color: "#6b7280", maxWidth: 200 }}>
-                        <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                          {log.catatan || "—"}
-                        </span>
+                      <td style={styles.tdDefault}>{log.tingkat_keterlibatan ?? "—"}</td>
+                      <td style={styles.tdNote}>
+                        <span style={styles.noteClamp}>{log.catatan || "—"}</span>
                       </td>
-                      <td style={{ padding: "12px 14px" }}>
+                      <td style={styles.tdActions}>
                         <button
-                          onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog", { namaSiswa: siswa.nama, mapel: mapel, kelasId, siswa, dataLog: log }) }}
-                          style={{ background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                          onClick={(e) => { e.stopPropagation(); onNavigate?.("formDailyLog", { namaSiswa: siswa.nama, mapel, kelasId, siswa, dataLog: log }); }}
+                          style={styles.btnEdit}
                         >
                           Edit
                         </button>
@@ -232,7 +217,7 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
 
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={9} style={{ padding: "40px 14px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
+                    <td colSpan={9} style={styles.emptyCell}>
                       {activeTab === "Semua"
                         ? "Belum ada log untuk siswa ini."
                         : `Tidak ada log dengan pemahaman "${activeTab}".`}
@@ -251,10 +236,7 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
           <div style={{ ...styles.modal, maxWidth: "360px" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: "32px", textAlign: "center", marginBottom: "10px" }}>⚠️</div>
             <div style={{ ...styles.modalTitle, textAlign: "center" }}>Konfirmasi Hapus</div>
-            <div style={{ ...styles.modalSubtitle, textAlign: "center" }}>
-              Hapus log ? 
-              {/* "{dailyList.find((k) => k.id === deleteConfirm.logId)?.nama}"? */}
-            </div>
+            <div style={{ ...styles.modalSubtitle, textAlign: "center" }}>Hapus log?</div>
             <div style={{ ...styles.modalFooter, justifyContent: "center" }}>
               <button style={styles.btnCancel} onClick={() => setDeleteConfirm(null)}>Batal</button>
               <button
@@ -269,51 +251,20 @@ export default function DailyLogDetailSiswa({ siswa, siswaId, mapel, kelasId, on
       )}
 
       {/* ── Toast Notifications ── */}
-      <div style={{
-        position: "fixed",
-        bottom: "24px",
-        right: "24px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-        zIndex: 2000,
-      }}>
+      <div style={styles.toastContainer}>
         {toasts.map((t) => (
-          <div key={t.id} style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            background: t.type === "success" ? "#F0FDF4" : "#FFF1F2",
-            border: `1.5px solid ${t.type === "success" ? "#4ADE80" : "#FDA4AF"}`,
-            color: t.type === "success" ? "#15803D" : "#9F1239",
-            borderRadius: "10px",
-            padding: "12px 16px",
-            fontSize: "13px",
-            fontWeight: 600,
-            boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
-            minWidth: "260px",
-            maxWidth: "360px",
-            animation: "slideIn 0.2s ease",
-          }}>
+          <div key={t.id} style={{ ...toastItemStyle(t.type), color: t.type === "success" ? "#15803D" : "#9F1239" }}>
             <span style={{ fontSize: "16px" }}>
               {t.type === "success" ? "✅" : "❌"}
             </span>
             <span style={{ flex: 1 }}>{t.message}</span>
             <button
               onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "inherit",
-                opacity: 0.6,
-                fontSize: "14px",
-                padding: "0 2px",
-              }}
+              style={{ ...styles.toastCloseBtn, color: "inherit" }}
             >✕</button>
           </div>
         ))}
       </div>
     </div>
   );
-};
+}

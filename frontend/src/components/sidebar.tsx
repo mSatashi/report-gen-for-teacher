@@ -43,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {!collapsed && (
           <button
-            onClick={onToggleCollapse}
+            onClick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
             style={styles.btnCollapse}
             title="Collapse sidebar"
           >
@@ -55,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* ── Expand button (collapsed state) ── */}
       {collapsed && (
         <button
-          onClick={onToggleCollapse}
+          onClick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
           style={styles.btnExpand}
           title="Expand sidebar"
         >

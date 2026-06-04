@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 
 export const styles: Record<string, CSSProperties> = {
+  // header
   headerStyle: {
     height: 60,
     background: "#fff",
@@ -177,7 +178,9 @@ export const styles: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "center",
     width: "100%",
-    border: "none",
+    borderTop: "none",
+    borderRight: "none",
+    borderBottom: "none",
     cursor: "pointer",
     fontSize: 13,
     transition: "all .15s",

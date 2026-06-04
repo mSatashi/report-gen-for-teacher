@@ -127,4 +127,211 @@ export const styles: Record<string, CSSProperties> = {
     display: "flex",
     color: "#6B7FA3",
   },
+
+  // ── Layout ──
+  pageWrapper: {
+    display: "flex",
+    flexDirection: "column" as const,
+    height: "100%",
+    gap: 0,
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 20,
+    flexShrink: 0,
+    flexWrap: "wrap" as const,
+    gap: 12,
+  },
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: "#111827",
+    margin: "0 0 2px",
+  },
+  pageSubtitle: {
+    color: "#9ca3af",
+    fontSize: 13,
+    margin: 0,
+  },
+  btnBack: {
+    background: "none",
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    padding: "8px 16px",
+    fontSize: 13,
+    fontWeight: 500,
+    color: "#374151",
+    cursor: "pointer",
+  },
+
+  // ── Body ──
+  scrollBody: {
+    flex: 1,
+    minHeight: 0,
+    overflowY: "auto" as const,
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 18,
+  },
+  tableCard: {
+    background: "#fff",
+    borderRadius: 14,
+    padding: "24px 28px",
+    boxShadow: "0 1px 4px rgba(0,0,0,.06)",
+    flex: 1,
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column" as const,
+  },
+  filterBar: {
+    display: "flex",
+    gap: 6,
+    flexWrap: "wrap" as const,
+    marginBottom: 20,
+    flexShrink: 0,
+  },
+  filterBadge: {
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    padding: "6px 14px",
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#3b82f6",
+    background: "#eff6ff",
+  },
+  tableWrapper: {
+    flex: 1,
+    overflowY: "auto" as const,
+    minHeight: 0,
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse" as const,
+    fontSize: 13,
+  },
+  tableHeadRow: {
+    background: "rgba(228,230,239,0.85)",
+  },
+  th: {
+    padding: "10px 14px",
+    textAlign: "left" as const,
+    fontWeight: 600,
+    color: "#374151",
+    whiteSpace: "nowrap" as const,
+  },
+  tableBodyRow: {
+    borderBottom: "1px solid #f3f4f6",
+  },
+  tdDefault: {
+    padding: "12px 14px",
+    color: "#6b7280",
+  },
+  tdNoWrap: {
+    padding: "12px 14px",
+    color: "#6b7280",
+    whiteSpace: "nowrap" as const,
+  },
+  tdBold: {
+    padding: "12px 14px",
+    fontWeight: 500,
+    color: "#111827",
+  },
+  tdBadge: {
+    padding: "12px 14px",
+  },
+  tdActions: {
+    padding: "12px 14px",
+  },
+  actionGroup: {
+    display: "flex",
+    gap: 6,
+    alignItems: "center",
+  },
+  btnEdit: {
+    background: "#f59e0b",
+    color: "#fff",
+    border: "none",
+    borderRadius: 6,
+    padding: "5px 12px",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  btnKirim: {
+    background: "#22c55e",
+    color: "#fff",
+    border: "none",
+    borderRadius: 6,
+    padding: "5px 12px",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  btnView: {
+    background: "#3b82f6",
+    color: "#fff",
+    border: "none",
+    borderRadius: 6,
+    padding: "5px 12px",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  emptyCell: {
+    padding: "40px 14px",
+    textAlign: "center" as const,
+    color: "#9ca3af",
+    fontSize: 13,
+  },
+
+  // ── Toast ──
+  toastContainer: {
+    position: "fixed" as const,
+    bottom: 24,
+    right: 24,
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 10,
+    zIndex: 2000,
+  },
+  toastCloseBtn: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    opacity: 0.6,
+    fontSize: 14,
+  },
 };
+// Status badge (warna bergantung value status)
+export function statusBadgeStyle(status: string | undefined): import("react").CSSProperties {
+  return {
+    display: "inline-block",
+    padding: "3px 10px",
+    borderRadius: 20,
+    fontSize: 11,
+    fontWeight: 700,
+    background: status === "draft" ? "#FEF3C7" : status === "final" ? "#F0FDF4" : "#F3F4F6",
+    color: status === "draft" ? "#92400E" : status === "final" ? "#15803D" : "#6B7280",
+  };
+}
+
+// Toast item (warna bergantung type)
+export function toastItemStyle(type: "success" | "error"): import("react").CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    background: type === "success" ? "#F0FDF4" : "#FFF1F2",
+    border: `1.5px solid ${type === "success" ? "#4ADE80" : "#FDA4AF"}`,
+    color: type === "success" ? "#15803D" : "#9F1239",
+    borderRadius: 10,
+    padding: "12px 16px",
+    fontSize: 13,
+    fontWeight: 600,
+    boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+    minWidth: 260,
+    maxWidth: 360,
+  };
+}

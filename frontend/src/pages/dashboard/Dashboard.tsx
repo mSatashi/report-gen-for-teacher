@@ -168,8 +168,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash, namaLengkap }) => 
             </button> */}
           </div>
 
-          {aktivitasTerbaru.map((a) => (
-            <ActivityItem key={a.kelas_id} activity={a} />
+          {aktivitasTerbaru.map((a, index) => (
+            <ActivityItem key={index} activity={a} />
           ))}
         </div>
 
