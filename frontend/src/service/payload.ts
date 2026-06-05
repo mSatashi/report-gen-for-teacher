@@ -224,3 +224,10 @@ export interface PenggunaResponse {
   tipe_pengguna: string;
   is_active: boolean;
 }
+
+export interface TopikResponse {  
+  id: string;
+  nama: string;
+  difficulty_index: number;
+  prasyarat?: TopikResponse[];
+}
