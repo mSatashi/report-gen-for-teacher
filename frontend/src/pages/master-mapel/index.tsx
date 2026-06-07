@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { styles } from "./styles";
 import { IconClose, IconEdit, IconPlus, IconTrash } from "../../icons";
 import { useMapelApi } from "./useMapelApi";
-import type { MapelPayload, MapelResponse, MapelUpdatePayload, Toast, TopikPayload } from "../../service/payload";
+import type { MapelPayload, MapelResponse, MapelUpdatePayload, Toast, TopikPayload, TopikResponse, TopikUpdatePayload } from "../../service/payload";
 
 type ModalMode = "add-mapel" | "edit-mapel" | null;
 
@@ -50,6 +50,7 @@ const getKesulitanInfo = (val: number) =>
 
 export default function MasterMapel() {
   const [mapelList, setMapelList] = useState<MapelResponse[]>([]);
+  const [topikList, setTopikList] = useState<TopikResponse[]>([]);
   const [, setToasts] = useState<Toast[]>([]);
   const [modal, setModal] = useState<ModalMode>(null);
   const [mapelForm, setMapelForm] = useState<{ nama_mata_pelajaran: string }>(emptyMapelForm());
@@ -57,8 +58,7 @@ export default function MasterMapel() {
   const [editingMapelId, setEditingMapelId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ mapelId: string } | null>(null);
 
-  const { errorMsg, loadMapelList, submitCreateMapel, submitUpdateMapel, submitDeleteMapel } =
-    useMapelApi();
+  const { errorMsg, loadMapelList, loadTopikList, submitCreateMapel, submitUpdateMapel, submitDeleteMapel } = useMapelApi();
 
   const showToast = (message: string, type: "success" | "error") => {
     const id = ++toastId;
@@ -66,7 +66,7 @@ export default function MasterMapel() {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
   };
 
-  const updateTopik = (idx: number, patch: Partial<TopikPayload>) => {
+  const updateTopik = (idx: number, patch: Partial<TopikUpdatePayload>) => {
     setTopikForm((prev) => prev.map((t, i) => (i === idx ? { ...t, ...patch } : t)));
   };
 
@@ -99,7 +99,10 @@ export default function MasterMapel() {
     });
   }, []);
 
-  const openEditMapel = (k: MapelResponse) => {
+  const openEditMapel = async (k: MapelResponse) => {
+    const topikData = await loadTopikList(k.id);
+    if (topikData?.length) setTopikList(topikData);
+
     setMapelForm({ nama_mata_pelajaran: k.nama_mata_pelajaran });
 
     type TopikFromApi = {
@@ -107,6 +110,7 @@ export default function MasterMapel() {
       nama?: string;
       difficulty_index?: number;
       prasyarat_ids?: string[];
+      prasyarat?: { id: string }[];
     };
 
     const parsed: TopikPayload[] =
@@ -116,11 +120,18 @@ export default function MasterMapel() {
             if (typeof t === "string") {
               return { id: undefined, nama: t, difficulty_index: 0.1, prasyarat_ids: [] }; // ← di sini
             }
+
+            const prasyaratIds =
+              t.prasyarat_ids?.length
+              ? t.prasyarat_ids
+              : (t.prasyarat ?? []).map((p) => p.id);
+
+
             return {
               id: t.id ?? undefined,   // ← dan di sini
               nama: t.nama ?? "",
               difficulty_index: t.difficulty_index ?? 0.1,
-              prasyarat_ids: t.prasyarat_ids ?? [],
+              prasyarat_ids: prasyaratIds,
             };
           });
 
@@ -129,56 +140,25 @@ export default function MasterMapel() {
     setModal("edit-mapel");
   };
 
-  // const openEditMapel = (k: MapelResponse) => {
-  // setMapelForm({ nama_mata_pelajaran: k.nama_mata_pelajaran });
-
-//   type TopikFromApi = {
-//     id?: string | null;
-//     nama?: string;
-//     difficulty_index?: number;
-//     prasyarat_ids?: string[];
-//   };
-  
-
-//   const parsed: TopikPayload[] =
-//     !k.topik_list || k.topik_list.length === 0
-//       ? [emptyTopik()]
-//       : (k.topik_list as unknown as TopikFromApi[]).map((t) => {
-//           if (typeof t === "string") {
-//             return { id: null, nama: t as string, difficulty_index: 0.1, prasyarat_ids: [] };
-//           }
-//           return {
-//             id: t.id ?? null,
-//             nama: t.nama ?? "",
-//             difficulty_index: t.difficulty_index ?? 0.1,
-//             prasyarat_ids: t.prasyarat_ids ?? [],
-//           };
-//         });
-
-//   setTopikForm(parsed);
-//   setEditingMapelId(k.id);
-//   setModal("edit-mapel");
-// };
-
 
   const saveMapel = async () => {
     if (!mapelForm.nama_mata_pelajaran.trim()) return;
 
     const filteredTopik = topikForm.filter((t) => t.nama.trim());
-    console.log(filteredTopik)
 
     if (editingMapelId) {
       const updatePayload: MapelUpdatePayload = {
         nama_mata_pelajaran: mapelForm.nama_mata_pelajaran,
         topik_list: filteredTopik.map((t) => ({
-          id: t.id ?? null,  
+          id: t.id || null,
           nama: t.nama,
           difficulty_index: t.difficulty_index,
-          prasyarat_ids: t.prasyarat_ids ?? [],
+          prasyarat_ids: t.prasyarat_ids || [],
         })),
       };
 
       const result = await submitUpdateMapel(updatePayload, editingMapelId);
+      // console.log('cek result: ', result)
       if (result) {
         setMapelList((prev) =>
           prev.map((k) => (k.id === editingMapelId ? { ...k, ...mapApiMapel(result) } : k))
@@ -189,10 +169,14 @@ export default function MasterMapel() {
         showToast(errorMsg ?? "Gagal memperbarui mata pelajaran", "error");
       }
     } else {
-      const payload: Omit<MapelPayload, "id"> = {
+      const payload: MapelPayload = {
         nama_mata_pelajaran: mapelForm.nama_mata_pelajaran,
-        topik_awal: topikForm.filter((t) => t.nama.trim()),
-      };
+        topik_awal: filteredTopik.map((t) => ({
+          nama: t.nama,
+          difficulty_index: t.difficulty_index,
+          prasyarat_ids: t.prasyarat_ids || [],
+        })),
+      }
       
       const result = await submitCreateMapel(payload);
       if (result) {
@@ -356,7 +340,7 @@ export default function MasterMapel() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 140px 34px",
+                    gridTemplateColumns: "1.5fr 140px 1.5fr 34px",
                     gap: "8px",
                     marginBottom: "4px",
                     paddingLeft: "2px",
@@ -368,7 +352,9 @@ export default function MasterMapel() {
                   <span style={{ fontSize: "11px", color: "#8A94A8", fontWeight: 600 }}>
                     Tingkat Kesulitan
                   </span>
-                  <span />
+                  <span style={{ fontSize: "11px", color: "#8A94A8", fontWeight: 600 }}>
+                    Prasyarat
+                  </span>
                 </div>
               )}
 
@@ -381,7 +367,7 @@ export default function MasterMapel() {
                       key={idx}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "1fr 140px 34px",
+                        gridTemplateColumns: "1.5fr 140px 1.5fr 34px",
                         gap: "8px",
                         alignItems: "center",
                       }}
@@ -437,6 +423,49 @@ export default function MasterMapel() {
                         </span>
                       </div>
 
+                      <div style={{ position: "relative" }}>
+                        <select
+                          value={topik.prasyarat_ids?.[0] || ""}
+                          onChange={(e) => {
+                            // const selected = Array.from(e.target.selectedOptions, option => option.value);
+                            // updateTopik(idx, { prasyarat_ids: selected });
+                            updateTopik(idx, { 
+                              prasyarat_ids: e.target.value ? [e.target.value] : [] 
+                            });
+                          }}
+                          style={{
+                            width: "100%",
+                            height: "38px",
+                            borderRadius: "8px",
+                            padding: "0 24px 0 10px",
+                            fontSize: "13px",
+                            appearance: "none",
+                            cursor: "pointer",
+                            outline: "none",
+                          }}
+                        >
+                          <option value="">-- Pilih --</option>
+                          {topikList.map((opt, idx) => (
+                            <option key={idx} value={opt.id}>
+                              {opt.nama}
+                            </option>
+                          ))}
+                        </select>
+                        <span
+                          style={{
+                            position: "absolute",
+                            right: "8px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            pointerEvents: "none",
+                            fontSize: "10px",
+                            color: kesulitanInfo.color,
+                          }}
+                        >
+                          ▾
+                        </span>
+                      </div>
+
                       {/* Tombol hapus topik */}
                       {topikForm.length > 1 ? (
                         <button
@@ -464,6 +493,7 @@ export default function MasterMapel() {
                   );
                 })}
               </div>
+              
             </div>
 
             <div style={styles.modalFooter}>

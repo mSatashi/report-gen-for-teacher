@@ -1,22 +1,19 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties } from 'react';
 
 export const styles: Record<string, CSSProperties> = {
   root: {
-    // background: "#F4F6FB",
     minHeight: "100vh",
-    // padding: "32px",
-    // color: "#1E2A3B",
   },
   header: {
     marginBottom: "28px",
   },
-  // breadcrumb: {
-  //   fontSize: "12px",
-  //   color: "#8A9BB0",
-  //   marginBottom: "6px",
-  //   letterSpacing: "0.04em",
-  //   textTransform: "uppercase" as const,
-  // },
+  breadcrumb: {
+    fontSize: "12px",
+    color: "#8A9BB0",
+    marginBottom: "6px",
+    letterSpacing: "0.04em",
+    textTransform: "uppercase" as const,
+  },
   title: {
     margin: 0,
     fontSize: 26, 
@@ -27,6 +24,14 @@ export const styles: Record<string, CSSProperties> = {
     fontSize: "14px",
     color: "#6B7FA3",
     marginTop: "4px",
+  },
+  toolbar: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px",
+    flexWrap: "wrap" as const,
+    gap: "12px",
   },
   statsRow: {
     display: "flex",
@@ -57,16 +62,6 @@ export const styles: Record<string, CSSProperties> = {
   },
   statLabel: { fontSize: "12px", color: "#8A9BB0", fontWeight: 500 },
   statValue: { fontSize: "22px", fontWeight: 700, color: "#1E2A3B" },
-
-  toolbar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "20px",
-    flexWrap: "wrap" as const,
-    gap: "12px",
-  },
-
   btnPrimary: {
     background: "linear-gradient(135deg, #5B6BDF 0%, #4A5AC8 100%)",
     color: "#fff",
@@ -82,9 +77,77 @@ export const styles: Record<string, CSSProperties> = {
     boxShadow: "0 2px 8px rgba(91,107,223,0.25)",
     transition: "opacity 0.15s",
   },
-  
+  input: {
+    width: "100%",
+    padding: "10px 14px",
+    border: "1.5px solid #E2E8F0",
+    borderRadius: "10px",
+    fontSize: "14px",
+    color: "#1E2A3B",
+    outline: "none",
+    boxSizing: "border-box" as const,
+    transition: "border-color 0.15s",
+    background: "#FAFBFF",
+  },
+  emptyState: {
+    textAlign: "center" as const,
+    padding: "28px",
+    color: "#8A9BB0",
+    fontSize: "13px",
+  },
+  tableWrapper: {
+    padding: "0 22px 18px",
+    borderTop: "1px solid #F0F2FA",
+    overflowY: "auto",
+  },
+  dataTable: {
+    width: "100%",
+  },
+  th: {
+    textAlign: "left" as const,
+    fontSize: "11px",
+    fontWeight: 700,
+    color: "#8A9BB0",
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.06em",
+    padding: "12px 10px",
+    borderBottom: "1px solid #F0F2FA",
+  },
+  td: {
+    padding: "11px 10px",
+    fontSize: "13px",
+    color: "#1E2A3B",
+    borderBottom: "1px solid #F8F9FD",
+  },
+  btnDanger: {
+    background: "#FEF2F2",
+    color: "#E53E3E",
+    border: "1.5px solid #FED7D7",
+    borderRadius: "8px",
+    padding: "7px 12px",
+    fontSize: "12px",
+    fontWeight: 600,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "5px",
+  },
+  btnEdit: {
+    background: "#EEF2FF",
+    color: "#5B6BDF",
+    border: "1.5px solid #D4D9F5",
+    borderRadius: "8px",
+    padding: "7px 12px",
+    fontSize: "12px",
+    fontWeight: 600,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "5px",
+  },
 
-  // // Modal
+  // Modal styles
+  // Modal
   overlay: {
     position: "fixed" as const,
     inset: 0,
@@ -100,7 +163,7 @@ export const styles: Record<string, CSSProperties> = {
     borderRadius: "18px",
     padding: "32px",
     width: "100%",
-    maxWidth: "780px",
+    maxWidth: "480px",
     boxShadow: "0 20px 60px rgba(15,22,36,0.2)",
     position: "relative" as const,
   },
@@ -127,7 +190,7 @@ export const styles: Record<string, CSSProperties> = {
     textTransform: "uppercase" as const,
     letterSpacing: "0.05em",
   },
-  input: {
+  select: {
     width: "100%",
     padding: "10px 14px",
     border: "1.5px solid #E2E8F0",
@@ -136,26 +199,14 @@ export const styles: Record<string, CSSProperties> = {
     color: "#1E2A3B",
     outline: "none",
     boxSizing: "border-box" as const,
-    transition: "border-color 0.15s",
     background: "#FAFBFF",
+    appearance: "none" as const,
   },
-  // select: {
-  //   width: "100%",
-  //   padding: "10px 14px",
-  //   border: "1.5px solid #E2E8F0",
-  //   borderRadius: "10px",
-  //   fontSize: "14px",
-  //   color: "#1E2A3B",
-  //   outline: "none",
-  //   boxSizing: "border-box" as const,
-  //   background: "#FAFBFF",
-  //   appearance: "none" as const,
-  // },
-  // row2: {
-  //   display: "grid",
-  //   gridTemplateColumns: "1fr 1fr",
-  //   gap: "14px",
-  // },
+  row2: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "14px",
+  },
   modalFooter: {
     display: "flex",
     justifyContent: "flex-end",
@@ -196,61 +247,38 @@ export const styles: Record<string, CSSProperties> = {
     color: "#6B7FA3",
   },
 
-  emptyState: {
-    textAlign: "center" as const,
-    padding: "28px",
-    color: "#8A9BB0",
-    fontSize: "13px",
+
+  toastNotif: {
+    position: "fixed",
+    bottom: "24px",
+    right: "24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    zIndex: 2000,
   },
-  tableWrapper: {
-    padding: "0 22px 18px",
-    borderTop: "1px solid #F0F2FA",
-    overflowY: "auto",
-  },
-  th: {
-    textAlign: "left" as const,
-    fontSize: "11px",
-    fontWeight: 700,
-    color: "#8A9BB0",
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.06em",
-    padding: "12px 10px",
-    borderBottom: "1px solid #F0F2FA",
-  },
-  td: {
-    padding: "11px 10px",
-    fontSize: "13px",
-    color: "#1E2A3B",
-    borderBottom: "1px solid #F8F9FD",
-  },
-  mapelTable: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-  },
-  btnEdit: {
-    background: "#EEF2FF",
-    color: "#5B6BDF",
-    border: "1.5px solid #D4D9F5",
-    borderRadius: "8px",
-    padding: "7px 12px",
-    fontSize: "12px",
-    fontWeight: 600,
-    cursor: "pointer",
+
+  bodyToastNotif: {
     display: "flex",
     alignItems: "center",
-    gap: "5px",
-  },
-  btnDanger: {
-    background: "#FEF2F2",
-    color: "#E53E3E",
-    border: "1.5px solid #FED7D7",
-    borderRadius: "8px",
-    padding: "7px 12px",
-    fontSize: "12px",
+    gap: "10px",
+    borderRadius: "10px",
+    padding: "12px 16px",
+    fontSize: "13px",
     fontWeight: 600,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: "5px",
+    boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+    minWidth: "260px",
+    maxWidth: "360px",
+    animation: "slideIn 0.2s ease",
   },
+
+  btnToast: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "inherit",
+    opacity: 0.6,
+    fontSize: "14px",
+    padding: "0 2px",
+  }
 };

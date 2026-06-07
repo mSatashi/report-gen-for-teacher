@@ -176,7 +176,7 @@ export interface MapelPayload {
 
 export interface MapelUpdatePayload { 
   nama_mata_pelajaran: string;
-  topik_list?: TopikPayload[];
+  topik_list?: TopikUpdatePayload[];
 }
 
 export interface TopikResponse {
@@ -186,6 +186,13 @@ export interface TopikResponse {
 }
 
 export interface TopikPayload {
+  id?: string | null | undefined;
+  nama: string;
+  difficulty_index: number;
+  prasyarat_ids?: string[];
+}
+
+export interface TopikUpdatePayload {
   id: string | null | undefined;
   nama: string;
   difficulty_index: number;
@@ -200,4 +207,27 @@ export interface MailPayload {
 export interface MailResponse {
   message: string;
   laporan_id: string;
+}
+
+export interface PenggunaPayload {
+  email_address: string;
+  username: string;
+  password: string;
+  tipe_pengguna: string;
+  confirmPassword?: string;
+}
+
+export interface PenggunaResponse {
+  id: string;
+  username: string;
+  email_address: string;
+  tipe_pengguna: string;
+  is_active: boolean;
+}
+
+export interface TopikResponse {  
+  id: string;
+  nama: string;
+  difficulty_index: number;
+  prasyarat?: TopikResponse[];
 }

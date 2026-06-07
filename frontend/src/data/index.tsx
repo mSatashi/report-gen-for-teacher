@@ -11,13 +11,21 @@ import type { NavItem, StatCard } from "../types";
 
 export const NAV_ITEMS: NavItem[] = [
   { kind: "section", label: "Main Menu" },
-  { kind: "link", label: "Dashboards",    route: "home",         icon: <IconDashboard /> },
+  { kind: "link", label: "Dashboards", route: "home", icon: <IconDashboard /> },
   { kind: "section", label: "Master Data" },
   { kind: "link", label: "Kelas", route: "masterKelas", icon: <IconKelas /> },
   { kind: "link", label: "Mata Pelajaran", route: "masterMapel", icon: <IconKelas /> },
   { kind: "link", label: "Siswa", route: "masterSiswa", icon: <IconStudents /> },
   { kind: "section", label: "Report" },
   { kind: "link", label: "List Report", route: "listReportGen", icon: <IconReport /> },
+  { kind: "section", label: "IF5200 - PPT" },
+];
+
+export const NAV_ITEMS_ADMIN: NavItem[] = [
+  { kind: "section", label: "Main Menu" },
+  { kind: "link", label: "Dashboards",    route: "homeAdmin",icon: <IconDashboard /> },
+  { kind: "section", label: "Account" },
+  { kind: "link", label: "Data Pengguna", route: "listAkun", icon: <IconKelas /> },
   { kind: "section", label: "IF5200 - PPT" },
 ];
 

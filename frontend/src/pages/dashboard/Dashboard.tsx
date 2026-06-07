@@ -37,7 +37,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash, namaLengkap }) => 
   }, []);
 
   const statCards = buildStatCards(dataDashboard)
-  // ← tambah ini, fallback ke dummy jika kosong
   const progressSiswa = dataDashboard?.progress_siswa?.length
     ? dataDashboard.progress_siswa
     : [];
@@ -67,7 +66,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ flash, namaLengkap }) => 
       {/* Greeting */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 26, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>
-          Selamat pagi, {namaLengkap} 👋
+          Selamat datang, {namaLengkap} 👋
         </h2>
         <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
           {today}

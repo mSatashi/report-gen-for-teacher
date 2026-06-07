@@ -1,5 +1,5 @@
 import { apiFetch } from "./apiFetch";
-import type { MapelPayload, MapelResponse, MapelUpdatePayload } from "./payload";
+import type { MapelPayload, MapelResponse, MapelUpdatePayload, TopikResponse } from "./payload";
 
 /** GET /mata-pelajaran — ambil semua mata pelajaran */
 export async function fetchMapelList(): Promise<MapelResponse[]> {
@@ -14,9 +14,11 @@ export async function createMapel(payload: MapelPayload): Promise<MapelResponse>
     method: "POST",
     body: JSON.stringify({
       nama_mata_pelajaran: payload.nama_mata_pelajaran,
-      topik_list: [
-        ...(payload.topik_awal?.map((t) => t.nama) ?? []),
-      ],
+      topik_awal: payload.topik_awal?.map((t) => ({
+        nama: t.nama,
+        difficulty_index: t.difficulty_index,
+        prasyarat_ids: t.prasyarat_ids ?? [],
+      })),
     }),
   });
   if (!res.ok) {
@@ -54,4 +56,11 @@ export async function deleteMapelApi(id: string): Promise<void> {
     method: "DELETE",
   });
   if (!res.ok) throw new Error(`Gagal menghapus mata pelajaran (${res.status})`);
+}
+
+/** GET /topik/mapel/:id — ambil semua topik untuk mata pelajaran tertentu */
+export async function fetchTopikList(idMapel: string): Promise<TopikResponse[]> {
+  const res = await apiFetch(`/topik/mapel/${idMapel}`);
+  if (!res.ok) throw new Error(`Gagal memuat data topik (${res.status})`);
+  return res.json();
 }
