@@ -1,4 +1,5 @@
 import uuid
+import re
 from typing import List, Optional
 
 from app.schemas.schemas import MuridResponse
@@ -13,8 +14,37 @@ from app.schemas.schemas import RegisterRequest, PenggunaResponse
 from app.services.auth_service import get_current_user
 
 
+def validate_password(password: str) -> None:
+    errors = []
+    
+    if not password:
+        raise HTTPException(status_code=400, detail="Password tidak boleh kosong")
+    
+    if len(password) < 10:
+        errors.append("Password minimal 10 karakter")
+    
+    if not re.search(r'[A-Z]', password):
+        errors.append("Password harus mengandung minimal 1 huruf besar")
+    
+    if not re.search(r'[a-z]', password):
+        errors.append("Password harus mengandung minimal 1 huruf kecil")
+    
+    if not re.search(r'[0-9]', password):
+        errors.append("Password harus mengandung minimal 1 angka")
+    
+    if not re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?]', password):
+        errors.append("Password harus mengandung minimal 1 karakter spesial (!@#$%^&* dll)")
+    
+    if errors:
+        detail = "Password tidak valid: " + ", ".join(errors)
+        raise HTTPException(status_code=400, detail=detail)
+
+
 def create_pengajar(db: Session, data: RegisterRequest) -> Pengguna:
     """Registrasi pengguna baru (pengajar)."""
+    # Validate password against security policy
+    validate_password(data.password)
+    
     if db.query(Pengguna).filter(Pengguna.email_address == data.email_address).first():
         raise HTTPException(status_code=400, detail="Email sudah terdaftar")
     if db.query(Pengguna).filter(Pengguna.username == data.username).first():
