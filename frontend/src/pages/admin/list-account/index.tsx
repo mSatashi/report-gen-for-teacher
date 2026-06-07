@@ -15,6 +15,31 @@ const emptyPengguna = (): PenggunaPayload => ({
 
 let toastId = 0;
 
+/** Calculate password strength (0-4) */
+const calculatePasswordStrength = (password: string): number => {
+  if (!password) return 0;
+  let strength = 0;
+
+  if (password.length >= 8) strength++;
+  if (/[A-Z]/.test(password)) strength++;
+  if (/[a-z]/.test(password)) strength++;
+  if (/[0-9]/.test(password)) strength++;
+  if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength++;
+
+  return Math.min(strength, 4); // Cap at 4 for the bar display
+};
+
+/** Get password strength indicator */
+const getPasswordStrengthInfo = (strength: number) => {
+  const levels = [
+    { label: "Sangat Lemah", color: "#DC2626", width: "25%" },
+    { label: "Lemah", color: "#F97316", width: "50%" },
+    { label: "Sedang", color: "#EAB308", width: "75%" },
+    { label: "Kuat", color: "#16A34A", width: "100%" },
+  ];
+  return levels[Math.max(0, strength - 1)] || { label: "Sangat Lemah", color: "#DC2626", width: "0%" };
+};
+
 type Props = {
   initialData?: PenggunaResponse[];
 };
@@ -26,6 +51,7 @@ export default function ListAkun({ initialData = [] }: Props) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [penggunaList, setPenggunaList] = useState<PenggunaResponse[]>(initialData);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string } | null>(null);
+  const [passwordStrength, setPasswordStrength] = useState(0);
 
   const { errorMsg, loadPengguna, submitPengguna, sumbitDeletePengguna } = usePenggunaApi();
 
@@ -55,6 +81,13 @@ export default function ListAkun({ initialData = [] }: Props) {
 
     if (!penggunaForm.password.trim()) {
       showToast("Password wajib diisi", "error");
+      return;
+    }
+
+    // Validate password strength
+    const strength = calculatePasswordStrength(penggunaForm.password);
+    if (strength < 2) {
+      showToast("Password terlalu lemah. Gunakan kombinasi huruf besar, kecil, angka, dan simbol.", "error");
       return;
     }
 
@@ -263,11 +296,49 @@ export default function ListAkun({ initialData = [] }: Props) {
                 value={penggunaForm.password}
                 placeholder="Masukkan password"
                 required
-                onChange={(e) =>
-                  setPenggunaForm((f) => ({ ...f, password: e.target.value }))
-                }
+                onChange={(e) => {
+                  const newPassword = e.target.value;
+                  setPenggunaForm((f) => ({ ...f, password: newPassword }));
+                  setPasswordStrength(calculatePasswordStrength(newPassword));
+                }}
                 style={styles.input}
               />
+              {/* Password Strength Bar */}
+              {penggunaForm.password && (
+                <div style={{ marginTop: "10px" }}>
+                  <div style={{
+                    height: "6px",
+                    background: "#E5E7EB",
+                    borderRadius: "3px",
+                    overflow: "hidden",
+                    marginBottom: "6px",
+                  }}>
+                    <div style={{
+                      height: "100%",
+                      background: getPasswordStrengthInfo(passwordStrength).color,
+                      width: getPasswordStrengthInfo(passwordStrength).width,
+                      transition: "all 0.3s ease",
+                    }} />
+                  </div>
+                  <div style={{
+                    fontSize: "12px",
+                    color: getPasswordStrengthInfo(passwordStrength).color,
+                    fontWeight: 600,
+                  }}>
+                    Kekuatan: {getPasswordStrengthInfo(passwordStrength).label}
+                  </div>
+                  {passwordStrength < 4 && (
+                    <div style={{
+                      fontSize: "11px",
+                      color: "#6B7280",
+                      marginTop: "4px",
+                      lineHeight: "1.4",
+                    }}>
+                      💡 Saran: Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={styles.formGroup}>
